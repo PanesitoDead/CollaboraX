@@ -13,7 +13,7 @@
         </div>
         <div class="flex gap-2">
             <button onclick="openCoordinadorModal()" 
-                    class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
+                    class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                 </svg>
@@ -24,62 +24,55 @@
 
     {{-- Stats Cards --}}
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div class="bg-white rounded-lg border p-6">
+        <div class="bg-white rounded-lg border border-gray-300 p-6">
             <div class="flex items-center justify-between pb-2">
                 <h3 class="text-sm font-medium text-gray-600">Áreas</h3>
                 <svg class="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
                 </svg>
             </div>
-            {{-- {{ $stats['areas'] }} --}}
-            <div class="text-2xl font-bold">Areas</div>
+            <div class="text-2xl font-bold">{{ $stats['areas'] }}</div>
             <p class="text-xs text-gray-500">Marketing, Ventas, Operaciones, Finanzas, TI</p>
         </div>
 
-        <div class="bg-white rounded-lg border p-6">
+        <div class="bg-white rounded-lg border border-gray-300 p-6">
             <div class="flex items-center justify-between pb-2">
                 <h3 class="text-sm font-medium text-gray-600">Usuarios Totales</h3>
                 <svg class="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
                 </svg>
             </div>
-            {{-- {{ $stats['usuarios_totales'] }} --}}
-            <div class="text-2xl font-bold">Usuarios Totales</div>
-            {{-- {{ $stats['usuarios_nuevos'] }} --}}
-            <p class="text-xs text-gray-500">+Usuarios nuevos desde la semana pasada</p>
+            <div class="text-2xl font-bold">{{ $stats['usuarios_totales'] }}</div>
+            <p class="text-xs text-gray-500">+{{ $stats['usuarios_nuevos'] }} desde la semana pasada</p>
         </div>
 
-        <div class="bg-white rounded-lg border p-6">
+        <div class="bg-white rounded-lg border border-gray-300 p-6">
             <div class="flex items-center justify-between pb-2">
                 <h3 class="text-sm font-medium text-gray-600">Metas Activas</h3>
                 <svg class="h-4 w-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
                 </svg>
             </div>
-            {{-- {{ $stats['metas_activas'] }} --}}
-            <div class="text-2xl font-bold">Metas Activas</div>
-            {{-- {{ $stats['metas_progreso'] }} --}}
-            {{-- {{ $stats['metas_pendientes'] }} --}}
-            <p class="text-xs text-gray-500">+Metas pendientes desde la semana pasada</p>
+            <div class="text-2xl font-bold">{{ $stats['metas_activas'] }}</div>
+            <p class="text-xs text-gray-500">{{ $stats['metas_progreso'] }} en progreso, {{ $stats['metas_pendientes'] }} pendientes</p>
         </div>
 
-        <div class="bg-white rounded-lg border p-6">
+        <div class="bg-white rounded-lg border border-gray-300 p-6">
             <div class="flex items-center justify-between pb-2">
                 <h3 class="text-sm font-medium text-gray-600">Cumplimiento Global</h3>
-                <svg class="h-4 w-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
                 </svg>
             </div>
-            {{-- {{ $stats['cumplimiento'] }} --}}
-            <div class="text-2xl font-bold">20%</div>
+            <div class="text-2xl font-bold">{{ $stats['cumplimiento'] }}%</div>
             <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-                <div class="bg-purple-600 h-2 rounded-full" style="width: {{ 20 }}%"></div>
+                <div class="bg-blue-600 h-2 rounded-full" style="width: {{ $stats['cumplimiento'] }}%"></div>
             </div>
         </div>
     </div>
 
     {{-- Tabs Content --}}
-    <div class="bg-white rounded-lg border">
+    <div class="bg-white rounded-lg border border-gray-300 ">
         <div class="border-b border-gray-200">
             <nav class="-mb-px flex space-x-8 px-6" aria-label="Tabs">
                 <button onclick="showTab('coordinadores')" 
@@ -107,8 +100,8 @@
                 <p class="text-gray-600">Responsables de las áreas de la empresa</p>
             </div>
             <div class="space-y-4">
-                @foreach($coordinadores=[] as $coordinador)
-                <div class="flex items-center justify-between rounded-lg border p-4">
+                @foreach($coordinadores as $coordinador)
+                <div class="flex items-center justify-between rounded-lg border border-gray-300 p-4">
                     <div class="flex items-center gap-4">
                         <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
                             <span class="text-sm font-medium">{{ $coordinador['initials'] }}</span>
@@ -144,8 +137,8 @@
                 <p class="text-gray-600">Estructura organizativa de TechSolutions S.A.</p>
             </div>
             <div class="space-y-4">
-                @foreach($areas=[] as $area)
-                <div class="flex items-center justify-between rounded-lg border p-4">
+                @foreach($areas as $area)
+                <div class="flex items-center justify-between rounded-lg border border-gray-300 p-4">
                     <div>
                         <p class="font-medium">{{ $area['name'] }}</p>
                         <div class="flex items-center gap-2 text-sm text-gray-500">
@@ -192,7 +185,7 @@
 <div id="coordinadorModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
     <div class="flex items-center justify-center min-h-screen p-4">
         <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
-            {{-- action="{{ route('private.admin.coordinadores-generales.store') }}" --}}
+            {{-- action="{{ route('admin.coordinadores-generales.store') }}" --}}
             <form  method="POST">
                 @csrf
                 <div class="px-6 py-4 border-b border-gray-200">
@@ -206,10 +199,10 @@
                     <div>
                         <label for="usuario_id" class="block text-sm font-medium text-gray-700">Usuario</label>
                         <select name="usuario_id" id="usuario_id" required 
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500">
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Seleccionar usuario</option>
-                            @foreach($usuarios_disponibles=[] as $usuario)
-                            <option value="{{ $usuario->id }}">{{ $usuario->name }} ({{ $usuario->email }})</option>
+                            @foreach($usuarios_disponibles as $usuario)
+                            {{-- <option value="{{ $usuario->id }}">{{ $usuario->name }} ({{ $usuario->email }})</option> --}}
                             @endforeach
                         </select>
                         <p class="text-xs text-gray-500 mt-1">
@@ -220,17 +213,17 @@
                     <div>
                         <label for="area_id" class="block text-sm font-medium text-gray-700">Área</label>
                         <select name="area_id" id="area_id" required 
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500">
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Seleccionar área</option>
-                            @foreach($areas_disponibles=[] as $area)
-                            <option value="{{ $area->id }}">{{ $area->nombre }}</option>
+                            @foreach($areas_disponibles as $area)
+                            {{-- <option value="{{ $area->id }}">{{ $area->nombre }}</option> --}}
                             @endforeach
                         </select>
                     </div>
 
                     <div class="flex items-center">
                         <input type="checkbox" name="enviar_notificacion" id="enviar_notificacion" checked 
-                               class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
+                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
                         <label for="enviar_notificacion" class="ml-2 block text-sm text-gray-700">
                             Enviar notificación al usuario
                         </label>
@@ -246,7 +239,7 @@
                         Cancelar
                     </button>
                     <button type="submit" 
-                            class="px-4 py-2 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-md hover:bg-purple-700">
+                            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-gray-300 border-transparent rounded-md hover:bg-blue-700">
                         Asignar Rol
                     </button>
                 </div>
@@ -265,7 +258,7 @@ function showTab(tabName) {
     
     // Remove active state from all buttons
     document.querySelectorAll('.tab-button').forEach(button => {
-        button.classList.remove('border-purple-500', 'text-purple-600');
+        button.classList.remove('border-blue-500', 'text-blue-600');
         button.classList.add('border-transparent', 'text-gray-500');
     });
     
@@ -275,7 +268,7 @@ function showTab(tabName) {
     // Add active state to selected button
     const activeButton = document.querySelector(`[data-tab="${tabName}"]`);
     activeButton.classList.remove('border-transparent', 'text-gray-500');
-    activeButton.classList.add('border-purple-500', 'text-purple-600');
+    activeButton.classList.add('border-blue-500', 'text-blue-600');
 }
 
 // Modal functionality

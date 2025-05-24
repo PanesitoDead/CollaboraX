@@ -3,7 +3,7 @@
 @section('content')
 <div class="flex min-h-screen flex-col">
     <!-- Header -->
-    <header class="sticky top-0 z-50 border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <header class="sticky top-0 z-50 border-b border-gray-300 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60" style="padding-left: 2%; padding-right: 2%;">
         <div class="container mx-auto flex h-16 items-center justify-between px-4">
             <div class="flex items-center gap-2">
                 <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
@@ -33,7 +33,7 @@
     </header>
 
     <!-- Hero Section -->
-    <section class="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-gray-50">
+    <section class="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-gray-50" style="padding-left: 10%; padding-right: 10%;">
         <div class="absolute inset-0 bg-grid-black/[0.02] bg-[size:60px_60px]"></div>
         <div class="container mx-auto relative py-24 lg:py-32 px-4">
             <div class="mx-auto max-w-4xl text-center">
@@ -90,7 +90,7 @@
     </section>
 
     <!-- Stats Section -->
-    <section class="border-b bg-gray-50 py-12">
+    <section class="border border-gray-300 bg-gray-50 py-12" style="padding-left: 10%; padding-right: 10%;">
         <div class="container mx-auto px-4">
             <div class="grid grid-cols-2 gap-8 md:grid-cols-4">
                 @php
@@ -112,7 +112,7 @@
     </section>
 
     <!-- Features Section -->
-    <section id="caracteristicas" class="py-24">
+    <section id="caracteristicas" class="py-24" style="padding-left: 10%; padding-right: 10%;">
         <div class="container mx-auto px-4">
             <div class="mx-auto max-w-2xl text-center">
                 <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">
@@ -186,7 +186,7 @@
     </section>
 
     <!-- How it Works -->
-    <section class="bg-gray-50 py-24">
+    <section class="bg-gray-50 py-24" style="padding-left: 10%; padding-right: 10%;">
         <div class="container mx-auto px-4">
             <div class="mx-auto max-w-2xl text-center">
                 <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Cómo funciona CollaboraX</h2>
@@ -234,7 +234,7 @@
     </section>
 
     <!-- Pricing -->
-    <section id="planes" class="py-24">
+    <section id="planes" class="py-24" style="padding-left: 10%; padding-right: 10%;">
         <div class="container mx-auto px-4">
             <div class="mx-auto max-w-2xl text-center">
                 <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Planes diseñados para crecer contigo</h2>
@@ -360,7 +360,7 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="bg-gray-50 py-24">
+    <section class="bg-gray-50 py-24" style="padding-left: 10%; padding-right: 10%;">
         <div class="container mx-auto px-4">
             <div class="mx-auto max-w-2xl text-center">
                 <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">¿Listo para transformar tu equipo?</h2>
@@ -383,7 +383,7 @@
     </section>
 
     <!-- Footer -->
-    <footer class="border-t bg-white">
+    <footer class="border border-gray-300 bg-white" style="padding-left: 2%; padding-right: 2%;">
         <div class="container mx-auto py-12 px-4">
             <div class="grid gap-8 md:grid-cols-4">
                 <div class="space-y-4">
@@ -433,7 +433,7 @@
                 </div>
             </div>
 
-            <div class="mt-12 flex flex-col items-center justify-between gap-4 border-t pt-8 md:flex-row">
+            <div class="mt-12 flex flex-col items-center justify-between gap-4 border-t border-gray-300 pt-8 md:flex-row">
                 <p class="text-center text-sm text-gray-500 md:text-left">
                     &copy; {{ date('Y') }} CollaboraX. Todos los derechos reservados.
                 </p>

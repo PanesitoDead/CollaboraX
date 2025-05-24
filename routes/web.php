@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\admin\ColaboradorController;
+use App\Http\Controllers\admin\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -18,6 +20,11 @@ Route::get('/auth/register', function () {
     return view('public.auth.register');
 })->name('register');
 
+Route::get('/logout', function () {
+    return view('public.auth.logout');
+})->name('logout');
+
+//     Super Admin
 Route::get('/super-admin/dashboard', function () {
     return view('super-admin.dashboard');
 })->name('super-admin.dashboard');
@@ -34,40 +41,19 @@ Route::get('/super-admin/configuracion', function () {
     return view('super-admin.configuracion');
 })->name('super-admin.configuracion');
 
-Route::get('/logout', function () {
-    return view('public.auth.logout');
-})->name('logout');
 
 
-Route::get('/admin/dashboard', function () {
-    return view('private.admin.dashboard');
-})->name('admin.dashboard');
+Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+Route::get('/admin/colaboradores', [ColaboradorController::class, 'index'])->name('admin.colaboradores');
 
-Route::get('/admin/usuarios', function () {
-    return view('private.admin.usuarios');
-})->name('admin.usuarios');
 
-Route::get('/admin/colaboradores', function () {
-    return view('private.admin.colaboradores');
-})->name('admin.colaboradores');
-Route::get('/admin/cpordinadores-equipo', function () {
-    return view('private.admin.coordinadores-equipo');
-})->name('admin.coordinadores-equipo');
-Route::get('/admin/coordinadores-generales', function () {
-    return view('private.admin.coordinadores-generales');
-})->name('admin.coordinadores-generales');
+// Route::resource('areas', AreaController::class);
+// Route::resource('coordinadores-equipo', CoordinadorEquipoController::class);
+// Route::resource('coordinadores-generales', CoordinadorGeneralController::class);
 
-Route::get('/admin/areas', function () {
-    return view('private.admin.areas');
-})->name('admin.areas');
+// Route::get('estadisticas', [EstadisticaController::class, 'index'])->name('estadisticas');
+// Route::get('configuracion', [ConfiguracionController::class, 'index'])->name('configuracion');
 
-Route::get('/admin/estadisticas', function () {
-    return view('private.admin.estadisticas');
-})->name('admin.estadisticas');
-
-Route::get('/admin/configuracion', function () {
-    return view('private.admin.configuracion');
-})->name('admin.configuracion');
 
 // Route::get('/dashboard-admin', [DashboardController::class, 'admin'])
 // ->middleware(['auth', 'verified', CheckAdmin::class])->name('dashboard.admin');
