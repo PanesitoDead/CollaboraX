@@ -1,0 +1,29 @@
+@import "tailwindcss";
+@source "../views";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Grid pattern for hero background */
+.bg-grid-black\/\[0\.02\] {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgb(0 0 0 / 0.02)'%3e%3cpath d='m0 .5h32m-32 32v-32'/%3e%3c/svg%3e");
+}
+
+/* Custom gradient text */
+.bg-clip-text {
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+/* Smooth scrolling for anchor links */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Custom backdrop blur support */
+@supports (backdrop-filter: blur(20px)) {
+    .supports-\[backdrop-filter\]\:bg-white\/60 {
+        background-color: rgb(255 255 255 / 0.6);
+    }
+}
