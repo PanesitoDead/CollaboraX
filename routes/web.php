@@ -3,6 +3,7 @@
 use App\Http\Controllers\admin\ColaboradorController;
 use App\Http\Controllers\admin\DashboardController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 
 
 
@@ -19,8 +20,9 @@ Route::get('/auth/register', function () {
     return view('public.auth.register');
 })->name('register');
 
-Route::get('/logout', function () {
-    return view('public.auth.logout');
+Route::post('/logout', function () {
+    Auth::logout(); 
+    return redirect('/');
 })->name('logout');
 
 //     Super Admin
