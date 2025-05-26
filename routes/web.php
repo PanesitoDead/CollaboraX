@@ -7,6 +7,7 @@ use App\Http\Controllers\admin\CoordinadorEquipoController;
 use App\Http\Controllers\admin\CoordinadorGeneralController;
 use App\Http\Controllers\admin\DashboardController;
 use App\Http\Controllers\admin\EstadisticaController;
+use App\Http\Controllers\colaborador\ActividadController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
@@ -47,8 +48,7 @@ Route::get('/super-admin/configuracion', function () {
     return view('super-admin.configuracion');
 })->name('super-admin.configuracion');
 
-
-
+//     Admin
 Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 Route::get('/admin/areas', [AreaController::class, 'index'])->name('admin.areas');
 Route::get('/admin/colaboradores', [ColaboradorController::class, 'index'])->name('admin.colaboradores');
@@ -57,6 +57,12 @@ Route::get('/admin/coordinadores-generales', [CoordinadorGeneralController::clas
 Route::get('/admin/estadisticas', [EstadisticaController::class, 'index'])->name('admin.estadisticas');
 Route::get('/admin/configuracion', [ConfiguracionController::class, 'index'])->name('admin.configuracion');
 
+Route::get('/colaborador/actividades', [ActividadController::class, 'index'])->name('colaborador.actividades');
+Route::get('/colaborador/mi-equipo', [\App\Http\Controllers\colaborador\MiEquipoController::class, 'index'])->name('colaborador.mi-equipo');
+Route::get('/colaborador/mensajes', [\App\Http\Controllers\colaborador\MensajeController::class, 'index'])->name('colaborador.mensajes');
+Route::get('/colaborador/reuniones', [\App\Http\Controllers\colaborador\ReunionController::class, 'index'])->name('colaborador.reuniones');
+Route::get('/colaborador/invitaciones', [\App\Http\Controllers\colaborador\InvitacionController::class, 'index'])->name('colaborador.invitaciones');
+Route::get('/colaborador/configuracion', [\App\Http\Controllers\colaborador\ConfiguracionController::class, 'index'])->name('colaborador.configuracion');
 
 // Route::resource('areas', AreaController::class);
 // Route::resource('coordinadores-equipo', CoordinadorEquipoController::class);
