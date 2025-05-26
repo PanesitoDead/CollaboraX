@@ -1,7 +1,12 @@
 <?php
 
+use App\Http\Controllers\admin\AreaController;
 use App\Http\Controllers\admin\ColaboradorController;
+use App\Http\Controllers\admin\ConfiguracionController;
+use App\Http\Controllers\admin\CoordinadorEquipoController;
+use App\Http\Controllers\admin\CoordinadorGeneralController;
 use App\Http\Controllers\admin\DashboardController;
+use App\Http\Controllers\admin\EstadisticaController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
@@ -45,6 +50,15 @@ Route::get('/super-admin/configuracion', function () {
 
 Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 Route::get('/admin/colaboradores', [ColaboradorController::class, 'index'])->name('admin.colaboradores');
+
+
+Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+Route::get('/admin/areas', [AreaController::class, 'index'])->name('admin.areas');
+Route::get('/admin/colaboradores', [ColaboradorController::class, 'index'])->name('admin.colaboradores');
+Route::get('/admin/coordinadores-equipos', [CoordinadorEquipoController::class, 'index' ])->name('admin.coordinadores-equipos');
+Route::get('/admin/coordinadores-generales', [CoordinadorGeneralController::class, 'index'])->name('admin.coordinadores-generales');
+Route::get('/admin/estadisticas', [EstadisticaController::class, 'index'])->name('admin.estadisticas');
+Route::get('/admin/configuracion', [ConfiguracionController::class, 'index'])->name('admin.configuracion');
 
 
 // Route::resource('areas', AreaController::class);

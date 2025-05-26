@@ -7,17 +7,8 @@
     {{-- Header --}}
     <div class="flex justify-between items-center">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900">Colaboradores</h1>
-            <p class="text-gray-600">Gestiona los colaboradores de la empresa.</p>
-        </div>
-        <div class="flex gap-2">
-            <button onclick="openInviteModal()" 
-                    class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                </svg>
-                Nuevo Colaborador
-            </button>
+            <h1 class="text-2xl font-bold text-gray-900">Coordinadores de Equipo</h1>
+            <p class="text-gray-600">Gestiona los coordinadores de equipo de la empresa</p>
         </div>
     </div>
 

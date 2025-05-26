@@ -7,8 +7,11 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-class ColaboradorController extends Controller
+class CoordinadorEquipoController extends Controller
 {
+    /**
+     * Display a listing of the resource.
+     */
     public function index()
     {
         $coordinadoresData = collect([
@@ -86,23 +89,25 @@ class ColaboradorController extends Controller
             (object)[ 'id' => 5, 'nombre' => 'Administración' ],
         ];
 
-        return view('private.admin.colaboradores', compact('coordinadores', 'areas'));
+        return view('private.admin.coordinadores-equipos', compact('coordinadores', 'areas'));
     }
 
-    public function invite(Request $request)
+    public function asignarEquipo(Request $request)
     {
         $request->validate([
-            'email' => 'required|email|unique:users,email',
-            'nombre' => 'required|string|max:255',
-            'area_id' => 'required|exists:areas,id',
-            'mensaje' => 'nullable|string',
+            'coordinador_id' => 'required|numeric',
+            'equipo' => 'required|string',
+            'notificar' => 'boolean'
         ]);
 
-        // Lógica para enviar invitación
-        // Mail::to($request->email)->send(new InvitacionColaborador($request->all()));
-
-        return redirect()->route('admin.colaboradores.index')
-            ->with('success', 'Invitación enviada correctamente.');
+        // Lógica para asignar equipo
+        
+        return redirect()->route('coordinadores-equipo')
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Equipo asignado',
+                'message' => 'Se ha asignado el equipo correctamente.'
+            ]);
     }
 
     /**
