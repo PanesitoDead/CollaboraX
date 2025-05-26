@@ -12,7 +12,18 @@ class ConfiguracionController extends Controller
      */
     public function index()
     {
-        return view('private.admin.configuracion');
+    // empresa y logo dentro
+        // Simulación de datos de la empresa
+        $empresa = new \stdClass();
+        $empresa->nombre = 'Mi Empresa S.A.C.';
+        $empresa->ruc = '12345678901';
+        $empresa->email = 'contacto@miempresa.com';
+        $empresa->logo = null; // o puedes usar una imagen ficticia: 'logos/demo.png'
+
+        // Simulación de configuración general
+        $config = new \stdClass();
+        $config->registro_abierto = true;
+        return view('private.admin.configuracion', compact('empresa'));
     }
 
     /**
