@@ -48,9 +48,6 @@ Route::get('/super-admin/configuracion', function () {
 })->name('super-admin.configuracion');
 
 
-Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
-Route::get('/admin/colaboradores', [ColaboradorController::class, 'index'])->name('admin.colaboradores');
-
 
 Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 Route::get('/admin/areas', [AreaController::class, 'index'])->name('admin.areas');
