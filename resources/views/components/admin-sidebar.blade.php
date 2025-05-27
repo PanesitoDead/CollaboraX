@@ -1,6 +1,4 @@
 {{-- resources/views/components/admin-sidebar.blade.php --}}
-{{-- Lucide Icons --}}
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <style>
   /* Diseño base compacto */
   #sidebar {
