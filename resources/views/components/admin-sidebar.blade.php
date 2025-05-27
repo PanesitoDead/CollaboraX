@@ -1,85 +1,245 @@
 {{-- resources/views/components/admin-sidebar.blade.php --}}
-<div class="h-full bg-gradient-to-b from-blue-900 to-blue-800 text-white transition-all duration-300" style="width: 250px;">
-    {{-- Header --}}
-    <div class="flex h-16 items-center justify-between border-b border-white/10 px-4">
-        <div class="flex items-center gap-2">
-            <span class="font-semibold">CollaboraX</span>
+{{-- Lucide Icons --}}
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  /* Diseño base compacto */
+  #sidebar {
+    width: 240px;
+    transition: all 0.3s ease;
+    background: linear-gradient(to bottom, #1e3a8a, #1e40af);
+    overflow: visible;
+  }
+
+  /* Estado colapsado más compacto */
+  #sidebar.collapsed {
+    width: 72px;
+  }
+
+  /* Header ajustado */
+  .sidebar-header {
+    height: 100px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  /* Logo y flecha en estado expandido */
+  #sidebar:not(.collapsed) .sidebar-header {
+    height: 60px;
+    padding: 0 1.5rem;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  /* Posición correcta de la flecha */
+  .toggle-btn {
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+    padding: 4px;
+    transform: translateX(0);
+  }
+
+  /* Estado colapsado - CX arriba de la flecha */
+  #sidebar.collapsed .sidebar-header {
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    padding: 0;
+  }
+
+  /* Transición del logo */
+  .sidebar-fullname {
+    transition: opacity 0.2s;
+    white-space: nowrap;
+  }
+  .sidebar-abbrev {
+    opacity: 0;
+    position: absolute;
+    transition: all 0.3s;
+    font-size: 14px;
+  }
+  #sidebar.collapsed .sidebar-fullname {
+    opacity: 0;
+    display: none;
+  }
+  #sidebar.collapsed .sidebar-abbrev {
+    opacity: 1;
+    position: static;
+  }
+
+  /* Items del menú compactos */
+  .nav-links a {
+    display: flex;
+    align-items: center;
+    padding: 10px 1rem;
+    gap: 0.75rem;
+    color: rgba(255,255,255,0.8);
+    text-decoration: none;
+    border-radius: 6px;
+    margin: 2px 0px;
+    transition: all 0.2s;
+  }
+
+  /* Estado activo */
+  .nav-links a.bg-white\\/20 {
+    border-radius: 6px;
+  }
+
+  /* Estado colapsado */
+  #sidebar.collapsed nav a {
+    justify-content: center;
+    padding: 10px;
+    margin: 2px 0;
+  }
+  #sidebar.collapsed .sidebar-label {
+    display: none;
+  }
+
+  /* Ajuste final de posición */
+  #sidebar:not(.collapsed) .toggle-btn {
+    position: relative;
+    right: -4px;
+  }
+
+  /* Nuevos estilos para el menú de usuario */
+  #user-menu-button {
+    transition: all 0.2s;
+    padding: 8px;
+    border-radius: 6px;
+  }
+  
+  #user-menu-button:hover {
+    background: rgba(255,255,255,0.1);
+  }
+
+  #user-menu {
+    min-width: 200px;
+    transform-origin: bottom;
+    transition: all 0.2s;
+    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    background: rgba(245,245,245, 1);
+    color: black;       /* Texto negro */
+    border: 1px solid rgba(0,0,0,0.1);
+  }
+
+  .user-menu-item {
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .user-menu-item:hover {
+    background: rgba(0,0,0,0.05);
+  }
+</style>
+<div id="sidebar" class="h-full bg-gradient-to-b from-blue-900 to-blue-800 text-white relative">
+  {{-- Header --}}
+  <div class="sidebar-header">
+    <div class="flex items-center gap-2">
+      <span class="sidebar-fullname font-semibold">CollaboraX</span>
+      <span class="sidebar-abbrev font-semibold">CX</span>
+    </div>
+    <button id="sidebar-toggle" class="toggle-btn">
+      <i data-lucide="chevron-left" class="h-5 w-5"></i>
+      <i data-lucide="chevron-right" class="h-5 w-5 hidden"></i>
+    </button>
+  </div>
+
+  {{-- Navigation --}}
+  <div class="p-4 overflow-y-auto" style="height: calc(100% - 64px - 80px);">
+    <nav class="space-y-2 nav-links">
+        @php
+        $items = [
+          ['route' => 'admin.dashboard', 'icon' => 'home', 'label' => 'Dashboard'],
+          ['route' => 'admin.areas', 'icon' => 'layers', 'label' => 'Áreas'],
+          ['route' => 'admin.colaboradores', 'icon' => 'users', 'label' => 'Colaboradores'],
+          ['route' => 'admin.coordinadores-equipos', 'icon' => 'user-check', 'label' => 'Coord. Equipo'],
+          ['route' => 'admin.coordinadores-generales', 'icon' => 'user-cog', 'label' => 'Coord. Generales'],
+          ['route' => 'admin.estadisticas', 'icon' => 'bar-chart-2', 'label' => 'Estadísticas'],
+          ['route' => 'admin.configuracion', 'icon' => 'settings', 'label' => 'Configuración'],
+        ];
+      @endphp
+      @foreach ($items as $item)
+        <a href="{{ route($item['route']) }}" class="{{ request()->routeIs($item['route'] . '*') ? 'bg-white/20' : '' }}">
+          <i data-lucide="{{ $item['icon'] }}" class="h-5 w-5"></i>
+          <span class="sidebar-label">{{ $item['label'] }}</span>
+        </a>
+      @endforeach
+    </nav>
+  </div>
+
+  {{-- User Info with logout dropdown --}}
+    <div class="absolute bottom-0 left-0 w-full px-3 pb-4">
+    <div class="relative">
+        <button id="user-menu-button" type="button" 
+                class="flex items-center gap-3 w-full text-left hover:bg-white/10 rounded-lg"
+                onclick="toggleUserMenu()">
+        <div class="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center border-2 border-white/20 shrink-0">
+            <span class="text-sm font-medium">AD</span>
+        </div>
+        <div class="flex flex-col flex-1 sidebar-label">
+            <span class="text-sm font-medium">Administrador</span>
+            <span class="text-xs text-white/70">Gestión</span>
+        </div>
+        <i data-lucide="chevron-up" class="h-4 w-4 sidebar-label" id="user-menu-arrow"></i>
+        </button>
+        
+        <div id="user-menu" class="hidden absolute bottom-full left-0 mb-2 w-full bg-gradient-to-b from-blue-900 to-blue-800 text-white rounded-lg border border-white/10">
+            <a href="{{ route('admin.configuracion') }}" class="user-menu-item">
+                <i data-lucide="user" class="h-5 w-5"></i>
+                <span>Perfil</span>
+            </a>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="user-menu-item w-full">
+                    <i data-lucide="log-out" class="h-5 w-5"></i>
+                    <span>Cerrar sesión</span>
+                </button>
+            </form>
         </div>
     </div>
-
-    {{-- Navigation --}}
-    <div class="p-4 overflow-y-auto" style="height: calc(100% - 64px - 72px);">
-        <nav class="space-y-2">
-            <a href="{{ route('admin.dashboard') }}" 
-               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200 hover:bg-white/10 {{ request()->routeIs('admin.dashboard') ? 'bg-white/20 font-medium' : '' }}">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
-                </svg>
-                <span>Dashboard</span>
-            </a>
-
-            <a href="{{ route('admin.areas') }}" 
-               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200 hover:bg-white/10 {{ request()->routeIs('admin.areas.*') ? 'bg-white/20 font-medium' : '' }}">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                </svg>
-                <span>Áreas</span>
-            </a>
-
-            <a href="{{ route('admin.colaboradores') }}" 
-               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200 hover:bg-white/10 {{ request()->routeIs('admin.colaboradores.*') ? 'bg-white/20 font-medium' : '' }}">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
-                </svg>
-                <span>Colaboradores</span>
-            </a>
-
-            <a href="{{ route('admin.coordinadores-equipos') }}" 
-               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200 hover:bg-white/10 {{ request()->routeIs('admin.coordinadores-equipo.*') ? 'bg-white/20 font-medium' : '' }}">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                </svg>
-                <span>Coord. Equipo</span>
-            </a>
-
-            <a href="{{ route('admin.coordinadores-generales') }}" 
-               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200 hover:bg-white/10 {{ request()->routeIs('admin.coordinadores-generales.*') ? 'bg-white/20 font-medium' : '' }}">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-                <span>Coord. Generales</span>
-            </a>
-
-            <a href="{{ route('admin.estadisticas') }}" 
-               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200 hover:bg-white/10 {{ request()->routeIs('admin.estadisticas') ? 'bg-white/20 font-medium' : '' }}">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                </svg>
-                <span>Estadísticas</span>
-            </a>
-
-            <a href="{{ route('admin.configuracion') }}" 
-               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200 hover:bg-white/10 {{ request()->routeIs('admin.configuracion') ? 'bg-white/20 font-medium' : '' }}">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-                <span>Configuración</span>
-            </a>
-        </nav>
-    </div>
-
-    {{-- User Info --}}
-    <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
-        <div class="flex items-center space-x-3">
-            <div class="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center border-2 border-white/20">
-                <span class="text-sm font-medium">AD</span>
-            </div>
-            <div class="flex flex-col">
-                <span class="text-sm font-medium">Administrador</span>
-                <span class="text-xs text-white/70">Gestión</span>
-            </div>
-        </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+  function toggleUserMenu() {
+    const menu = document.getElementById('user-menu');
+    const arrow = document.getElementById('user-menu-arrow');
+    menu.classList.toggle('hidden');
+    arrow.classList.toggle('rotate-180');
+  }
+
+  // Cerrar menú al hacer click fuera
+  document.addEventListener('click', function(event) {
+    const userMenu = document.getElementById('user-menu');
+    const userButton = document.getElementById('user-menu-button');
+    
+    if (!userButton.contains(event.target) && !userMenu.contains(event.target)) {
+      userMenu.classList.add('hidden');
+      document.getElementById('user-menu-arrow').classList.remove('rotate-180');
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const sidebar = document.getElementById('sidebar');
+    const toggle = document.getElementById('sidebar-toggle');
+    
+    // Inicializar Lucide primero
+    lucide.createIcons();
+    
+    toggle.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+      // Actualizar íconos correctamente
+      lucide.createIcons();
+    });
+  });
+</script>
+@endpush
