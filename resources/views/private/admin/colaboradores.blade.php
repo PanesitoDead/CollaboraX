@@ -80,7 +80,8 @@
             <table class="w-full">
             <thead class="bg-gray-50 border-b border-gray-300">
                 <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Coordinador</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Área</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Equipo</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
@@ -89,82 +90,93 @@
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-                @forelse($coordinadores as $coordinador)
+                @forelse($coordinadores as $c)
                 <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                        <div class="h-10 w-10 flex-shrink-0">
-                        <img class="h-10 w-10 rounded-full object-cover"
-                            src="{{ $coordinador->avatar ?? '/placeholder-40x40.png' }}"
-                            alt="{{ $coordinador->name }}">
-                        </div>
-                        <div class="ml-4">
-                        <div class="text-sm font-medium text-gray-900">{{ $coordinador->name }}</div>
-                        <div class="text-sm text-gray-500">{{ $coordinador->email }}</div>
-                        </div>
-                    </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
+                <!-- Nombre -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {{ $c->name }}
+                </td>
+
+                <!-- Email -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ $c->email }}
+                </td>
+
+                <!-- Área -->
+                <td class="px-6 py-4 whitespace-nowrap">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {{ $coordinador->area->nombre ?? 'Sin área' }}
+                    {{ $c->area->nombre ?? 'Sin área' }}
                     </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                    @if($coordinador->equipo)
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        {{ $coordinador->equipo->nombre }}
-                        </span>
+                </td>
+
+                <!-- Equipo -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    @if($c->equipo)
+                    {{ $c->equipo->nombre }}
                     @else
-                        <span class="text-sm text-gray-500">Sin equipo</span>
+                    <span class="text-gray-400">Sin equipo</span>
                     @endif
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                    <button onclick="toggleStatus({{ $coordinador->id }}, '{{ $coordinador->estado }}')"
-                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors {{ $coordinador->estado === 'activo' ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-red-100 text-red-800 hover:bg-red-200' }}">
-                        <span class="w-1.5 h-1.5 rounded-full mr-1.5 {{ $coordinador->estado === 'activo' ? 'bg-green-400' : 'bg-red-400' }}"></span>
-                        {{ ucfirst($coordinador->estado) }}
+                </td>
+
+                <!-- Estado -->
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <button
+                    onclick="toggleStatus({{ $c->id }}, '{{ $c->estado }}')"
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors
+                        {{ $c->estado === 'activo'
+                        ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                        : 'bg-red-100 text-red-800 hover:bg-red-200' }}">
+                    <span class="w-1.5 h-1.5 rounded-full mr-1.5
+                        {{ $c->estado === 'activo' ? 'bg-green-400' : 'bg-red-400' }}"></span>
+                    {{ ucfirst($c->estado) }}
                     </button>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {{ $coordinador->created_at->format('d/m/Y') }}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                </td>
+
+                <!-- Fecha Registro -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ $c->created_at->format('d/m/Y') }}
+                </td>
+
+                <!-- Acciones -->
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div class="flex justify-end gap-2">
-                        <button onclick="openModal({{ $coordinador->id }})"
-                                class="text-blue-600 hover:text-blue-900 transition-colors">
-                        <!-- Icono Ver -->
-                        <i data-lucide="eye" class="w-4 h-4"></i>
-                        </button>
-                        <button onclick="editCoordinador({{ $coordinador->id }})"
-                                class="text-indigo-600 hover:text-indigo-900 transition-colors">
-                        <!-- Icono Editar -->
-                        <i data-lucide="edit" class="w-4 h-4"></i>
-                        </button>
+                    <!-- Ver -->
+                    <button
+                        onclick="openModal({{ $c->id }})"
+                        class="inline-flex items-center px-3 py-2 text-blue-600 hover:text-blue-900 transition-colors">
+                        <i data-lucide="eye" class="w-4 h-4 mr-1"></i>
+                        Ver
+                    </button>
+                    <!-- Cambiar Rol -->
+                    <button
+                        onclick="openChangeRole({{ $c->id }})"
+                        class="inline-flex items-center px-3 py-2 text-blue-600 hover:text-blue-900 transition-colors">
+                        <i data-lucide="user-plus" class="w-4 h-4 mr-1"></i>
+                        Cambiar Rol
+                    </button>
                     </div>
-                    </td>
+                </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="px-6 py-12 text-center">
-                    <div class="text-gray-500">
-                        <i data-lucide="users" class="mx-auto h-12 w-12 text-gray-400"></i>
-                        <h3 class="mt-2 text-sm font-medium text-gray-900">No hay coordinadores</h3>
-                        <p class="mt-1 text-sm text-gray-500">Comienza creando un nuevo coordinador de equipo.</p>
-                    </div>
-                    </td>
+                <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                    <i data-lucide="users" class="mx-auto h-12 w-12 text-gray-400"></i>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No hay colaboradores</h3>
+                    <p class="mt-1 text-sm text-gray-500">Agrega nuevos colaboradores para comenzar.</p>
+                </td>
                 </tr>
                 @endforelse
             </tbody>
             </table>
         </div>
 
-        {{-- Pagination --}}
+        {{-- Paginación --}}
         @if($coordinadores->hasPages())
-            <div class="px-6 py-3 border-t border-gray-200">
+        <div class="px-6 py-3 border-t border-gray-200">
             {{ $coordinadores->links() }}
-            </div>
-        @endif
         </div>
+        @endif
+    </div>
 </div>
 
 {{-- Modal --}}

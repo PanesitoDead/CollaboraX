@@ -91,195 +91,192 @@
 
     {{-- Charts Section --}}
     <div class="grid gap-6 lg:grid-cols-2">
-        {{-- Rendimiento por Área --}}
-        <div class="bg-white rounded-lg border border-gray-300 p-6">
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-lg font-medium">Rendimiento por Área</h3>
-                <select class="text-sm border-gray-300 rounded-md">
-                    <option>Este mes</option>
-                    <option>Mes anterior</option>
-                    <option>Trimestre</option>
-                </select>
-            </div>
-            <div class="space-y-4">
-                @foreach($rendimiento_areas as $area)
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-3 h-3 rounded-full" style="background-color: {{ $area['color'] }}"></div>
-                        <span class="text-sm font-medium">{{ $area['nombre'] }}</span>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <div class="w-32 bg-gray-200 rounded-full h-2">
-                            <div class="h-2 rounded-full" style="width: {{ $area['porcentaje'] }}%; background-color: {{ $area['color'] }}"></div>
-                        </div>
-                        <span class="text-sm font-medium w-12 text-right">{{ $area['porcentaje'] }}%</span>
-                    </div>
-                </div>
-                @endforeach
-            </div>
+    {{-- Distribución de Roles --}}
+    <div class="bg-white rounded-lg border border-gray-300 p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-medium flex items-center">
+            <i data-lucide="users" class="w-5 h-5 mr-2 text-gray-600"></i>
+            Distribución de Roles
+        </h3>
+        <select class="text-sm border-gray-300 rounded-md">
+            <option>Este mes</option>
+            <option>Trimestre</option>
+            <option>Año</option>
+        </select>
         </div>
+        <div class="w-full h-64">
+            <canvas id="rolesChart"></canvas>
+        </div> 
+    </div>
 
         {{-- Actividad Semanal --}}
-        <div class="bg-white rounded-lg border border-gray-300 p-6">
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-lg font-medium">Actividad Semanal</h3>
-                <div class="flex space-x-2">
-                    <div class="flex items-center space-x-1">
-                        <div class="w-3 h-3 bg-purple-500 rounded"></div>
-                        <span class="text-xs text-gray-600">Metas</span>
-                    </div>
-                    <div class="flex items-center space-x-1">
-                        <div class="w-3 h-3 bg-blue-500 rounded"></div>
-                        <span class="text-xs text-gray-600">Actividades</span>
-                    </div>
-                </div>
+        <div class="bg-white rounded-lg border border-gray-300 p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium flex items-center">
+                <i data-lucide="calendar" class="w-5 h-5 mr-2 text-gray-600"></i>
+                Actividad Semanal
+                </h3>
+                <select id="semanaSelector" class="text-sm border-gray-300 rounded-md">
+                <option value="1">Última semana</option>
+                <option value="2">2 Semanas</option>
+                </select>
             </div>
-            <div class="h-64 flex items-end justify-between space-x-2">
-                @foreach($actividad_semanal as $dia)
-                <div class="flex flex-col items-center space-y-2 flex-1">
-                    <div class="w-full flex flex-col space-y-1">
-                        <div class="bg-purple-500 rounded-t" style="height: {{ ($dia['metas']/max(array_column($actividad_semanal, 'metas')))*60 }}px"></div>
-                        <div class="bg-blue-500 rounded-b" style="height: {{ ($dia['actividades']/max(array_column($actividad_semanal, 'actividades')))*60 }}px"></div>
-                    </div>
-                    <div class="text-xs text-gray-600">{{ $dia['dia'] }}</div>
-                </div>
-                @endforeach
+            <div class="h-64">
+                <canvas id="actividadSemanalChart"></canvas>
             </div>
         </div>
     </div>
 
-    {{-- Detailed Stats --}}
-    <div class="grid gap-6 lg:grid-cols-3">
-        {{-- Top Performers --}}
-        <div class="bg-white rounded-lg border border-gray-300 p-6">
-            <h3 class="text-lg font-medium mb-4">Mejores Colaboradores</h3>
+    <div class="grid gap-6 lg:grid-cols-3 mt-6">
+    {{-- Áreas con Más Rendimiento --}}
+        <div class="bg-white rounded-lg border border-gray-300 p-6 shadow-sm">
+            <h3 class="text-lg font-medium mb-4 flex items-center">
+            <i data-lucide="bar-chart-2" class="w-5 h-5 mr-2 text-gray-600"></i>
+            Áreas con Más Rendimiento
+            </h3>
             <div class="space-y-4">
-                @foreach($top_performers as $index => $performer)
-                <div class="flex items-center space-x-3">
-                    <div class="flex-shrink-0">
-                        @if($index === 0)
-                            <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                                <span class="text-yellow-600 font-bold">1</span>
-                            </div>
-                        @elseif($index === 1)
-                            <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                                <span class="text-gray-600 font-bold">2</span>
-                            </div>
-                        @elseif($index === 2)
-                            <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                                <span class="text-orange-600 font-bold">3</span>
-                            </div>
-                        @else
-                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span class="text-blue-600 font-bold">{{ $index + 1 }}</span>
-                            </div>
-                        @endif
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-900 truncate">{{ $performer['nombre'] }}</p>
-                        <p class="text-xs text-gray-500">{{ $performer['area'] }}</p>
-                    </div>
-                    <div class="text-sm font-medium text-green-600">{{ $performer['puntuacion'] }}%</div>
+            @foreach($top_performers as $i => $p)
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 flex-shrink-0">
+                <div class="rounded-full flex items-center justify-center 
+                    @if($i===0) bg-yellow-100 @elseif($i===1) bg-gray-100 @elseif($i===2) bg-orange-100 @else bg-blue-100 @endif">
+                    <span class="font-bold 
+                    @if($i===0) text-yellow-600 
+                    @elseif($i===1) text-gray-600 
+                    @elseif($i===2) text-orange-600 
+                    @else text-blue-600 @endif">
+                    {{ $i+1 }}
+                    </span>
                 </div>
-                @endforeach
+                </div>
+                <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-900 truncate">{{ $p['area'] }}</p>
+                <p class="text-xs text-gray-500">Cumplimiento: {{ $p['puntuacion'] }}%</p>
+                </div>
+            </div>
+            @endforeach
             </div>
         </div>
 
-        {{-- Metas por Estado --}}
-        <div class="bg-white rounded-lg border border-gray-300 p-6">
-            <h3 class="text-lg font-medium mb-4">Estado de Metas</h3>
+        {{-- Estado de Metas --}}
+        <div class="bg-white rounded-lg border border-gray-300 p-6 shadow-sm">
+            <h3 class="text-lg font-medium mb-4 flex items-center">
+            <i data-lucide="check-square" class="w-5 h-5 mr-2 text-gray-600"></i>
+            Estado de Metas
+            </h3>
             <div class="space-y-4">
-                @foreach($metas_estado as $estado)
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-4 h-4 rounded-full" style="background-color: {{ $estado['color'] }}"></div>
-                        <span class="text-sm">{{ $estado['nombre'] }}</span>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <span class="text-sm font-medium">{{ $estado['cantidad'] }}</span>
-                        <span class="text-xs text-gray-500">({{ $estado['porcentaje'] }}%)</span>
-                    </div>
+            @foreach($metas_estado as $e)
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                <div class="w-4 h-4 rounded-full" style="background-color: {{ $e['color'] }}"></div>
+                <span class="text-sm">{{ $e['nombre'] }}</span>
                 </div>
-                @endforeach
+                <div class="flex items-center space-x-2">
+                <span class="text-sm font-medium">{{ $e['cantidad'] }}</span>
+                <span class="text-xs text-gray-500">({{ $e['porcentaje'] }}%)</span>
+                </div>
+            </div>
+            @endforeach
             </div>
             <div class="mt-4 pt-4 border-t border-gray-200">
-                <div class="flex justify-between text-sm">
-                    <span class="font-medium">Total de Metas</span>
-                    <span class="font-medium">{{ array_sum(array_column($metas_estado, 'cantidad')) }}</span>
-                </div>
+            <div class="flex justify-between text-sm font-medium">
+                <span>Total de Metas</span>
+                <span>{{ array_sum(array_column($metas_estado, 'cantidad')) }}</span>
+            </div>
             </div>
         </div>
 
-        {{-- Actividad Reciente --}}
-        <div class="bg-white rounded-lg border border-gray-300 p-6">
-            <h3 class="text-lg font-medium mb-4">Actividad Reciente</h3>
+        {{-- Reuniones por Semana --}}
+        <div class="bg-white rounded-lg border border-gray-300 p-6 shadow-sm">
+            <h3 class="text-lg font-medium mb-4 flex items-center">
+            <i data-lucide="clock" class="w-5 h-5 mr-2 text-gray-600"></i>
+            Reuniones por Semana
+            </h3>
             <div class="space-y-4">
-                @foreach($actividad_reciente as $actividad)
-                <div class="flex space-x-3">
-                    <div class="flex-shrink-0">
-                        <div class="w-8 h-8 rounded-full bg-{{ $actividad['color'] }}-100 flex items-center justify-center">
-                            <svg class="w-4 h-4 text-{{ $actividad['color'] }}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                {!! $actividad['icon'] !!}
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm text-gray-900">{{ $actividad['descripcion'] }}</p>
-                        <p class="text-xs text-gray-500">{{ $actividad['usuario'] }} • {{ $actividad['tiempo'] }}</p>
-                    </div>
-                </div>
-                @endforeach
+            @foreach($reuniones_semana as $dia)
+            <div class="flex items-center justify-between">
+                <span class="text-sm">{{ $dia['dia'] }}</span>
+                <span class="text-sm font-medium">{{ $dia['conteo'] }}</span>
             </div>
-        </div>
-    </div>
-
-    {{-- Tabla de Rendimiento Detallado --}}
-    <div class="bg-white rounded-lg border border-gray-300">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-medium">Rendimiento Detallado por Área</h3>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Área</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Coordinador</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Equipos</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Colaboradores</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metas Activas</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completadas</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rendimiento</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @foreach($rendimiento_detallado as $area)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <div class="w-3 h-3 rounded-full mr-3" style="background-color: {{ $area['color'] }}"></div>
-                                <span class="text-sm font-medium text-gray-900">{{ $area['nombre'] }}</span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $area['coordinador'] ?? 'Sin asignar' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $area['equipos'] }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $area['colaboradores'] }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $area['metas_activas'] }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $area['metas_completadas'] }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                                    <div class="h-2 rounded-full" style="width: {{ $area['rendimiento'] }}%; background-color: {{ $area['color'] }}"></div>
-                                </div>
-                                <span class="text-sm font-medium">{{ $area['rendimiento'] }}%</span>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
+            @endforeach
+            </div>
+            <div class="mt-4 pt-4 border-t border-gray-200 text-sm flex justify-between font-medium">
+            <span>Total</span>
+            <span>{{ array_sum(array_column($reuniones_semana, 'conteo')) }}</span>
+            </div>
         </div>
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Gráfico circular Distribución de Roles
+    const ctx = document.getElementById('rolesChart').getContext('2d');
+    const rolesData = @json($roles_dist);
+    new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: rolesData.map(r => r.nombre),
+        datasets: [{
+          data: rolesData.map(r => r.porcentaje),
+          backgroundColor: rolesData.map(r => r.color)
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        aspectRatio: 1,
+        plugins: {
+          legend: { position: 'bottom' }
+        }
+      }
+    });
+
+    const actividadSemanalData = @json($actividad_semanal);
+    const ctxActividad = document.getElementById('actividadSemanalChart').getContext('2d');
+    const labels = actividadSemanalData.map(d => d.dia);
+    const metas = actividadSemanalData.map(d => d.metas);
+    const actividades = actividadSemanalData.map(d => d.actividades);
+
+    const actividadChart = new Chart(ctxActividad, {
+        type: 'bar',
+        data: {
+        labels: labels,
+        datasets: [
+            {
+            label: 'Metas',
+            data: metas,
+            backgroundColor: '#8b5cf6' // purple-500
+            },
+            {
+            label: 'Actividades',
+            data: actividades,
+            backgroundColor: '#3b82f6' // blue-500
+            }
+        ]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+            beginAtZero: true,
+            ticks: {
+                stepSize: 1
+            }
+            }
+        },
+        plugins: {
+            legend: {
+            position: 'bottom'
+            }
+        }
+        }
+    });
+
+  });
+</script>
+@endpush
