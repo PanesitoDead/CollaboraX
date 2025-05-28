@@ -8,7 +8,10 @@ use App\Http\Controllers\admin\CoordinadorGeneralController;
 use App\Http\Controllers\admin\DashboardController;
 use App\Http\Controllers\admin\EstadisticaController;
 use App\Http\Controllers\colaborador\ActividadController;
+use App\Http\Controllers\coordEquipo\ConfiguracionCoordinadorController;
 use App\Http\Controllers\coordEquipo\CoordEquipoController;
+use App\Http\Controllers\coordEquipo\EquipoCoordinadorController;
+use App\Http\Controllers\coordEquipo\ReunionesCoordinadorController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
@@ -90,6 +93,24 @@ Route::get('/colaborador/configuracion', [\App\Http\Controllers\colaborador\Conf
     Route::post('/coord-equipo/reuniones', [CoordEquipoController::class, 'crearReunion'])->name('coord-equipo.reuniones.store');
     Route::post('/coord-equipo/metas', [CoordEquipoController::class, 'crearMeta'])->name('coord-equipo.metas.store');
     Route::get('/coord-equipo/configuracion', [CoordEquipoController::class, 'dashboard'])->name('coord-equipo.configuracion');
+
+    Route::get('/coord-equipo/equipo', [EquipoCoordinadorController::class, 'index'])->name('coord-equipo.equipo');
+    Route::post('/coord-equipo/equipo/invitar', [EquipoCoordinadorController::class, 'invitarColaboradores'])->name('coord-equipo.equipo.invitar');
+    Route::delete('/coord-equipo/equipo/invitaciones/{id}', [EquipoCoordinadorController::class, 'cancelarInvitacion'])->name('coord-equipo.equipo.cancelar-invitacion');
+    Route::post('/coord-equipo/equipo/reunion', [EquipoCoordinadorController::class, 'programarReunion'])->name('coord-equipo.equipo.reunion');
+
+    Route::get('/coord-equipo/reuniones', [ReunionesCoordinadorController::class, 'index'])->name('coord-equipo.reuniones');
+    Route::post('/coord-equipo/reuniones', [ReunionesCoordinadorController::class, 'store'])->name('coord-equipo.reuniones.store');
+    Route::post('/coord-equipo/reuniones/{id}/join', [ReunionesCoordinadorController::class, 'join'])->name('coord-equipo.reuniones.join');
+    Route::post('/coord-equipo/reuniones/{id}/cancel', [ReunionesCoordinadorController::class, 'cancel'])->name('coord-equipo.reuniones.cancel');
+    Route::post('/coord-equipo/reuniones/{id}/reschedule', [ReunionesCoordinadorController::class, 'reschedule'])->name('coord-equipo.reuniones.reschedule');
+
+    Route::get('/coord-equipo/configuracion', [ConfiguracionCoordinadorController::class, 'index'])->name('coord-equipo.configuracion');
+    Route::post('/coord-equipo/configuracion/perfil', [ConfiguracionCoordinadorController::class, 'actualizarPerfil'])->name('coord-equipo.configuracion.perfil');
+    Route::post('/coord-equipo/configuracion/notificaciones', [ConfiguracionCoordinadorController::class, 'actualizarNotificaciones'])->name('coord-equipo.configuracion.notificaciones');
+    Route::post('/coord-equipo/configuracion/privacidad', [ConfiguracionCoordinadorController::class, 'actualizarPrivacidad'])->name('coord-equipo.configuracion.privacidad');
+    Route::post('/coord-equipo/configuracion/password', [ConfiguracionCoordinadorController::class, 'cambiarPassword'])->name('coord-equipo.configuracion.password');
+    Route::post('/coord-equipo/configuracion/apariencia', [ConfiguracionCoordinadorController::class, 'actualizarApariencia'])->name('coord-equipo.configuracion.apariencia');
 
 
 Route::middleware('auth')->group(function () {
