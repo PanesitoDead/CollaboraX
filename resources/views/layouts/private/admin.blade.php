@@ -41,6 +41,7 @@
     @endif
 
     <script>
+        lucide.createIcons();
         // Auto-hide toast after 3 seconds
         setTimeout(() => {
             const toast = document.getElementById('toast');

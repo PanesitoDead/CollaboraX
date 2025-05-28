@@ -4,72 +4,49 @@
 @section('title', 'Panel de Administrador')
 
 @section('content')
-<div class="flex flex-col gap-6">
+<div class="space-y-6 p-4">
     {{-- Header --}}
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div class="flex justify-between items-center">
         <div>
-            <h1 class="text-3xl font-bold tracking-tight">Panel de Administrador</h1>
+            <h1 class="text-2xl font-bold text-gray-900">Panel de Administrador</h1>
             <p class="text-gray-600">Gestión de la empresa TechSolutions S.A.</p>
         </div>
-        <div class="flex gap-2">
-            <button onclick="openCoordinadorModal()" 
-                    class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                </svg>
-                Nuevo Coordinador General
-            </button>
-        </div>
+    </div>    {{-- Stats Cards --}}
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        @foreach([
+            ['label' => 'Áreas', 'value' => $stats['areas'], 'icon' => 'layers','text' => 'Marketing, Ventas, Operaciones, Finanzas, TI'],
+            ['label' => 'Usuarios Totales', 'value' => $stats['usuarios_totales'], 'icon' => 'users', 'text' => "+{$stats['usuarios_nuevos']} desde la semana pasada"],
+            ['label' => 'Metas Activas', 'value' => $stats['metas_activas'], 'icon' => 'target', 'text' => "{$stats['metas_progreso']} en progreso, {$stats['metas_pendientes']} pendientes"],
+            ['label' => 'Cumplimiento', 'value' => "{$stats['cumplimiento']}%", 'icon' => 'check-square', 'text' => null],
+        ] as $card)
+            <div 
+            class="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow duration-200"
+            role="region" aria-labelledby="card-{{ Str::slug($card['label']) }}">
+
+            <header class="flex items-center justify-between mb-4">
+                <h3 id="card-{{ Str::slug($card['label']) }}" class="text-sm font-semibold text-gray-700">{{ $card['label'] }}</h3>
+                <i data-lucide="{{ $card['icon'] }}" class="w-5 h-5 text-blue-500"></i>
+            </header>
+
+            <div class="flex-1">
+                <p class="text-3xl font-bold text-gray-900">{{ $card['value'] }}</p>
+                @if($card['label'] === 'Cumplimiento')
+                <div class="w-full bg-gray-200 rounded-full h-2 mt-3">
+                <div class="bg-blue-500 h-2 rounded-full" style="width: {{ $stats['cumplimiento'] }}%"></div>
+                </div>
+                @endif
+            </div>
+
+            @if($card['text'])
+            <footer class="mt-4 text-xs text-gray-500">
+                {{ $card['text'] }}
+            </footer>
+            @endif
+            </div>
+        @endforeach
     </div>
 
-    {{-- Stats Cards --}}
-    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div class="bg-white rounded-lg border border-gray-300 p-6">
-            <div class="flex items-center justify-between pb-2">
-                <h3 class="text-sm font-medium text-gray-600">Áreas</h3>
-                <svg class="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
-                </svg>
-            </div>
-            <div class="text-2xl font-bold">{{ $stats['areas'] }}</div>
-            <p class="text-xs text-gray-500">Marketing, Ventas, Operaciones, Finanzas, TI</p>
-        </div>
-
-        <div class="bg-white rounded-lg border border-gray-300 p-6">
-            <div class="flex items-center justify-between pb-2">
-                <h3 class="text-sm font-medium text-gray-600">Usuarios Totales</h3>
-                <svg class="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
-                </svg>
-            </div>
-            <div class="text-2xl font-bold">{{ $stats['usuarios_totales'] }}</div>
-            <p class="text-xs text-gray-500">+{{ $stats['usuarios_nuevos'] }} desde la semana pasada</p>
-        </div>
-
-        <div class="bg-white rounded-lg border border-gray-300 p-6">
-            <div class="flex items-center justify-between pb-2">
-                <h3 class="text-sm font-medium text-gray-600">Metas Activas</h3>
-                <svg class="h-4 w-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
-                </svg>
-            </div>
-            <div class="text-2xl font-bold">{{ $stats['metas_activas'] }}</div>
-            <p class="text-xs text-gray-500">{{ $stats['metas_progreso'] }} en progreso, {{ $stats['metas_pendientes'] }} pendientes</p>
-        </div>
-
-        <div class="bg-white rounded-lg border border-gray-300 p-6">
-            <div class="flex items-center justify-between pb-2">
-                <h3 class="text-sm font-medium text-gray-600">Cumplimiento Global</h3>
-                <svg class="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
-                </svg>
-            </div>
-            <div class="text-2xl font-bold">{{ $stats['cumplimiento'] }}%</div>
-            <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-                <div class="bg-blue-600 h-2 rounded-full" style="width: {{ $stats['cumplimiento'] }}%"></div>
-            </div>
-        </div>
-    </div>
+    {{-- Actions --}}
 
     {{-- Tabs Content --}}
     <div class="bg-white rounded-lg border border-gray-300 ">

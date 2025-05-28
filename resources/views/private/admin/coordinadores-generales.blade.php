@@ -3,7 +3,7 @@
 @section('title', 'Coordinadores Generales')
 
 @section('content')
-<div class="space-y-6">
+<div class="space-y-6 p-4">
     {{-- Header --}}
     <div class="flex justify-between items-center">
         <div>
@@ -11,7 +11,7 @@
             <p class="text-gray-600">Gestiona los coordinadores generales de tu organización</p>
         </div>
         <div class="flex items-center gap-2">
-            <button id="openAsignarModal" 
+            <button id="openAsignarModal" onclick="openAsignarModal()"
                     class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                 <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
                 Nuevo Coordinador General
@@ -22,34 +22,53 @@
     {{-- Filters --}}
     <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-300">
         <form method="GET" class="flex flex-wrap gap-4">
-            <div class="flex-1 min-w-64 relative">
-                <i data-lucide="search" class="absolute left-3 top-3 text-gray-400 w-4 h-4"></i>
-                <input type="text" name="search" id="searchInput"
-                       value="{{ request('search') }}"
-                       placeholder="Buscar por nombre o email..."
-                       class="w-full pl-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <div class="relative flex-1 min-w-64">
+                <i data-lucide="search" class="absolute left-3 top-3 h-4 w-4 text-gray-400"></i>
+                <input 
+                    type="text" 
+                    name="search" 
+                    value="{{ request('search') }}"
+                    placeholder="Buscar por nombre o email..." 
+                    class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
             </div>
-            <div class="min-w-48">
-                <select name="area" id="areaFilter" onchange="this.form.submit()"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <div class="min-w-48 relative">
+                <select
+                    name="area"
+                    onchange="this.form.submit()"
+                    class="w-full pr-4 pl-3 py-2 border border-gray-300 rounded-lg
+                        focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                        appearance-none"
+                >
                     <option value="">Todas las áreas</option>
                     @foreach($areas as $area)
-                        <option value="{{ $area->id }}" {{ request('area') == $area->id ? 'selected' : '' }}>
-                            {{ $area->nombre }}
-                        </option>
+                    <option value="{{ $area->id }}" {{ request('area') == $area->id ? 'selected' : '' }}>
+                        {{ $area->nombre }}
+                    </option>
                     @endforeach
                 </select>
+                <div class="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+                    <i data-lucide="chevron-down" class="h-5 w-5 text-gray-500"></i>
+                </div>
             </div>
-            <div class="min-w-40">
-                <select name="estado" id="estadoFilter" onchange="this.form.submit()"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <div class="min-w-48 relative">
+                <select
+                    name="estado"
+                    onchange="this.form.submit()"
+                    class="w-full pl-3 pr-4 py-2 border border-gray-300 rounded-lg
+                        focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                        appearance-none"
+                >
                     <option value="">Todos los estados</option>
-                    <option value="activo" {{ request('estado') == 'activo' ? 'selected' : '' }}>Activo</option>
+                    <option value="activo"   {{ request('estado') == 'activo'   ? 'selected' : '' }}>Activo</option>
                     <option value="inactivo" {{ request('estado') == 'inactivo' ? 'selected' : '' }}>Inactivo</option>
                 </select>
-            </div>
-            <button type="submit"
-                    class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                <div class="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+                    <i data-lucide="chevron-down" class="h-5 w-5 text-gray-500"></i>
+                </div>
+                </div>
+            <button type="submit" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors cursor-pointe">
+                <i data-lucide="filter" class="h-4 w-4 mr-2"></i>
                 Filtrar
             </button>
         </form>
@@ -118,83 +137,68 @@
 </div>
 
 {{-- Modal Asignar Coordinador General --}}
-<div id="asignarModal" class="fixed inset-0 z-50 hidden">
-    <div class="fixed inset-0 bg-black/50" onclick="closeAsignarModal()"></div>
-    <div class="fixed inset-0 flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden">
-            <div class="px-4 py-5 border-b border-gray-200 flex justify-between items-center">
-                <h3 class="text-lg font-medium text-gray-900">Asignar Coordinador General</h3>
-                <button onclick="closeAsignarModal()" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            <form id="asignarForm" method="POST" class="px-6 py-4">
-                @csrf
-                <div class="space-y-4">
-                    <div>
-                        <label for="usuario_id" class="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
-                        <select name="usuario_id" id="usuario_id" required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">Seleccionar usuario</option>
-                            @foreach($usuariosDisponibles as $u)
-                                <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->email }})</option>
-                            @endforeach
-                        </select>
-                        <p class="mt-1 text-xs text-gray-500">Solo usuarios activos con rol Colaborador.</p>
-                    </div>
-                    <div>
-                        <label for="area_id" class="block text-sm font-medium text-gray-700 mb-1">Área</label>
-                        <select name="area_id" id="area_id" required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">Seleccionar área</option>
-                            @foreach($areas as $area)
-                                <option value="{{ $area->id }}">{{ $area->nombre }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <input type="checkbox" name="enviar_notificacion" id="enviar_notificacion" checked
-                               class="h-4 w-4 rounded border-gray-300 focus:ring-blue-500">
-                        <label for="enviar_notificacion" class="text-sm text-gray-700">Enviar notificación al usuario</label>
-                    </div>
-                </div>
-                <div class="mt-6 flex justify-end space-x-2">
-                    <button type="button" onclick="closeAsignarModal()"
-                            class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                        Cancelar
-                    </button>
-                    <button type="submit"
-                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        Asignar Rol
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+<div id="asignarModal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="asignarModalTitle">
+  <div class="fixed inset-0 bg-black/50" onclick="closeAsignarModal()"></div>
+  <div class="fixed inset-0 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col overflow-hidden min-h-0">
+      <form id="asignarForm" method="POST" class="flex flex-col h-full">
+        @csrf
+        <div id="methodFieldAsignar"></div>
 
-{{-- Modal Detalles --}}
-<div id="detallesModal" class="fixed inset-0 z-50 hidden">
-    <div class="fixed inset-0 bg-black/50" onclick="closeDetallesModal()"></div>
-    <div class="fixed inset-0 flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
-            <div class="px-4 py-5 border-b border-gray-200 flex justify-between items-center">
-                <h3 class="text-lg font-medium text-gray-900">Detalles del Coordinador General</h3>
-                <button onclick="closeDetallesModal()" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            <div id="detallesContent" class="p-6">
-                <div class="flex items-center justify-center py-8">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                </div>
-            </div>
+        <!-- Header fijo -->
+        <header class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center flex-shrink-0">
+          <h3 id="asignarModalTitle" class="text-lg font-semibold text-gray-900">Asignar Coordinador General</h3>
+          <button type="button" onclick="closeAsignarModal()" aria-label="Cerrar modal" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </header>
+
+        <!-- Contenido scrollable -->
+        <div class="px-6 py-4 space-y-4 overflow-y-auto flex-1 max-h-[70vh] min-h-0">
+          <div>
+            <label for="usuario_id" class="block mb-1 text-sm font-medium text-gray-700">Usuario</label>
+            <select name="usuario_id" id="usuario_id" required
+                    class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <option value="">Seleccionar usuario</option>
+              @foreach($usuariosDisponibles as $u)
+                <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->email }})</option>
+              @endforeach
+            </select>
+            <p class="mt-1 text-xs text-gray-500">Solo usuarios activos con rol Colaborador.</p>
+          </div>
+          <div>
+            <label for="area_id" class="block mb-1 text-sm font-medium text-gray-700">Área</label>
+            <select name="area_id" id="area_id" required
+                    class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <option value="">Seleccionar área</option>
+              @foreach($areas as $area)
+                <option value="{{ $area->id }}">{{ $area->nombre }}</option>
+              @endforeach
+            </select>
+          </div>
+          <div class="flex items-center space-x-2">
+            <input type="checkbox" name="enviar_notificacion" id="enviar_notificacion" checked
+                   class="h-4 w-4 rounded border-gray-300 focus:ring-blue-500">
+            <label for="enviar_notificacion" class="text-sm text-gray-700">Enviar notificación al usuario</label>
+          </div>
         </div>
+
+        <!-- Footer fijo -->
+        <footer class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end space-x-2 flex-shrink-0">
+          <button type="button" onclick="closeAsignarModal()"
+                  class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+            Cancelar
+          </button>
+          <button type="submit"
+                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            Asignar Rol
+          </button>
+        </footer>
+      </form>
     </div>
+  </div>
 </div>
 @endsection
 

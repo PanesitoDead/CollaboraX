@@ -3,7 +3,7 @@
 @section('title', 'Coordinadores de Equipo')
 
 @section('content')
-<div class="space-y-6">
+<div class="space-y-6 p-4">
     {{-- Header --}}
     <div class="flex justify-between items-center">
         <div>
@@ -12,10 +12,8 @@
         </div>
         <div class="flex gap-2">
             <button onclick="openInviteModal()" 
-                    class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                </svg>
+                    class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors cursor-pointer">
+                <i data-lucide="plus" class="h-4 w-4"></i>
                 Nuevo Colaborador
             </button>
         </div>
@@ -24,33 +22,53 @@
     {{-- Filters --}}
     <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-300">
         <form method="GET" class="flex flex-wrap gap-4">
-            <div class="flex-1 min-w-64">
+            <div class="relative flex-1 min-w-64">
+                <i data-lucide="search" class="absolute left-3 top-3 h-4 w-4 text-gray-400"></i>
                 <input 
                     type="text" 
                     name="search" 
                     value="{{ request('search') }}"
                     placeholder="Buscar por nombre o email..." 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
             </div>
-            <div class="min-w-48">
-                <select name="area" onchange="this.form.submit()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <div class="min-w-48 relative">
+                <select
+                    name="area"
+                    onchange="this.form.submit()"
+                    class="w-full pr-4 pl-3 py-2 border border-gray-300 rounded-lg
+                        focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                        appearance-none"
+                >
                     <option value="">Todas las áreas</option>
                     @foreach($areas as $area)
-                        <option value="{{ $area->id }}" {{ request('area') == $area->id ? 'selected' : '' }}>
-                            {{ $area->nombre }}
-                        </option>
+                    <option value="{{ $area->id }}" {{ request('area') == $area->id ? 'selected' : '' }}>
+                        {{ $area->nombre }}
+                    </option>
                     @endforeach
                 </select>
+                <div class="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+                    <i data-lucide="chevron-down" class="h-5 w-5 text-gray-500"></i>
+                </div>
             </div>
-            <div class="min-w-40">
-                <select name="estado" onchange="this.form.submit()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <div class="min-w-48 relative">
+                <select
+                    name="estado"
+                    onchange="this.form.submit()"
+                    class="w-full pl-3 pr-4 py-2 border border-gray-300 rounded-lg
+                        focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                        appearance-none"
+                >
                     <option value="">Todos los estados</option>
-                    <option value="activo" {{ request('estado') == 'activo' ? 'selected' : '' }}>Activo</option>
+                    <option value="activo"   {{ request('estado') == 'activo'   ? 'selected' : '' }}>Activo</option>
                     <option value="inactivo" {{ request('estado') == 'inactivo' ? 'selected' : '' }}>Inactivo</option>
                 </select>
-            </div>
-            <button type="submit" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                <div class="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+                    <i data-lucide="chevron-down" class="h-5 w-5 text-gray-500"></i>
+                </div>
+                </div>
+            <button type="submit" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors cursor-pointe">
+                <i data-lucide="filter" class="h-4 w-4 mr-2"></i>
                 Filtrar
             </button>
         </form>
@@ -60,101 +78,93 @@
     <div class="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full">
-                <thead class="bg-gray-50 border-b border-gray-300 ">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Coordinador</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Área</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Equipo</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Registro</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @forelse($coordinadores as $coordinador)
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="h-10 w-10 flex-shrink-0">
-                                        <img class="h-10 w-10 rounded-full object-cover" 
-                                             src="{{ $coordinador->avatar ?? '/placeholder-40x40.png' }}" 
-                                             alt="{{ $coordinador->name }}">
-                                    </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">{{ $coordinador->name }}</div>
-                                        <div class="text-sm text-gray-500">{{ $coordinador->email }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                    {{ $coordinador->area->nombre ?? 'Sin área' }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                @if($coordinador->equipo)
-                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        {{ $coordinador->equipo->nombre }}
-                                    </span>
-                                @else
-                                    <span class="text-sm text-gray-500">Sin equipo</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <button onclick="toggleStatus({{ $coordinador->id }}, '{{ $coordinador->estado }}')" 
-                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors {{ $coordinador->estado === 'activo' ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-red-100 text-red-800 hover:bg-red-200' }}">
-                                    <span class="w-1.5 h-1.5 rounded-full mr-1.5 {{ $coordinador->estado === 'activo' ? 'bg-green-400' : 'bg-red-400' }}"></span>
-                                    {{ ucfirst($coordinador->estado) }}
-                                </button>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ $coordinador->created_at->format('d/m/Y') }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <div class="flex justify-end gap-2">
-                                    <button onclick="openModal({{ $coordinador->id }})" 
-                                            class="text-blue-600 hover:text-blue-900 transition-colors">
-                                        <!-- Icono Ver -->
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                        </svg>
-                                    </button>
-                                    <button onclick="editCoordinador({{ $coordinador->id }})" 
-                                            class="text-indigo-600 hover:text-indigo-900 transition-colors">
-                                        <!-- Icono Editar -->
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="px-6 py-12 text-center">
-                                <div class="text-gray-500">
-                                    <!-- Icono Sin datos -->
-                                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    </svg>
-                                    <h3 class="mt-2 text-sm font-medium text-gray-900">No hay coordinadores</h3>
-                                    <p class="mt-1 text-sm text-gray-500">Comienza creando un nuevo coordinador de equipo.</p>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
+            <thead class="bg-gray-50 border-b border-gray-300">
+                <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Coordinador</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Área</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Equipo</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Registro</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                @forelse($coordinadores as $coordinador)
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                        <div class="h-10 w-10 flex-shrink-0">
+                        <img class="h-10 w-10 rounded-full object-cover"
+                            src="{{ $coordinador->avatar ?? '/placeholder-40x40.png' }}"
+                            alt="{{ $coordinador->name }}">
+                        </div>
+                        <div class="ml-4">
+                        <div class="text-sm font-medium text-gray-900">{{ $coordinador->name }}</div>
+                        <div class="text-sm text-gray-500">{{ $coordinador->email }}</div>
+                        </div>
+                    </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {{ $coordinador->area->nombre ?? 'Sin área' }}
+                    </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                    @if($coordinador->equipo)
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        {{ $coordinador->equipo->nombre }}
+                        </span>
+                    @else
+                        <span class="text-sm text-gray-500">Sin equipo</span>
+                    @endif
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                    <button onclick="toggleStatus({{ $coordinador->id }}, '{{ $coordinador->estado }}')"
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors {{ $coordinador->estado === 'activo' ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-red-100 text-red-800 hover:bg-red-200' }}">
+                        <span class="w-1.5 h-1.5 rounded-full mr-1.5 {{ $coordinador->estado === 'activo' ? 'bg-green-400' : 'bg-red-400' }}"></span>
+                        {{ ucfirst($coordinador->estado) }}
+                    </button>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ $coordinador->created_at->format('d/m/Y') }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div class="flex justify-end gap-2">
+                        <button onclick="openModal({{ $coordinador->id }})"
+                                class="text-blue-600 hover:text-blue-900 transition-colors">
+                        <!-- Icono Ver -->
+                        <i data-lucide="eye" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="editCoordinador({{ $coordinador->id }})"
+                                class="text-indigo-600 hover:text-indigo-900 transition-colors">
+                        <!-- Icono Editar -->
+                        <i data-lucide="edit" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center">
+                    <div class="text-gray-500">
+                        <i data-lucide="users" class="mx-auto h-12 w-12 text-gray-400"></i>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">No hay coordinadores</h3>
+                        <p class="mt-1 text-sm text-gray-500">Comienza creando un nuevo coordinador de equipo.</p>
+                    </div>
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
             </table>
         </div>
 
         {{-- Pagination --}}
         @if($coordinadores->hasPages())
             <div class="px-6 py-3 border-t border-gray-200">
-                {{ $coordinadores->links() }}
+            {{ $coordinadores->links() }}
             </div>
         @endif
-    </div>
+        </div>
 </div>
 
 {{-- Modal --}}

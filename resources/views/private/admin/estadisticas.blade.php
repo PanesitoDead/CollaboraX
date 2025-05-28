@@ -4,28 +4,30 @@
 @section('title', 'Estadísticas')
 
 @section('content')
-<div class="flex flex-col gap-6">
+<div class="space-y-6 p-4">
     {{-- Header --}}
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div class="flex justify-between items-center">
         <div>
-            <h1 class="text-3xl font-bold tracking-tight">Estadísticas</h1>
+            <h1 class="text-2xl font-bold text-gray-900">Estadísticas</h1>
             <p class="text-gray-600">Análisis y métricas de rendimiento de la empresa</p>
         </div>
-        <div class="flex gap-2">
-            <select class="border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500">
+        <div class="flex items-center gap-4">
+            <select class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            aria-label="Seleccionar periodo">
                 <option value="7">Últimos 7 días</option>
                 <option value="30" selected>Últimos 30 días</option>
                 <option value="90">Últimos 3 meses</option>
                 <option value="365">Último año</option>
             </select>
-            <button class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
+            <button
+            class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">
+                <i data-lucide="download" class="h-4 w-4 mr-2"></i>
                 Exportar Reporte
             </button>
         </div>
     </div>
+
+    {{-- KPI Overview --}}
 
     {{-- KPI Cards --}}
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
