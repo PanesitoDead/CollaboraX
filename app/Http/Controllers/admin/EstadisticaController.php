@@ -12,15 +12,14 @@ class EstadisticaController extends Controller
      */
     public function index()
     {
-        $kpis = [
-            'productividad' => 78,
-            'productividad_cambio' => 5.2,
+        $stats = [
+            'actividades_terminadas' => 78,
+            'actividades_nuevas' => 5.2,
             'metas_completadas' => 24,
             'metas_total' => 32,
-            'colaboradores_activos' => 45,
-            'colaboradores_conectados' => 28,
-            'tiempo_promedio' => 7.5,
-            'tiempo_tareas' => 2.3,
+            'asistencias_totales' => 45,
+            'asistencias_semana' => 28,
+            'porcentaje_avance' => 7.5,
         ];
 
         $rendimiento_areas = [
@@ -88,7 +87,7 @@ class EstadisticaController extends Controller
         ];
 
         return view('private.admin.estadisticas', compact(
-            'kpis',
+            'stats',
             'rendimiento_areas',
             'actividad_semanal',
             'top_performers',

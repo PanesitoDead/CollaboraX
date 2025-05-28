@@ -27,69 +27,67 @@
         </div>
     </div>
 
-    {{-- KPI Overview --}}
-
     {{-- KPI Cards --}}
-    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div class="bg-white rounded-lg border border-gray-300 p-6">
-            <div class="flex items-center justify-between pb-2">
-                <h3 class="text-sm font-medium text-gray-600">Productividad General</h3>
-                <svg class="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                </svg>
-            </div>
-            <div class="text-2xl font-bold">{{ $kpis['productividad'] }}%</div>
-            <div class="flex items-center text-sm">
-                <svg class="h-4 w-4 text-green-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
-                </svg>
-                <span class="text-green-600">+{{ $kpis['productividad_cambio'] }}%</span>
-                <span class="text-gray-500 ml-1">vs mes anterior</span>
-            </div>
-        </div>
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        @foreach([
+            [
+                'label' => 'Actividades Terminadas',
+                'value' => $stats['actividades_terminadas'],
+                'icon'  => 'check-circle',
+                'text'  => "+{$stats['actividades_nuevas']} esta semana",
+            ],
+            [
+                'label' => 'Metas',
+                'value' => "{$stats['metas_completadas']}/{$stats['metas_total']}",
+                'icon'  => 'target',
+                'text'  => "{$stats['metas_completadas']} cumplidas de {$stats['metas_total']}",
+            ],
+            [
+                'label' => 'Asistencias a Reuniones',
+                'value' => $stats['asistencias_totales'],
+                'icon'  => 'users',
+                'text'  => "{$stats['asistencias_semana']} esta semana",
+            ],
+            [
+                'label' => 'Avance de Metas',
+                'value' => "{$stats['porcentaje_avance']}%",
+                'icon'  => 'bar-chart-2',
+                'text'  => null,
+            ],
+        ] as $card)
+            <div 
+                class="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow duration-200"
+                role="region" aria-labelledby="card-{{ Str::slug($card['label']) }}">
 
-        <div class="bg-white rounded-lg border border-gray-300 p-6">
-            <div class="flex items-center justify-between pb-2">
-                <h3 class="text-sm font-medium text-gray-600">Metas Completadas</h3>
-                <svg class="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
-                </svg>
-            </div>
-            <div class="text-2xl font-bold">{{ $kpis['metas_completadas'] }}/{{ $kpis['metas_total'] }}</div>
-            <div class="flex items-center text-sm">
-                <span class="text-blue-600">{{ number_format(($kpis['metas_completadas']/$kpis['metas_total'])*100, 1) }}%</span>
-                <span class="text-gray-500 ml-1">de cumplimiento</span>
-            </div>
-        </div>
+                <header class="flex items-center justify-between mb-4">
+                    <h3 id="card-{{ Str::slug($card['label']) }}" class="text-sm font-semibold text-gray-700">{{ $card['label'] }}</h3>
+                    <i data-lucide="{{ $card['icon'] }}" class="w-5 h-5 text-blue-500"></i>
+                </header>
 
-        <div class="bg-white rounded-lg border border-gray-300 p-6">
-            <div class="flex items-center justify-between pb-2">
-                <h3 class="text-sm font-medium text-gray-600">Colaboradores Activos</h3>
-                <svg class="h-4 w-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
-                </svg>
-            </div>
-            <div class="text-2xl font-bold">{{ $kpis['colaboradores_activos'] }}</div>
-            <div class="flex items-center text-sm">
-                <span class="text-purple-600">{{ $kpis['colaboradores_conectados'] }}</span>
-                <span class="text-gray-500 ml-1">conectados hoy</span>
-            </div>
-        </div>
+                <div class="flex-1">
+                    <p class="text-3xl font-bold text-gray-900">{{ $card['value'] }}</p>
 
-        <div class="bg-white rounded-lg border border-gray-300 p-6">
-            <div class="flex items-center justify-between pb-2">
-                <h3 class="text-sm font-medium text-gray-600">Tiempo Promedio</h3>
-                <svg class="h-4 w-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
+                    {{-- barra de progreso solo para porcentaje --}}
+                    @if($card['label'] === 'Avance de Metas')
+                        <div class="w-full bg-gray-200 rounded-full h-2 mt-3">
+                            <div 
+                            class="bg-blue-500 h-2 rounded-full" 
+                            style="width: {{ $stats['porcentaje_avance'] }}%">
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                @if($card['text'])
+                    <footer class="mt-4 text-xs text-gray-500">
+                        {{ $card['text'] }}
+                    </footer>
+                @endif
+
             </div>
-            <div class="text-2xl font-bold">{{ $kpis['tiempo_promedio'] }}h</div>
-            <div class="flex items-center text-sm">
-                <span class="text-orange-600">{{ $kpis['tiempo_tareas'] }}h</span>
-                <span class="text-gray-500 ml-1">por tarea</span>
-            </div>
-        </div>
+        @endforeach
     </div>
+
 
     {{-- Charts Section --}}
     <div class="grid gap-6 lg:grid-cols-2">

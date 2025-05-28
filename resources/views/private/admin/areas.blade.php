@@ -62,25 +62,21 @@
                 <!-- Área Header -->
                 <header class="px-6 py-4 bg-gray-50 border-b border-gray-200">
                     <div class="flex justify-between items-start">
-                    <div class="flex items-center space-x-4">
-                        <div class="w-12 h-12 rounded-lg bg-{{ $area['color'] }}-100 flex items-center justify-center">
-                        {!! $area['icon'] !!}
+                        <div class="flex items-center space-x-4">
+                            <span class="w-2 h-2 rounded-full bg-{{ $area['color'] }}-500"></span>
+                            <h2 class="text-lg font-semibold text-gray-900">{{ $area['nombre'] }}</h2>
+                            <p class="text-sm text-gray-500">Cód. {{ $area['codigo'] }}</p>
                         </div>
-                        <div>
-                        <h2 class="text-lg font-semibold text-gray-900">{{ $area['nombre'] }}</h2>
-                        <p class="text-sm text-gray-500">Código: {{ $area['codigo'] }}</p>
+                        <div class="flex space-x-2">
+                            <button onclick="editArea({{ $area['id'] }})" aria-label="Editar {{ $area['nombre'] }}" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                            <i data-lucide="edit-2" class="w-4 h-4 text-gray-500 hover:text-gray-700"></i>
+                            </button>
+                            <button onclick="deleteArea({{ $area['id'] }})" aria-label="Eliminar {{ $area['nombre'] }}" class="p-2 rounded-lg hover:bg-red-50 transition-colors">
+                            <i data-lucide="trash" class="w-4 h-4 text-gray-500 hover:text-red-600"></i>
+                            </button>
                         </div>
                     </div>
-                    <div class="flex space-x-2">
-                        <button onclick="editArea({{ $area['id'] }})" aria-label="Editar {{ $area['nombre'] }}" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                        <i data-lucide="edit-2" class="w-4 h-4 text-gray-500 hover:text-gray-700"></i>
-                        </button>
-                        <button onclick="deleteArea({{ $area['id'] }})" aria-label="Eliminar {{ $area['nombre'] }}" class="p-2 rounded-lg hover:bg-red-50 transition-colors">
-                        <i data-lucide="trash" class="w-4 h-4 text-gray-500 hover:text-red-600"></i>
-                        </button>
-                    </div>
-                    </div>
-                    <p class="mt-4 text-sm text-gray-600">{{ $area['descripcion'] }}</p>
+                    <p class="mt-1 text-sm text-gray-600">{{ $area['descripcion'] }}</p>
                     <div class="mt-4 flex justify-between items-center">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $area['estado']=='activa'? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
                         {{ ucfirst($area['estado']) }}
@@ -159,7 +155,7 @@
 
     {{-- Pagination --}}
     @if($areas->hasPages())
-        <div class="px-6 py-4 border-t border-gray-200">
+        <div class="px-6 py-3 border-t border-gray-200">
             {{ $areas->links() }}
         </div>
     @endif
