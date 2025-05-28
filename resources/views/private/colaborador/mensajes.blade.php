@@ -3,7 +3,7 @@
 @section('title', 'Mensajes')
 
 @section('content')
-<div class="space-y-6">
+<div class="space-y-6 p-4">
     <div class="flex flex-col h-[calc(100vh-4rem)]">
         <div class="flex items-center justify-between mb-4">
             <h1 class="text-3xl font-bold tracking-tight">Mensajes</h1>

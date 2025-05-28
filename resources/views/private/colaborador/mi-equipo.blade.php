@@ -3,7 +3,7 @@
 @section('title', 'Mi Equipo')
 
 @section('content')
-<div class="space-y-6">
+<div class="space-y-6 p-4">
     {{-- Header --}}
     <div>
         <h1 class="text-2xl font-bold text-gray-900">Mi Equipo</h1>
