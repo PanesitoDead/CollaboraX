@@ -17,6 +17,15 @@ use Illuminate\Support\Facades\Auth;
 
 
 
+use App\Http\Controllers\CoordinadorGeneral\ActividadesController;
+use App\Http\Controllers\CoordinadorGeneral\DashboarController;
+use App\Http\Controllers\CoordinadorGeneral\MetasController;
+use App\Http\Controllers\CoordinadorGeneral\ConfigurationController;
+use App\Http\Controllers\CoordinadorGeneral\EquiposController;
+use App\Http\Controllers\CoordinadorGeneral\ReunionesController;
+use App\Http\Controllers\CoordinadorGeneral\MensajesController;
+
+
 
 Route::get('/', function () {
     return view('public.home.home');
@@ -136,3 +145,31 @@ Route::middleware('auth')->group(function () {
     
     
 });
+
+
+
+
+
+
+// Rutas para Coordinador General - Metas
+Route::get('/coordinador-general/metas', [MetasController::class, 'index'])->name('coordinador-general.metas');
+Route::get('/coordinador-general/configuracion', [ConfigurationController::class, 'index'])->name('coordinador-general.configuracion');
+Route::get('/coordinador-general/dashboard', [DashboarController::class, 'index'])->name('coordinador-general.dashboard');
+Route::get('/coordinador-general/actividades', [ActividadesController::class, 'index'])->name('coordinador-general.actividades');
+Route::get('/coordinador-general/equipos', [EquiposController::class, 'index'])->name('coordinador-general.equipos');
+
+
+Route::get('/coordinador-general/reuniones', [ReunionesController::class, 'index'])->name('coordinador-general.reuniones');
+Route::get('/coordinador-general/reuniones', [ReunionesController::class, 'index'])->name('coordinador-general.reuniones');
+Route::post('/coordinador-general/reuniones', [ReunionesController::class, 'store'])->name('coordinador-general.reuniones.store');
+Route::put('/coordinador-general/reuniones/{id}', [ReunionesController::class, 'update'])->name('coordinador-general.reuniones.update');
+Route::delete('/coordinador-general/reuniones/{id}', [ReunionesController::class, 'destroy'])->name('coordinador-general.reuniones.destroy');
+Route::post('/coordinador-general/reuniones/{id}/join', [ReunionesController::class, 'join'])->name('coordinador-general.reuniones.join');
+
+
+
+// Rutas de mensajes para coordinador general
+Route::get('/coordinador-general/mensajes', [MensajesController::class, 'index'])->name('coordinador-general.mensajes');
+Route::post('/coordinador-general/mensajes/send', [MensajesController::class, 'send'])->name('coordinador-general.mensajes.send');
+Route::post('/coordinador-general/mensajes/new-chat', [MensajesController::class, 'newChat'])->name('coordinador-general.mensajes.new-chat');
+Route::get('/coordinador-general/mensajes/search', [MensajesController::class, 'search'])->name('coordinador-general.mensajes.search');
