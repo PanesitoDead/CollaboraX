@@ -1,155 +1,146 @@
+{{-- resources/views/super-admin/empresas.blade.php --}}
 @extends('layouts.super-admin.super-admin')
 
 @section('title', 'Gestión de Empresas')
 @section('page-title', 'Gestión de Empresas')
 
 @section('content')
-<div class="space-y-6">
-    <!-- Header with Actions -->
+<div class="space-y-6 p-4">
+    {{-- Header --}}
     <div class="flex justify-between items-center">
         <div>
-            <h2 class="text-xl font-semibold text-gray-900">Empresas Registradas</h2>
-            <p class="text-sm text-gray-600">Gestiona todas las empresas del sistema</p>
+            <h1 class="text-2xl font-bold text-gray-900">Empresas Registradas</h1>
+            <p class="text-gray-600">Gestiona todas las empresas del sistema</p>
         </div>
-        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-            Exportar Datos
-        </button>
+        <div class="flex items-center gap-2">
+            <button id="exportBtn" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                Exportar Datos
+            </button>
+        </div>
     </div>
 
-    <!-- Filters -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Buscar</label>
-                <input type="text" placeholder="Nombre de empresa..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+    {{-- Filters --}}
+    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-300">
+        <form class="flex flex-wrap gap-4" method="GET">
+            <div class="relative flex-1 min-w-64">
+                <i data-lucide="search" class="absolute left-3 top-3 h-4 w-4 text-gray-400"></i>
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Buscar por nombre o email..."
+                    class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Plan</label>
-                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div class="min-w-48 relative">
+                <select name="plan" onchange="this.form.submit()"
+                    class="w-full pr-4 pl-3 py-2 border border-gray-300 rounded-lg
+                        focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                        appearance-none">
                     <option value="">Todos los planes</option>
-                    <option value="basic">Basic</option>
-                    <option value="professional">Professional</option>
-                    <option value="enterprise">Enterprise</option>
+                    <option value="basic" {{ request('plan')=='basic'?'selected':'' }}>Basic</option>
+                    <option value="professional" {{ request('plan')=='professional'?'selected':'' }}>Professional</option>
+                    <option value="enterprise" {{ request('plan')=='enterprise'?'selected':'' }}>Enterprise</option>
                 </select>
+                <div class="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+                    <i data-lucide="chevron-down" class="h-5 w-5 text-gray-500"></i>
+                </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
-                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">Todos</option>
-                    <option value="active">Activo</option>
-                    <option value="inactive">Inactivo</option>
-                    <option value="suspended">Suspendido</option>
+            <div class="min-w-48 relative">
+                <select name="estado" onchange="this.form.submit()"
+                    class="w-full pr-4 pl-3 py-2 border border-gray-300 rounded-lg
+                        focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                        appearance-none">
+                    <option value="">Todos los estados</option>
+                    <option value="active" {{ request('estado')=='active'?'selected':'' }}>Activo</option>
+                    <option value="inactive" {{ request('estado')=='inactive'?'selected':'' }}>Inactivo</option>
+                    <option value="suspended" {{ request('estado')=='suspended'?'selected':'' }}>Suspendido</option>
                 </select>
+                <div class="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+                    <i data-lucide="chevron-down" class="h-5 w-5 text-gray-500"></i>
+                </div>
             </div>
-            <div class="flex items-end">
-                <button class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium">
-                    Filtrar
-                </button>
-            </div>
-        </div>
+            <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <i data-lucide="filter" class="w-4 h-4 mr-2"></i>
+                Filtrar
+            </button>
+        </form>
     </div>
 
-    <!-- Companies Table -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    {{-- Table --}}
+    <div class="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-300">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Empresa</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuarios</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Registro</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    @foreach($empresas ?? [
-                        ['id' => 1, 'nombre' => 'TechCorp Solutions', 'email' => 'admin@techcorp.com', 'plan' => 'Enterprise', 'usuarios' => 45, 'estado' => 'active', 'fecha' => '2024-01-15'],
-                        ['id' => 2, 'nombre' => 'Digital Innovations', 'email' => 'contact@digital.com', 'plan' => 'Professional', 'usuarios' => 23, 'estado' => 'active', 'fecha' => '2024-01-14'],
-                        ['id' => 3, 'nombre' => 'StartUp Hub', 'email' => 'info@startup.com', 'plan' => 'Basic', 'usuarios' => 8, 'estado' => 'inactive', 'fecha' => '2024-01-13'],
-                        ['id' => 4, 'nombre' => 'Global Systems', 'email' => 'admin@global.com', 'plan' => 'Enterprise', 'usuarios' => 67, 'estado' => 'active', 'fecha' => '2024-01-12']
-                    ] as $empresa)
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0 h-10 w-10">
-                                    <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                                        <span class="text-sm font-medium text-gray-700">{{ substr($empresa['nombre'], 0, 2) }}</span>
-                                    </div>
+                    @forelse($empresas as $e)
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap flex items-center">
+                                <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                    <span class="text-sm font-medium text-gray-700">{{ substr($e->nombre,0,2) }}</span>
                                 </div>
                                 <div class="ml-4">
-                                    <div class="text-sm font-medium text-gray-900">{{ $empresa['nombre'] }}</div>
-                                    <div class="text-sm text-gray-500">{{ $empresa['email'] }}</div>
+                                    <p class="text-sm font-medium text-gray-900">{{ $e->nombre }}</p>
+                                    <p class="text-sm text-gray-500">{{ $e->email }}</p>
                                 </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
-                                {{ $empresa['plan'] === 'Enterprise' ? 'bg-purple-100 text-purple-800' : 
-                                   ($empresa['plan'] === 'Professional' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800') }}">
-                                {{ $empresa['plan'] }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $empresa['usuarios'] }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
-                                {{ $empresa['estado'] === 'active' ? 'bg-green-100 text-green-800' : 
-                                   ($empresa['estado'] === 'inactive' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800') }}">
-                                {{ ucfirst($empresa['estado']) }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ $empresa['fecha'] }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div class="flex space-x-2">
-                                <button class="text-blue-600 hover:text-blue-900">Ver</button>
-                                <button class="text-green-600 hover:text-green-900">Editar</button>
-                                <button class="text-red-600 hover:text-red-900">Suspender</button>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforeach
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {{
+                                    $e->plan=='Enterprise'? 'bg-purple-100 text-purple-800': (
+                                    $e->plan=='Professional'? 'bg-blue-100 text-blue-800': 'bg-gray-100 text-gray-800') }}">
+                                    {{ ucfirst($e->plan) }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $e->usuarios_count }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {{
+                                    $e->estado=='active'? 'bg-green-100 text-green-800': (
+                                    $e->estado=='inactive'? 'bg-red-100 text-red-800': 'bg-yellow-100 text-yellow-800') }}">
+                                    {{ ucfirst($e->estado) }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $e->created_at->format('Y-m-d') }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button onclick="verEmpresa({{ $e->id }})" class="text-blue-600 hover:text-blue-900 mr-2">Ver</button>
+                                <button onclick="editarEmpresa({{ $e->id }})" class="text-green-600 hover:text-green-900 mr-2">Editar</button>
+                                <button onclick="suspenderEmpresa({{ $e->id }})" class="text-red-600 hover:text-red-900">Suspender</button>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="6" class="px-6 py-12 text-center text-gray-500">No hay empresas registradas.</td></tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
-        
-        <!-- Pagination -->
-        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-            <div class="flex-1 flex justify-between sm:hidden">
-                <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Anterior</a>
-                <a href="#" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Siguiente</a>
+
+        {{-- Pagination --}}
+        @if($empresas->hasPages())
+            <div class="px-6 py-3 border-t border-gray-200">
+                {{ $empresas->links() }}
             </div>
-            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                    <p class="text-sm text-gray-700">
-                        Mostrando <span class="font-medium">1</span> a <span class="font-medium">10</span> de <span class="font-medium">97</span> resultados
-                    </p>
-                </div>
-                <div>
-                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                        <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                            <span class="sr-only">Anterior</span>
-                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                        </a>
-                        <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">1</a>
-                        <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">2</a>
-                        <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">3</a>
-                        <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                            <span class="sr-only">Siguiente</span>
-                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                            </svg>
-                        </a>
-                    </nav>
-                </div>
-            </div>
-        </div>
+        @endif
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', () => lucide.createIcons());
+
+    function verEmpresa(id) {
+        // lógica abrir modal detalle
+    }
+    function editarEmpresa(id) {
+        // lógica editar
+    }
+    function suspenderEmpresa(id) {
+        if(!confirm('¿Suspender empresa?')) return;
+        // lógica suspender
+    }
+</script>
+@endpush

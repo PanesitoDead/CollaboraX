@@ -24,8 +24,8 @@ use App\Http\Controllers\CoordinadorGeneral\ConfigurationController;
 use App\Http\Controllers\CoordinadorGeneral\EquiposController;
 use App\Http\Controllers\CoordinadorGeneral\ReunionesController;
 use App\Http\Controllers\CoordinadorGeneral\MensajesController;
-
-
+use App\Http\Controllers\superAdmin\EmpresasController;
+use App\Http\Controllers\superAdmin\EstadisticaController as SuperAdminEstadisticaController;
 
 Route::get('/', function () {
     return view('public.home.home');
@@ -49,13 +49,9 @@ Route::get('/super-admin/dashboard', function () {
     return view('super-admin.dashboard');
 })->name('super-admin.dashboard');
 
-Route::get('/super-admin/empresas', function () {
-    return view('super-admin.empresas');
-})->name('super-admin.empresas');
+Route::get('/super-admin/empresas', [EmpresasController::class, 'index'])->name('super-admin.empresas');
 
-Route::get('/super-admin/estadisticas', function () {
-    return view('super-admin.estadisticas');
-})->name('super-admin.estadisticas');
+Route::get('/super-admin/estadisticas', [SuperAdminEstadisticaController::class, 'index'])->name('super-admin.estadisticas');
 
 Route::get('/super-admin/configuracion', function () {
     return view('super-admin.configuracion');
