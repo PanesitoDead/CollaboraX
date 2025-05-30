@@ -10,6 +10,7 @@ class Empresa extends Model
     use SoftDeletes;
 
     protected $table = 'empresas';
+    public $timestamps = false;
 
     protected $fillable = ['usuario_id', 'plan_servicio_id', 'nombre', 'descripcion', 'ruc', 'telefono'];
 

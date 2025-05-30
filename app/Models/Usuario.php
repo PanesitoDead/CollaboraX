@@ -2,16 +2,23 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
-class Usuario extends Model
+class Usuario extends Authenticatable
 {
-    use SoftDeletes;
+    use HasFactory, Notifiable, SoftDeletes;
 
     protected $table = 'usuarios';
+    public $timestamps = false;
 
     protected $fillable = ['correo', 'clave', 'rol_id', 'activo', 'en_linea', 'ultima_conexion', 'foto'];
+
+    protected $hidden = [
+        'clave',
+    ];
 
     public function rol()
     {
@@ -31,5 +38,15 @@ class Usuario extends Model
     public function fotoPerfil()
     {
         return $this->belongsTo(Archivo::class, 'foto');
+    }
+
+    public function getAuthPassword()
+    {
+        return $this->clave;
+    }
+
+    public function getAuthIdentifierName()
+    {
+        return 'correo';
     }
 }

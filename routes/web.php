@@ -30,19 +30,15 @@ use App\Http\Controllers\superAdmin\EstadisticaController as SuperAdminEstadisti
 
 Route::get('/', function () {
     return view('public.home.home');
-});
+})->name('home');
 
-Route::get('/auth/login', [AuthController::class, 'index'])->name('login');
+Route::get('/auth/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/auth/login', [AuthController::class, 'login'])->name('login.post');
 
-Route::get('/auth/register', function () {
-    return view('public.auth.register');
-})->name('register');
+Route::get('/auth/register', [AuthController::class, 'showRegisterForm'])->name('register');
+Route::post('/auth/register', [AuthController::class, 'register'])->name('register.post');
 
-Route::post('/logout', function () {
-    Auth::logout(); 
-    return redirect('/');
-})->name('logout');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 //     Super Admin
 Route::get('/super-admin/dashboard', function () {

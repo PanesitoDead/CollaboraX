@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\coordEquipo;
 
 use App\Http\Controllers\Controller;
+use Auth;
 use Illuminate\Http\Request;
 use Validator;
 
@@ -15,7 +16,9 @@ class CoordEquipoController extends Controller
 
     public function dashboard()
     {
-        //$user = Auth::user();
+        $user = Auth::user();
+
+        
         
         // Datos simulados - reemplazar con datos reales de la base de datos
         $stats = [

@@ -25,27 +25,75 @@
                     </svg>
                     <span class="text-red-600 text-sm font-medium">Por favor corrige los errores</span>
                 </div>
+                <ul class="list-disc list-inside text-red-600 text-sm">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
             </div>
         @endif
 
         <!-- Formulario de registro -->
-        <form method="POST" action="{{ route('register') }}" class="space-y-4">
+
+
+        <form method="POST" action="{{ route('register.post') }}" class="space-y-4">
             @csrf
 
-            <!-- Empresa -->
+            <!-- Nombre de la empresa -->
             <div>
-                <label for="company" class="block text-sm font-medium text-gray-700 mb-1">Empresa</label>
+                <label for="nombre" class="block text-sm font-medium text-gray-700 mb-1">Nombre de la empresa</label>
                 <input
                     type="text"
-                    id="company"
-                    name="company"
-                    value="{{ old('company') }}"
+                    id="nombre"
+                    name="nombre"
+                    value="{{ old('nombre') }}"
                     required
-                    autocomplete="organization"
-                    placeholder="Nombre de la empresa"
+                    placeholder="Nombre comercial"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                @error('company')<p class="mt-1 text-sm text-red-500">{{ $message }}</p>@enderror
+                @error('nombre')<p class="mt-1 text-sm text-red-500">{{ $message }}</p>@enderror
+            </div>
+
+            <!-- Descripción -->
+            <div>
+                <label for="descripcion" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                <textarea
+                    id="descripcion"
+                    name="descripcion"
+                    placeholder="Breve descripción de la empresa"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >{{ old('descripcion') }}</textarea>
+                @error('descripcion')<p class="mt-1 text-sm text-red-500">{{ $message }}</p>@enderror
+            </div>
+
+            <!-- RUC -->
+            <div>
+                <label for="ruc" class="block text-sm font-medium text-gray-700 mb-1">RUC</label>
+                <input
+                    type="text"
+                    id="ruc"
+                    name="ruc"
+                    value="{{ old('ruc') }}"
+                    required
+                    placeholder="Número de RUC"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                @error('ruc')<p class="mt-1 text-sm text-red-500">{{ $message }}</p>@enderror
+            </div>
+
+            <!-- Teléfono -->
+            <div>
+                <label for="telefono" class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                <input
+                    type="text"
+                    id="telefono"
+                    name="telefono"
+                    value="{{ old('telefono') }}"
+                    required
+                    placeholder="Número de contacto"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                @error('telefono')<p class="mt-1 text-sm text-red-500">{{ $message }}</p>@enderror
             </div>
 
             <!-- Plan -->
@@ -58,30 +106,37 @@
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                     <option value="">Seleccione un plan</option>
-                    <option value="standard" {{ old('plan')=='standard' ? 'selected':'' }}>Standard</option>
-                    <option value="business" {{ old('plan')=='business' ? 'selected':'' }}>Business</option>
-                    <option value="enterprise" {{ old('plan')=='enterprise' ? 'selected':'' }}>Enterprise</option>
+                    @foreach ($planes as $plan)
+                        <option value="{{ $plan->id }}" {{ old('plan') == $plan->id ? 'selected' : '' }}>
+                            {{ $plan->nombre }}
+                        </option>
+                    @endforeach
                 </select>
                 @error('plan')<p class="mt-1 text-sm text-red-500">{{ $message }}</p>@enderror
             </div>
 
-            <!-- Email -->
+            <!-- Correo electrónico -->
             <div>
                 <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
-                <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value="{{ old('email') }}"
-                    required
-                    autocomplete="email"
-                    placeholder="tu@email.com"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
+                <div class="flex rounded-lg border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
+                    <input
+                        type="text"
+                        id="email"
+                        name="email"
+                        value="{{ old('email') }}"
+                        required
+                        autocomplete="username"
+                        placeholder="correo-empresa"
+                        class="flex-grow px-3 py-2 rounded-l-lg focus:outline-none"
+                    >
+                    <span class="inline-flex items-center px-3 bg-gray-100 text-gray-500 rounded-r-lg select-none">
+                        @collaborax.com
+                    </span>
+                </div>
                 @error('email')<p class="mt-1 text-sm text-red-500">{{ $message }}</p>@enderror
             </div>
 
-            <!-- Contraseña -->
+
             <div>
                 <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
                 <div class="relative">
@@ -146,8 +201,6 @@
                 </label>
             </div>
 
-            <!-- Botón de registro -->
-            
             <button
                 type="submit"
                 class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
@@ -155,6 +208,10 @@
                 Crear cuenta
             </button>
         </form>
+
+
+
+        
 
         <!-- Enlace a login -->
         <div class="text-center mt-6">
