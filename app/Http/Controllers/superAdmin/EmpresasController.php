@@ -3,53 +3,47 @@
 namespace App\Http\Controllers\superAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Repositories\EmpresaRepositorio;
+use App\Traits\Http\Controllers\CriterioTrait;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class EmpresasController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request)
+
+    use CriterioTrait;
+    protected EmpresaRepositorio $empresaRepositorio;
+
+    public function __construct(EmpresaRepositorio $empresaRepositorio)
     {
-        // Datos de ejemplo simulados
-        $data = [
-            ['id' => 1, 'nombre' => 'TechCorp Solutions',  'email' => 'admin@techcorp.com',  'plan' => 'Enterprise',   'usuarios_count' => 45, 'estado' => 'active',   'created_at' => '2024-01-15'],
-            ['id' => 2, 'nombre' => 'Digital Innovations','email' => 'contact@digital.com', 'plan' => 'Professional','usuarios_count' => 23, 'estado' => 'active',   'created_at' => '2024-01-14'],
-            ['id' => 3, 'nombre' => 'StartUp Hub',        'email' => 'info@startup.com',   'plan' => 'Basic',       'usuarios_count' => 8,  'estado' => 'inactive', 'created_at' => '2024-01-13'],
-            ['id' => 4, 'nombre' => 'Global Systems',     'email' => 'admin@global.com',   'plan' => 'Enterprise',  'usuarios_count' => 67, 'estado' => 'active',   'created_at' => '2024-01-12'],
-        ];
+        $this->empresaRepositorio = $empresaRepositorio;
+    }
 
-        // Convertimos cada arreglo en un objeto y parseamos created_at con Carbon
-        $items = collect($data)
-            ->map(function($item) {
-                return (object) array_merge($item, [
-                    'created_at' => Carbon::parse($item['created_at']),
-                ]);
-            });
 
-        // Simulación de paginación (todos en una sola página)
-        $perPage = 10;
-        $page    = LengthAwarePaginator::resolveCurrentPage();
-        $slice   = $items->slice(($page - 1) * $perPage, $perPage)->values();
-        $empresas = new LengthAwarePaginator(
-            $slice,
-            $items->count(),
-            $perPage,
-            $page,
-            ['path' => $request->url(), 'query' => $request->query()]
-        );
-
-        // Pasamos filtros actuales para reuso en la vista
-        $filters = [
-            'search' => $request->query('search', ''),
-            'plan'   => $request->query('plan', ''),
-            'estado' => $request->query('estado', ''),
-        ];
-
-        return view('super-admin.empresas', compact('empresas', 'filters'));
+    public function index(Request $request)
+    {   
+        $criterios = $this->obtenerCriterios($request);
+        $empresasPag = $this->empresaRepositorio->obtenerPaginado($criterios);
+        $empresasParse = $empresasPag->getCollection()->map(function ($empresa) {
+            // Agregamos el campo plan_servicio
+            $empresa->plan_servicio = $empresa->planServicio ? $empresa->planServicio->nombre : 'No asignado';
+            // Agregamos el campo usuarios
+            $empresa->nro_usuarios =  0;
+            $empresa->correo = $empresa->usuario->correo ?? 'No disponible';
+            $empresa->activo = $empresa->usuario->activo;
+            // Parseamos los campos de fecha a un formato legible
+            $empresa->fecha_registro = $empresa->usuario->fecha_registro
+                ? Carbon::parse($empresa->usuario->fecha_registro)->format('d/m/Y H:i')
+                : 'No disponible';
+            return $empresa;
+        });
+        $empresasPag->setCollection($empresasParse);
+    
+        return view('super-admin.empresas', [
+            'empresas' => $empresasPag,
+            'criterios' => $criterios,
+        ]);
     }
 
     /**
