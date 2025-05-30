@@ -11,6 +11,8 @@ class Rol extends Model
 
     protected $table = 'roles';
 
+    public $timestamps = false;
+
     protected $fillable = ['nombre', 'descripcion', 'activo'];
 
     public function usuarios()

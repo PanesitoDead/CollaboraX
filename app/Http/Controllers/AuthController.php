@@ -6,9 +6,22 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Repositories\RolRepositorio;
 
 class AuthController extends Controller
 {
+
+    protected RolRepositorio $rolRepositorio;
+    public function __construct(RolRepositorio $rolRepositorio)
+    {
+        $this->rolRepositorio = $rolRepositorio;
+    }
+
+    public function index()
+    {
+
+        return view('public.auth.login');
+    }
     public function showLoginForm()
     {
         return view('auth.login');
@@ -16,22 +29,29 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+        // $credentials = $request->validate([
+        //     'email' => 'required|email',
+        //     'password' => 'required',
+        // ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
-            $request->session()->regenerate();
+        // if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        //     $request->session()->regenerate();
             
-            // Redirigir según el rol del usuario
-            $user = Auth::user();
-            return $this->redirectByRole($user);
-        }
+        //     // Redirigir según el rol del usuario
+        //     $user = Auth::user();
+        //     return $this->redirectByRole($user);
+        // }
 
-        return back()->withErrors([
-            'email' => 'Las credenciales proporcionadas no coinciden con nuestros registros.',
-        ])->onlyInput('email');
+        // return back()->withErrors([
+        //     'email' => 'Las credenciales proporcionadas no coinciden con nuestros registros.',
+        // ])->onlyInput('email');
+
+        // Probamos crear un rol 
+        $this->rolRepositorio->create([
+            'nombre' => 'super-admin',
+            'descripcion' => 'Rol de super administrador',
+            'activo' => true,
+        ]);
     }
 
     public function showRegisterForm()

@@ -11,6 +11,8 @@ class Area extends Model
 
     protected $table = 'areas';
 
+    public $timestamps = false;
+
     protected $fillable = ['empresa_id', 'nombre', 'descripcion', 'codigo', 'color', 'activo', 'fecha_creacion'];
 
     public function empresa()

@@ -11,5 +11,7 @@ class Archivo extends Model
 
     protected $table = 'archivos';
 
+    public $timestamps = false;
+
     protected $fillable = ['nombre', 'ruta'];
 }

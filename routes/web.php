@@ -7,6 +7,7 @@ use App\Http\Controllers\admin\CoordinadorEquipoController;
 use App\Http\Controllers\admin\CoordinadorGeneralController;
 use App\Http\Controllers\admin\DashboardController;
 use App\Http\Controllers\admin\EstadisticaController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\colaborador\ActividadController;
 use App\Http\Controllers\coordEquipo\ConfiguracionCoordinadorController;
 use App\Http\Controllers\coordEquipo\CoordEquipoController;
@@ -31,9 +32,8 @@ Route::get('/', function () {
     return view('public.home.home');
 });
 
-Route::get('/auth/login', function () {
-    return view('public.auth.login');
-})->name('login');
+Route::get('/auth/login', [AuthController::class, 'index'])->name('login');
+Route::post('/auth/login', [AuthController::class, 'login'])->name('login.post');
 
 Route::get('/auth/register', function () {
     return view('public.auth.register');
