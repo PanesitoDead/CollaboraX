@@ -50,7 +50,7 @@
                         <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full" id="pendientes-count">0</span>
                     </div>
                 </div>
-                <div class="p-4 space-y-3 overflow-y-auto h-96" id="pendientes-column">
+                <div class="p-4 space-y-3 overflow-y-auto h-96 kanban-column" id="pendientes-column" data-estado="pendiente">
                     <!-- Actividades se cargan con JavaScript -->
                 </div>
             </div>
@@ -63,7 +63,7 @@
                         <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full" id="en-proceso-count">0</span>
                     </div>
                 </div>
-                <div class="p-4 space-y-3 overflow-y-auto h-96" id="en-proceso-column">
+                <div class="p-4 space-y-3 overflow-y-auto h-96 kanban-column" id="en-proceso-column" data-estado="en-proceso">
                     <!-- Actividades se cargan con JavaScript -->
                 </div>
             </div>
@@ -76,7 +76,7 @@
                         <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full" id="completadas-count">0</span>
                     </div>
                 </div>
-                <div class="p-4 space-y-3 overflow-y-auto h-96" id="completadas-column">
+                <div class="p-4 space-y-3 overflow-y-auto h-96 kanban-column" id="completadas-column" data-estado="completada">
                     <!-- Actividades se cargan con JavaScript -->
                 </div>
             </div>
@@ -89,7 +89,7 @@
                         <span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full" id="retrasadas-count">0</span>
                     </div>
                 </div>
-                <div class="p-4 space-y-3 overflow-y-auto h-96" id="retrasadas-column">
+                <div class="p-4 space-y-3 overflow-y-auto h-96 kanban-column" id="retrasadas-column" data-estado="retrasada">
                     <!-- Actividades se cargan con JavaScript -->
                 </div>
             </div>
@@ -223,6 +223,9 @@
     </div>
 </div>
 
+<!-- Sortable.js para drag and drop -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
 <script>
 // Variables globales
 let actividades = [];
@@ -230,6 +233,7 @@ let equiposDisponibles = [];
 let metasDisponibles = [];
 let filteredActividades = [];
 let nextId = 25;
+let sortableInstances = {};
 
 // Datos hardcodeados completos para carga instantánea
 const actividadesHardcoded = [
@@ -286,6 +290,7 @@ function initializeData() {
     loadActivities();
     renderEquiposInSelects();
     generateTeamSummary();
+    initSortable();
 }
 
 // Cargar datos desde el controlador en background
@@ -306,6 +311,7 @@ async function loadDataFromServer() {
                 filteredActividades = [...actividades];
                 loadActivities();
                 generateTeamSummary();
+                initSortable(); // Reinicializar sortable con los nuevos datos
             }
             
             if (JSON.stringify(serverEquipos) !== JSON.stringify(equiposDisponibles)) {
@@ -386,8 +392,16 @@ function loadActivities() {
 
 function createActivityCard(actividad) {
     const card = document.createElement('div');
-    card.className = 'bg-white border border-gray-200 rounded-lg p-3 shadow-md hover:shadow-lg cursor-pointer form-transition hover-scale';
-    card.onclick = () => showActivityDetails(actividad);
+    card.className = 'bg-white border border-gray-200 rounded-lg p-3 shadow-md hover:shadow-lg cursor-move form-transition hover-scale activity-card';
+    card.setAttribute('data-id', actividad.id);
+    
+    // Evitar que el click para arrastrar abra el modal de detalles
+    card.addEventListener('click', function(e) {
+        // Solo mostrar detalles si no estamos arrastrando
+        if (!card.classList.contains('sortable-drag')) {
+            showActivityDetails(actividad);
+        }
+    });
 
     const priorityColors = {
         'Alta': 'bg-red-100 text-red-800',
@@ -414,6 +428,130 @@ function createActivityCard(actividad) {
     return card;
 }
 
+// Inicializar Sortable.js para drag and drop
+function initSortable() {
+    // Destruir instancias previas si existen
+    Object.values(sortableInstances).forEach(instance => {
+        if (instance && typeof instance.destroy === 'function') {
+            instance.destroy();
+        }
+    });
+    
+    sortableInstances = {};
+    
+    // Obtener todas las columnas
+    const columns = document.querySelectorAll('.kanban-column');
+    
+    // Inicializar Sortable en cada columna
+    columns.forEach(column => {
+        const estado = column.getAttribute('data-estado');
+        
+        sortableInstances[estado] = new Sortable(column, {
+            group: 'actividades', // Permite arrastrar entre columnas
+            animation: 150, // Duración de la animación en ms
+            ghostClass: 'bg-gray-100', // Clase para el elemento fantasma durante el arrastre
+            chosenClass: 'bg-gray-200', // Clase para el elemento seleccionado
+            dragClass: 'sortable-drag', // Clase para el elemento durante el arrastre
+            
+            // Cuando se completa el arrastre
+            onEnd: function(evt) {
+                const actividadId = parseInt(evt.item.getAttribute('data-id'));
+                const nuevoEstado = evt.to.getAttribute('data-estado');
+                
+                // Actualizar el estado de la actividad en el array
+                updateActivityStatus(actividadId, nuevoEstado);
+            }
+        });
+    });
+}
+
+// Actualizar el estado de una actividad
+function updateActivityStatus(actividadId, nuevoEstado) {
+    // Encontrar la actividad en el array
+    const actividad = actividades.find(a => a.id === actividadId);
+    
+    if (actividad) {
+        const estadoAnterior = actividad.estado;
+        
+        // Actualizar el estado
+        actividad.estado = nuevoEstado;
+        
+        // Actualizar también en el array filtrado si existe
+        const actividadFiltrada = filteredActividades.find(a => a.id === actividadId);
+        if (actividadFiltrada) {
+            actividadFiltrada.estado = nuevoEstado;
+        }
+        
+        // Actualizar contadores
+        updateStatusCounts();
+        
+        // Actualizar resumen por equipo
+        generateTeamSummary();
+        
+        // Mostrar notificación
+        const estadosLabels = {
+            'pendiente': 'Pendiente',
+            'en-proceso': 'En Proceso',
+            'completada': 'Completada',
+            'retrasada': 'Retrasada'
+        };
+        
+        showToast(`Actividad "${actividad.titulo}" movida a ${estadosLabels[nuevoEstado]}`);
+        
+        // Aquí se podría hacer una llamada al servidor para persistir el cambio
+        // saveActivityStatus(actividadId, nuevoEstado);
+    }
+}
+
+// Actualizar contadores de actividades por estado
+function updateStatusCounts() {
+    const counts = {
+        'pendiente': 0,
+        'en-proceso': 0,
+        'completada': 0,
+        'retrasada': 0
+    };
+    
+    filteredActividades.forEach(actividad => {
+        if (counts[actividad.estado] !== undefined) {
+            counts[actividad.estado]++;
+        }
+    });
+    
+    document.getElementById('pendientes-count').textContent = counts['pendiente'];
+    document.getElementById('en-proceso-count').textContent = counts['en-proceso'];
+    document.getElementById('completadas-count').textContent = counts['completada'];
+    document.getElementById('retrasadas-count').textContent = counts['retrasada'];
+}
+
+// Función para guardar el cambio de estado en el servidor (simulada)
+function saveActivityStatus(actividadId, nuevoEstado) {
+    // Aquí iría el código para enviar la actualización al servidor
+    console.log(`Guardando cambio de estado para actividad ${actividadId}: ${nuevoEstado}`);
+    
+    // Ejemplo de cómo sería con fetch:
+    /*
+    fetch('/coordinador-general/api/actividades/actualizar-estado', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            id: actividadId,
+            estado: nuevoEstado
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Actualización exitosa:', data);
+    })
+    .catch(error => {
+        console.error('Error al actualizar:', error);
+    });
+    */
+}
+
 function filterActivities() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const teamFilter = document.getElementById('teamFilter').value;
@@ -427,6 +565,7 @@ function filterActivities() {
     });
 
     loadActivities();
+    initSortable(); // Reinicializar sortable después de filtrar
 }
 
 function generateTeamSummary() {
@@ -606,6 +745,7 @@ function createActivity() {
     filteredActividades = [...actividades];
     loadActivities();
     generateTeamSummary();
+    initSortable(); // Reinicializar sortable después de añadir actividad
     closeCreateModal();
     showToast('Actividad creada correctamente');
     form.reset();
@@ -625,4 +765,42 @@ function showToast(message) {
     }, 3000);
 }
 </script>
+
+<style>
+/* Estilos para el drag and drop */
+.sortable-ghost {
+    opacity: 0.5;
+    background-color: #f3f4f6 !important;
+    border: 2px dashed #d1d5db !important;
+}
+
+.sortable-drag {
+    opacity: 0.9;
+    transform: rotate(2deg);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.kanban-column {
+    min-height: 50px; /* Altura mínima para que se pueda arrastrar a columnas vacías */
+}
+
+/* Eliminar el espacio entre tarjetas cuando se arrastran */
+.kanban-column.sortable-drag > * {
+    margin-bottom: 0 !important;
+}
+
+/* Indicador visual de que se puede soltar */
+.sortable-chosen {
+    background-color: #f9fafb;
+}
+
+/* Cursor de mover para las tarjetas */
+.activity-card {
+    cursor: grab;
+}
+
+.activity-card:active {
+    cursor: grabbing;
+}
+</style>
 @endsection
