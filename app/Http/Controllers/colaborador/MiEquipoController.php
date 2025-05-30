@@ -45,7 +45,8 @@ class MiEquipoController extends Controller
                 'actividades_completadas' => 5,
                 'actividades_totales' => 6,
                 'rendimiento' => 95,
-                'avatar' => '/placeholder-32px.png'
+                'avatar' => '/placeholder-32px.png',
+                'last_seen' => '2025-06-15 14:30:00',
             ],
             [
                 'id' => 2,
@@ -55,7 +56,8 @@ class MiEquipoController extends Controller
                 'actividades_completadas' => 4,
                 'actividades_totales' => 5,
                 'rendimiento' => 92,
-                'avatar' => '/placeholder-32px.png'
+                'avatar' => '/placeholder-32px.png',
+                'last_seen' => '2025-06-15 14:45:00',
             ],
             [
                 'id' => 3,
@@ -65,7 +67,8 @@ class MiEquipoController extends Controller
                 'actividades_completadas' => 3,
                 'actividades_totales' => 4,
                 'rendimiento' => 88,
-                'avatar' => '/placeholder-32px.png'
+                'avatar' => '/placeholder-32px.png',
+                'last_seen' => '2025-06-15 14:50:00',
             ],
             [
                 'id' => 4,
@@ -75,7 +78,8 @@ class MiEquipoController extends Controller
                 'actividades_completadas' => 2,
                 'actividades_totales' => 3,
                 'rendimiento' => 85,
-                'avatar' => '/placeholder-32px.png'
+                'avatar' => '/placeholder-32px.png',
+                'last_seen' => '2025-06-15 14:55:00',
             ],
             [
                 'id' => 5,
@@ -85,7 +89,8 @@ class MiEquipoController extends Controller
                 'actividades_completadas' => 3,
                 'actividades_totales' => 3,
                 'rendimiento' => 100,
-                'avatar' => '/placeholder-32px.png'
+                'avatar' => '/placeholder-32px.png',
+                'last_seen' => '2025-06-15 15:00:00',
             ],
             [
                 'id' => 6,
@@ -95,7 +100,8 @@ class MiEquipoController extends Controller
                 'actividades_completadas' => 2,
                 'actividades_totales' => 3,
                 'rendimiento' => 90,
-                'avatar' => '/placeholder-32px.png'
+                'avatar' => '/placeholder-32px.png',
+                'last_seen' => '2025-06-15 15:05:00',
             ]
         ];
 
