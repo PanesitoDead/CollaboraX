@@ -2,19 +2,27 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Auth\RegistroRequest;
+use App\Repositories\EmpresaRepositorio;
+use App\Repositories\PlanRepositorio;
+use App\Repositories\UsuarioRepositorio;
+use DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use App\Models\User;
-use App\Repositories\RolRepositorio;
+
 
 class AuthController extends Controller
 {
 
-    protected RolRepositorio $rolRepositorio;
-    public function __construct(RolRepositorio $rolRepositorio)
+    protected PlanRepositorio $planRepositorio;
+    protected UsuarioRepositorio $usuarioRepositorio;
+    protected EmpresaRepositorio $empresaRepositorio;
+
+    public function __construct(PlanRepositorio $planRepositorio, UsuarioRepositorio $usuarioRepositorio, EmpresaRepositorio $empresaRepositorio)
     {
-        $this->rolRepositorio = $rolRepositorio;
+        $this->planRepositorio = $planRepositorio;
+        $this->usuarioRepositorio = $usuarioRepositorio;
+        $this->empresaRepositorio = $empresaRepositorio;
     }
 
     public function index()
@@ -24,76 +32,100 @@ class AuthController extends Controller
     }
     public function showLoginForm()
     {
-        return view('auth.login');
+        return view('public.auth.login');
     }
 
     public function login(Request $request)
     {
-        // $credentials = $request->validate([
-        //     'email' => 'required|email',
-        //     'password' => 'required',
-        // ]);
+        $credentials = [
+            'correo' => $request->email,
+            'password' => $request->password,
+        ];
 
-        // if (Auth::attempt($credentials, $request->boolean('remember'))) {
-        //     $request->session()->regenerate();
-            
-        //     // Redirigir según el rol del usuario
-        //     $user = Auth::user();
-        //     return $this->redirectByRole($user);
-        // }
+        $remember = $request->filled('remember');
 
-        // return back()->withErrors([
-        //     'email' => 'Las credenciales proporcionadas no coinciden con nuestros registros.',
-        // ])->onlyInput('email');
+        if (Auth::attempt($credentials, $remember)) {
+            $request->session()->regenerate();
 
-        // Probamos crear un rol 
-        $this->rolRepositorio->create([
-            'nombre' => 'super-admin',
-            'descripcion' => 'Rol de super administrador',
-            'activo' => true,
-        ]);
+            // Actualizar última conexión
+            $usuario = Auth::user();
+            $usuario->ultima_conexion = now();
+            $usuario->en_linea = true;
+            $usuario->save();
+
+            return $this->redirectByRole($usuario);
+        }
+
+        return back()->withErrors([
+            'password' => 'La contraseña es incorrecta.',
+        ])->withInput($request->only('email', 'remember'));
     }
 
     public function showRegisterForm()
     {
-        return view('auth.register');
+        $planes = $this->planRepositorio->getAll();
+        return view('public.auth.register', ['planes' => $planes]);
     }
 
-    public function register(Request $request)
+    public function register(RegistroRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'company' => 'required|string|max:255',
-            'role' => 'required|in:colaborador,coordinador-grupo,coordinador-general,admin,super-admin',
-        ]);
+        DB::beginTransaction();
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'company' => $request->company,
-            'role' => $request->role,
-        ]);
+        try {
+            $correoGenerado = $request->email . '@collaborax.com';
 
-        Auth::login($user);
+            if ($this->usuarioRepositorio->existeCorreo($correoGenerado)) {
+                return back()->withErrors(['email' => 'El correo ya está registrado.'])->withInput();
+            }
 
-        return $this->redirectByRole($user);
+            $usuario = $this->usuarioRepositorio->create([
+                'correo' => $correoGenerado,
+                'clave' => bcrypt($request->password),
+                'rol_id' => 1, // ROL DE EMPRESA
+                'activo' => true,
+                'en_linea' => false,
+                'ultima_conexion' => now(),
+                'foto' => null,
+            ]);
+
+            $this->empresaRepositorio->create([
+                'usuario_id' => $usuario->id,
+                'plan_servicio_id' =>(int) $request->plan,
+                'nombre' => $request->nombre,
+                'descripcion' => $request->descripcion,
+                'ruc' => $request->ruc,
+                'telefono' => $request->telefono,
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('login')->with('success', 'Cuenta registrada exitosamente.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error en registro: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Ocurrió un error durante el registro.'])->withInput();
+        }
     }
 
     public function logout(Request $request)
     {
+        if (Auth::check()) {
+            $usuario = Auth::user();
+            $usuario->en_linea = false;
+            $usuario->save();
+        }
+
         Auth::logout();
+
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        return redirect()->route('home')->with('success', 'Sesión cerrada correctamente.');
     }
 
     private function redirectByRole($user)
     {
-        switch ($user->role) {
+        switch ($user->rol->nombre) {
             case 'super-admin':
                 return redirect()->route('super-admin.dashboard');
             case 'admin':
