@@ -32,16 +32,6 @@
                     <option value="">Todos los equipos</option>
                 </select>
             </div>
-            <div>
-                <select id="statusFilter" onchange="filterActivities()" 
-                        class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
-                    <option value="">Todos los estados</option>
-                    <option value="pendiente">Pendientes</option>
-                    <option value="en-proceso">En Proceso</option>
-                    <option value="completada">Completadas</option>
-                    <option value="retrasada">Retrasadas</option>
-                </select>
-            </div>
         </div>
     </div>
 
@@ -427,15 +417,13 @@ function createActivityCard(actividad) {
 function filterActivities() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const teamFilter = document.getElementById('teamFilter').value;
-    const statusFilter = document.getElementById('statusFilter').value;
 
     filteredActividades = actividades.filter(actividad => {
         const matchesSearch = actividad.titulo.toLowerCase().includes(searchTerm) || 
                             actividad.descripcion.toLowerCase().includes(searchTerm);
         const matchesTeam = !teamFilter || actividad.equipo === teamFilter;
-        const matchesStatus = !statusFilter || actividad.estado === statusFilter;
 
-        return matchesSearch && matchesTeam && matchesStatus;
+        return matchesSearch && matchesTeam;
     });
 
     loadActivities();

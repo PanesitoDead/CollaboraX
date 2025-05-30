@@ -281,31 +281,5 @@ class ActividadesController extends Controller
         return response()->json($equipos);
     }
 
-    public function getMetasDisponibles()
-    {
-        $metas = [
-            [
-                'id' => 1,
-                'titulo' => 'Lanzamiento MVP',
-                'descripcion' => 'Versión mínima viable del producto'
-            ],
-            [
-                'id' => 2,
-                'titulo' => 'Incrementar ventas 20%',
-                'descripcion' => 'Meta trimestral de crecimiento'
-            ],
-            [
-                'id' => 3,
-                'titulo' => 'Mejorar satisfacción cliente',
-                'descripcion' => 'Alcanzar 95% de satisfacción'
-            ],
-            [
-                'id' => 4,
-                'titulo' => 'Optimización de procesos',
-                'descripcion' => 'Reducir tiempos de entrega en 30%'
-            ]
-        ];
-
-        return response()->json($metas);
-    }
+   
 }

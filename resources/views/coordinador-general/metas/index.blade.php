@@ -167,16 +167,7 @@
                     <input type="date" name="fecha_limite" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
                 </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Equipos Asignados</label>
-                <div id="equiposContainer" class="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    @foreach($equiposDisponibles as $equipo)
-                        <label class="flex items-center">
-                            <input type="checkbox" name="equipos" value="{{ $equipo }}" class="mr-2"> {{ $equipo }}
-                        </label>
-                    @endforeach
-                </div>
-            </div>
+            
             <div class="flex justify-end space-x-3 pt-4">
                 <button type="button" onclick="closeCreateModal()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 tab-transition">
                     Cancelar

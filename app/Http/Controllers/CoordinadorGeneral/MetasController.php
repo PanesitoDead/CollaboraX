@@ -83,72 +83,10 @@ class MetasController extends Controller
             'Equipo Desarrollo',
             'Equipo Marketing', 
             'Equipo Ventas',
-            'Equipo Operaciones',
-            'Equipo IT',
-            'Equipo RRHH'
+            'Equipo Operaciones'
         ];
 
         return view('coordinador-general.metas.index', compact('metas', 'equiposDisponibles'));
     }
 
-    public function getMetas()
-    {
-        $metas = [
-            [
-                'id' => 1,
-                'titulo' => 'Aumentar ventas Q1',
-                'descripcion' => 'Incrementar las ventas en un 25% durante el primer trimestre del año',
-                'tipo' => 'Trimestral',
-                'prioridad' => 'Alta',
-                'responsable' => 'Equipo Ventas',
-                'fecha_inicio' => '2024-01-01',
-                'fecha_limite' => '2024-03-31',
-                'estado' => 'En Progreso',
-                'progreso' => 65,
-                'equipos' => ['Equipo Ventas', 'Equipo Marketing']
-            ],
-            [
-                'id' => 2,
-                'titulo' => 'Implementar nuevo CRM',
-                'descripcion' => 'Migrar todos los procesos de ventas al nuevo sistema CRM',
-                'tipo' => 'Semestral',
-                'prioridad' => 'Alta',
-                'responsable' => 'Equipo IT',
-                'fecha_inicio' => '2024-01-15',
-                'fecha_limite' => '2024-06-30',
-                'estado' => 'En Progreso',
-                'progreso' => 40,
-                'equipos' => ['Equipo IT', 'Equipo Ventas']
-            ],
-            [
-                'id' => 3,
-                'titulo' => 'Campaña de marketing digital',
-                'descripcion' => 'Lanzar campaña integral en redes sociales y Google Ads',
-                'tipo' => 'Mensual',
-                'prioridad' => 'Media',
-                'responsable' => 'Equipo Marketing',
-                'fecha_inicio' => '2024-02-01',
-                'fecha_limite' => '2024-02-29',
-                'estado' => 'Completada',
-                'progreso' => 100,
-                'equipos' => ['Equipo Marketing']
-            ]
-        ];
-
-        return response()->json($metas);
-    }
-
-    public function getEquipos()
-    {
-        $equipos = [
-            'Equipo Desarrollo',
-            'Equipo Marketing', 
-            'Equipo Ventas',
-            'Equipo Operaciones',
-            'Equipo IT',
-            'Equipo RRHH'
-        ];
-
-        return response()->json($equipos);
-    }
 }
