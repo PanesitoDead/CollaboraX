@@ -45,7 +45,10 @@ Route::get('/super-admin/dashboard', function () {
     return view('super-admin.dashboard');
 })->name('super-admin.dashboard');
 
-Route::get('/super-admin/empresas', [EmpresasController::class, 'index'])->name('super-admin.empresas');
+Route::get('/super-admin/empresas', [EmpresasController::class, 'index'])->name('super-admin.empresas.index');
+Route::get('/super-admin/empresas/{id}', [EmpresasController::class, 'show'])->name('super-admin.empresas.show');
+Route::put('/super-admin/empresas/{id}', [EmpresasController::class, 'update'])->name('super-admin.empresas.update');
+Route::patch('/super-admin/empresas/{id}/cambiar-estado', [EmpresasController::class, 'cambiarEstado'])->name('super-admin.empresas.cambiar-estado');
 
 Route::get('/super-admin/estadisticas', [SuperAdminEstadisticaController::class, 'index'])->name('super-admin.estadisticas');
 

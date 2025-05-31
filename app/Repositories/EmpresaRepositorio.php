@@ -12,6 +12,21 @@ class EmpresaRepositorio extends RepositorioBase
         parent::__construct($model);
     }
 
+    public function cambiarEstado(int $id, bool $estado): bool
+    {
+        // se cambia el estado del usuario asociado a la empresa
+        $empresa = $this->getById($id);
+        if (!$empresa) {
+            return false;
+        }
+        $usuario = $empresa->usuario;
+        if (!$usuario) {
+            return false;
+        }
+        $usuario->activo = $estado;
+        return $usuario->save();
+    }
+
     protected function aplicarRango(Builder $consulta, ?array $range): void
     {
         if ($range['field'] && $range['values']) {
