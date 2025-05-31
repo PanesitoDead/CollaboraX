@@ -95,6 +95,7 @@ Route::get('/colaborador/configuracion', [\App\Http\Controllers\colaborador\Conf
 
 //  Coordinador de Equipo
     Route::get('/coord-equipo/dashboard', [CoordEquipoController::class, 'dashboard'])->name('coord-equipo.dashboard');
+    
     Route::post('/coord-equipo/actividades', [CoordEquipoController::class, 'crearActividad'])->name('coord-equipo.actividades.store');
     Route::post('/coord-equipo/metas', [CoordEquipoController::class, 'crearMeta'])->name('coord-equipo.metas.store');
     Route::get('/coord-equipo/configuracion', [CoordEquipoController::class, 'dashboard'])->name('coord-equipo.configuracion');

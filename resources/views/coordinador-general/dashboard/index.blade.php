@@ -1,4 +1,3 @@
-{{-- resources/views/coordinador-general/dashboard/index.blade.php --}}
 @extends('layouts.coordinador-general.app')
 
 @section('content')
@@ -13,6 +12,13 @@
 
     <!-- Content -->
     <div class="flex-1 p-6">
+        <!-- Error Message -->
+        @if(session('error'))
+            <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                {{ session('error') }}
+            </div>
+        @endif
+
         <!-- Metrics Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 slide-in">
             <!-- Grupos Activos -->
@@ -20,8 +26,8 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-600">Grupos Activos</p>
-                        <p class="text-3xl font-bold text-gray-900 mt-2">12</p>
-                        <p class="text-sm text-blue-600 mt-1">+2 grupos nuevos este mes</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-2">{{ $metricas['equipos_activos'] }}</p>
+                        <p class="text-sm text-blue-600 mt-1">Equipos de trabajo activos</p>
                     </div>
                     <div class="p-3 bg-blue-50 rounded-full">
                         <i data-lucide="users" class="w-6 h-6 text-blue-600"></i>
@@ -34,8 +40,8 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-600">Metas Activas</p>
-                        <p class="text-3xl font-bold text-gray-900 mt-2">24</p>
-                        <p class="text-sm text-blue-600 mt-1">8 metas completadas este mes</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-2">{{ $metricas['metas_activas'] }}</p>
+                        <p class="text-sm text-blue-600 mt-1">Metas asignadas a equipos</p>
                     </div>
                     <div class="p-3 bg-blue-50 rounded-full">
                         <i data-lucide="target" class="w-6 h-6 text-blue-600"></i>
@@ -48,8 +54,8 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-600">Actividades</p>
-                        <p class="text-3xl font-bold text-gray-900 mt-2">142</p>
-                        <p class="text-sm text-blue-600 mt-1">67 completadas, 75 en progreso</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-2">{{ $metricas['total_actividades'] }}</p>
+                        <p class="text-sm text-blue-600 mt-1">{{ $metricas['actividades_completadas'] }} completadas, {{ $metricas['actividades_en_progreso'] }} en progreso</p>
                     </div>
                     <div class="p-3 bg-green-50 rounded-full">
                         <i data-lucide="check-square" class="w-6 h-6 text-green-600"></i>
@@ -62,7 +68,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-600">Próximas Reuniones</p>
-                        <p class="text-3xl font-bold text-gray-900 mt-2">8</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-2">{{ $metricas['reuniones_proximas'] }}</p>
                         <p class="text-sm text-blue-600 mt-1">3 reuniones esta semana</p>
                     </div>
                     <div class="p-3 bg-purple-50 rounded-full">
@@ -91,154 +97,165 @@
         <div class="relative">
             <!-- Metas Tab -->
             <div id="dashboard-content-metas" class="dashboard-tab-content slide-in">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Meta 1: Incrementar Productividad -->
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 form-transition hover-scale">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Incrementar Productividad</h3>
-                        <p class="text-sm text-gray-600 mb-4">Meta Trimestral</p>
-                        
-                        <div class="mb-4">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-medium text-gray-700">Progreso</span>
-                                <span class="text-sm font-bold text-gray-900">68%</span>
+                @if($metasRecientes->count() > 0)
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        @foreach($metasRecientes as $meta)
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 form-transition hover-scale">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ $meta['nombre'] }}</h3>
+                            <p class="text-sm text-gray-600 mb-4">{{ $meta['equipo'] }}</p>
+                            
+                            <div class="mb-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium text-gray-700">Progreso</span>
+                                    <span class="text-sm font-bold text-gray-900">{{ $meta['progreso'] }}%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    @php
+                                        $progressColor = 'bg-red-500';
+                                        if($meta['progreso'] >= 75) $progressColor = 'bg-green-500';
+                                        elseif($meta['progreso'] >= 50) $progressColor = 'bg-blue-500';
+                                        elseif($meta['progreso'] >= 25) $progressColor = 'bg-yellow-500';
+                                    @endphp
+                                    <div class="{{ $progressColor }} h-2 rounded-full transition-all duration-300" style="width: {{ $meta['progreso'] }}%"></div>
+                                </div>
                             </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="bg-blue-600 h-2 rounded-full" style="width: 68%"></div>
-                            </div>
-                        </div>
 
-                        <div class="flex items-center justify-between text-sm text-gray-600">
-                            <div class="flex items-center">
-                                <i data-lucide="clock" class="w-4 h-4 mr-1"></i>
-                                <span>Vence en 22 días</span>
-                            </div>
-                            <div class="flex items-center">
-                                <i data-lucide="users" class="w-4 h-4 mr-1"></i>
-                                <span>8 grupos asignados</span>
+                            <div class="flex items-center justify-between text-sm text-gray-600">
+                                <div class="flex items-center">
+                                    <i data-lucide="clock" class="w-4 h-4 mr-1"></i>
+                                    <span>
+                                        @if($meta['dias_vencimiento'])
+                                            @if(is_numeric($meta['dias_vencimiento']))
+                                                Vence en {{ $meta['dias_vencimiento'] }} días
+                                            @else
+                                                {{ $meta['dias_vencimiento'] }}
+                                            @endif
+                                        @else
+                                            Sin fecha límite
+                                        @endif
+                                    </span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i data-lucide="check-square" class="w-4 h-4 mr-1"></i>
+                                    <span>{{ $meta['tareas_completadas'] }}/{{ $meta['total_tareas'] }} tareas</span>
+                                </div>
                             </div>
                         </div>
+                        @endforeach
                     </div>
-
-                    <!-- Meta 2: Optimizar Procesos -->
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 form-transition hover-scale">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Optimizar Procesos</h3>
-                        <p class="text-sm text-gray-600 mb-4">Meta Semestral</p>
-                        
-                        <div class="mb-4">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-medium text-gray-700">Progreso</span>
-                                <span class="text-sm font-bold text-gray-900">42%</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="bg-blue-600 h-2 rounded-full" style="width: 42%"></div>
-                            </div>
+                @else
+                    <div class="text-center py-12">
+                        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="target" class="w-12 h-12 text-gray-400"></i>
                         </div>
-
-                        <div class="flex items-center justify-between text-sm text-gray-600">
-                            <div class="flex items-center">
-                                <i data-lucide="clock" class="w-4 h-4 mr-1"></i>
-                                <span>Vence en 68 días</span>
-                            </div>
-                            <div class="flex items-center">
-                                <i data-lucide="users" class="w-4 h-4 mr-1"></i>
-                                <span>5 grupos asignados</span>
-                            </div>
-                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No hay metas disponibles</h3>
+                        <p class="text-gray-500 mb-6">Crea metas para hacer seguimiento al progreso de los equipos.</p>
                     </div>
-
-                    <!-- Meta 3: Reducir Costos Operativos -->
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 form-transition hover-scale">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Reducir Costos Operativos</h3>
-                        <p class="text-sm text-gray-600 mb-4">Meta Anual</p>
-                        
-                        <div class="mb-4">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-medium text-gray-700">Progreso</span>
-                                <span class="text-sm font-bold text-gray-900">25%</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="bg-blue-600 h-2 rounded-full" style="width: 25%"></div>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center justify-between text-sm text-gray-600">
-                            <div class="flex items-center">
-                                <i data-lucide="clock" class="w-4 h-4 mr-1"></i>
-                                <span>Vence en 245 días</span>
-                            </div>
-                            <div class="flex items-center">
-                                <i data-lucide="users" class="w-4 h-4 mr-1"></i>
-                                <span>12 grupos asignados</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                @endif
 
                 <!-- Ver todas las metas button -->
                 <div class="flex justify-end mt-6">
-                    <button onclick="showToast('Redirigiendo a todas las metas')" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl tab-transition hover-scale">
+                    <a href="{{ route('coordinador-general.metas') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl tab-transition hover-scale">
                         Ver todas las metas
-                    </button>
+                    </a>
                 </div>
             </div>
 
             <!-- Grupos Tab -->
             <div id="dashboard-content-grupos" class="dashboard-tab-content hidden">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 form-transition hover-scale">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Equipo Desarrollo</h3>
-                        <p class="text-sm text-gray-600 mb-4">8 miembros activos</p>
-                        <div class="flex justify-between text-sm">
-                            <span>Actividades: 45</span>
-                            <span class="text-green-600">85% completadas</span>
+                @if($equiposRecientes->count() > 0)
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        @foreach($equiposRecientes as $equipo)
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 form-transition hover-scale">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ $equipo['nombre'] }}</h3>
+                            <p class="text-sm text-gray-600 mb-2">{{ $equipo['area'] }}</p>
+                            <p class="text-sm text-gray-600 mb-4">{{ $equipo['miembros_count'] }} miembros activos</p>
+                            
+                            <div class="mb-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium text-gray-700">Progreso</span>
+                                    <span class="text-sm font-bold text-gray-900">{{ $equipo['progreso'] }}%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: {{ $equipo['progreso'] }}%"></div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-between text-sm text-gray-600">
+                                <span>Metas: {{ $equipo['metas_activas'] }}</span>
+                                <span>Coordinador: {{ Str::limit($equipo['coordinador'], 15) }}</span>
+                            </div>
                         </div>
+                        @endforeach
                     </div>
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 form-transition hover-scale">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Equipo Marketing</h3>
-                        <p class="text-sm text-gray-600 mb-4">6 miembros activos</p>
-                        <div class="flex justify-between text-sm">
-                            <span>Actividades: 32</span>
-                            <span class="text-green-600">78% completadas</span>
+                @else
+                    <div class="text-center py-12">
+                        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="users" class="w-12 h-12 text-gray-400"></i>
                         </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No hay equipos disponibles</h3>
+                        <p class="text-gray-500 mb-6">Crea equipos para organizar el trabajo.</p>
                     </div>
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 form-transition hover-scale">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Equipo Ventas</h3>
-                        <p class="text-sm text-gray-600 mb-4">5 miembros activos</p>
-                        <div class="flex justify-between text-sm">
-                            <span>Actividades: 28</span>
-                            <span class="text-green-600">92% completadas</span>
-                        </div>
-                    </div>
+                @endif
+
+                <!-- Ver todos los grupos button -->
+                <div class="flex justify-end mt-6">
+                    <a href="{{ route('coordinador-general.equipos') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl tab-transition hover-scale">
+                        Ver todos los grupos
+                    </a>
                 </div>
             </div>
 
             <!-- Actividades Tab -->
             <div id="dashboard-content-actividades" class="dashboard-tab-content hidden">
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Actividades Recientes</h3>
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between py-3 border-b border-gray-100">
-                            <div>
-                                <p class="font-medium text-gray-900">Implementar nuevo sistema CRM</p>
-                                <p class="text-sm text-gray-600">Equipo Desarrollo</p>
+                @if($actividadesRecientes->count() > 0)
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Actividades Recientes</h3>
+                        <div class="space-y-4">
+                            @foreach($actividadesRecientes as $actividad)
+                            <div class="flex items-center justify-between py-3 {{ !$loop->last ? 'border-b border-gray-100' : '' }}">
+                                <div class="flex-1">
+                                    <p class="font-medium text-gray-900">{{ $actividad['titulo'] }}</p>
+                                    <p class="text-sm text-gray-600">{{ $actividad['equipo'] }} • {{ $actividad['meta'] }}</p>
+                                    @if($actividad['fecha_creacion'])
+                                        <p class="text-xs text-gray-500">Creada: {{ $actividad['fecha_creacion'] }}</p>
+                                    @endif
+                                </div>
+                                <div class="ml-4">
+                                    @if($actividad['estado'] === 'Completo')
+                                        <span class="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">Completada</span>
+                                    @elseif($actividad['estado'] === 'En proceso')
+                                        <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">En progreso</span>
+                                    @elseif($actividad['estado'] === 'Suspendida')
+                                        <span class="px-3 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">Suspendida</span>
+                                    @else
+                                        <span class="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">Pendiente</span>
+                                    @endif
+                                    @if($actividad['esta_vencida'])
+                                        <div class="text-xs text-red-600 font-medium mt-1">¡Vencida!</div>
+                                    @endif
+                                </div>
                             </div>
-                            <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">En progreso</span>
-                        </div>
-                        <div class="flex items-center justify-between py-3 border-b border-gray-100">
-                            <div>
-                                <p class="font-medium text-gray-900">Campaña de marketing digital</p>
-                                <p class="text-sm text-gray-600">Equipo Marketing</p>
-                            </div>
-                            <span class="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">Completada</span>
-                        </div>
-                        <div class="flex items-center justify-between py-3">
-                            <div>
-                                <p class="font-medium text-gray-900">Análisis de ventas Q4</p>
-                                <p class="text-sm text-gray-600">Equipo Ventas</p>
-                            </div>
-                            <span class="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">Pendiente</span>
+                            @endforeach
                         </div>
                     </div>
+                @else
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <div class="text-center py-12">
+                            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i data-lucide="check-square" class="w-12 h-12 text-gray-400"></i>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">No hay actividades disponibles</h3>
+                            <p class="text-gray-500 mb-6">Crea actividades para hacer seguimiento a las tareas.</p>
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Ver todas las actividades button -->
+                <div class="flex justify-end mt-6">
+                    <a href="{{ route('coordinador-general.actividades') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl tab-transition hover-scale">
+                        Ver todas las actividades
+                    </a>
                 </div>
             </div>
         </div>
@@ -298,4 +315,38 @@
         lucide.createIcons();
     });
 </script>
+
+<style>
+/* Animaciones y transiciones */
+.slide-in {
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.hover-scale {
+    transition: transform 0.2s ease-in-out;
+}
+
+.hover-scale:hover {
+    transform: scale(1.02);
+}
+
+.form-transition {
+    transition: all 0.3s ease;
+}
+
+.tab-transition {
+    transition: all 0.2s ease-in-out;
+}
+</style>
 @endsection
