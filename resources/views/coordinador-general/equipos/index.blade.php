@@ -69,7 +69,6 @@
                     <div id="dropdown-{{ $equipo['id'] }}" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
                         <a href="{{ route('coordinador-general.equipos.show', $equipo['id']) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Ver detalles</a>
                         <a href="{{ route('coordinador-general.equipos.edit', $equipo['id']) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Editar equipo</a>
-                       
                         <hr class="my-1">
                         <a href="#" onclick="confirmarEliminar({{ $equipo['id'] }}, '{{ $equipo['nombre'] }}')" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Eliminar equipo</a>
                     </div>
@@ -255,10 +254,8 @@
     </div>
 </div>
 
-
-
 <!-- Toast Notification -->
-<div id="toast" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full opacity-0 transition-all duration-150 z-50">
+<div id="toast" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full opacity-0 transition-all duration-300 z-50">
     <div class="flex items-center">
         <i data-lucide="check-circle" class="w-5 h-5 mr-2"></i>
         <span id="toast-message">Operación completada exitosamente</span>
@@ -266,9 +263,6 @@
 </div>
 
 <script>
-// Variables globales
-let currentEquipoId = null;
-
 // Modal functions
 function openCreateTeamModal() {
     document.getElementById('createTeamModal').classList.remove('hidden');
@@ -341,10 +335,14 @@ function filterTeams() {
 
 // Confirmation modal functions
 function confirmarEliminar(id, nombre) {
+    // Configurar el formulario de eliminación
     const form = document.getElementById('deleteTeamForm');
     form.action = `/coordinador-general/equipos/${id}`;
     
-    document.getElementById('confirmDeleteText').textContent = `¿Estás seguro de que deseas eliminar el equipo "${nombre}"?`;
+    // Configurar el texto del modal
+    document.getElementById('confirmDeleteText').textContent = `¿Estás seguro de que deseas eliminar el equipo "${nombre}"? Esta acción no se puede deshacer.`;
+    
+    // Mostrar el modal
     document.getElementById('confirmDeleteModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
@@ -352,133 +350,6 @@ function confirmarEliminar(id, nombre) {
 function closeConfirmDeleteModal() {
     document.getElementById('confirmDeleteModal').classList.add('hidden');
     document.body.style.overflow = 'auto';
-}
-
-// Miembros modal functions
-function openMiembrosModal(equipoId) {
-    currentEquipoId = equipoId;
-    document.getElementById('miembrosModal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-    
-    // Cargar miembros del equipo
-    cargarMiembros(equipoId);
-}
-
-function closeMiembrosModal() {
-    document.getElementById('miembrosModal').classList.add('hidden');
-    document.body.style.overflow = 'auto';
-    currentEquipoId = null;
-}
-
-async function cargarMiembros(equipoId) {
-    try {
-        const response = await fetch(`/coordinador-general/equipos/${equipoId}/miembros`);
-        const miembros = await response.json();
-        
-        const tableBody = document.getElementById('miembrosTableBody');
-        tableBody.innerHTML = '';
-        
-        miembros.forEach(miembro => {
-            const row = document.createElement('tr');
-            
-            // Formatear fecha
-            const fecha = new Date(miembro.fecha_union);
-            const fechaFormateada = fecha.toLocaleDateString();
-            
-            row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                        <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mr-3">
-                            <span class="text-xs font-medium text-gray-600">${miembro.nombre.charAt(0)}</span>
-                        </div>
-                        <div class="text-sm font-medium text-gray-900">${miembro.nombre}</div>
-                    </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${miembro.es_coordinador ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}">
-                        ${miembro.es_coordinador ? 'Coordinador' : 'Miembro'}
-                    </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${fechaFormateada}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    ${!miembro.es_coordinador ? `<button onclick="eliminarMiembro(${miembro.id})" class="text-red-600 hover:text-red-900">Eliminar</button>` : '<span class="text-gray-400">-</span>'}
-                </td>
-            `;
-            
-            tableBody.appendChild(row);
-        });
-    } catch (error) {
-        console.error('Error al cargar miembros:', error);
-        showToast('Error al cargar los miembros del equipo', 'error');
-    }
-}
-
-async function agregarMiembro() {
-    const trabajadorId = document.getElementById('newMemberId').value;
-    
-    if (!trabajadorId) {
-        showToast('Selecciona un trabajador', 'error');
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/coordinador-general/equipos/${currentEquipoId}/miembros`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({
-                trabajador_id: trabajadorId
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.error) {
-            showToast(data.error, 'error');
-        } else {
-            showToast('Miembro agregado exitosamente');
-            cargarMiembros(currentEquipoId);
-            document.getElementById('newMemberId').value = '';
-        }
-    } catch (error) {
-        console.error('Error al agregar miembro:', error);
-        showToast('Error al agregar miembro', 'error');
-    }
-}
-
-async function eliminarMiembro(trabajadorId) {
-    if (!confirm('¿Estás seguro de que deseas eliminar este miembro del equipo?')) {
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/coordinador-general/equipos/${currentEquipoId}/miembros`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({
-                trabajador_id: trabajadorId
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.error) {
-            showToast(data.error, 'error');
-        } else {
-            showToast('Miembro eliminado exitosamente');
-            cargarMiembros(currentEquipoId);
-        }
-    } catch (error) {
-        console.error('Error al eliminar miembro:', error);
-        showToast('Error al eliminar miembro', 'error');
-    }
 }
 
 // Toast notification
@@ -511,7 +382,6 @@ document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
         closeCreateTeamModal();
         closeConfirmDeleteModal();
-        closeMiembrosModal();
     }
 });
 

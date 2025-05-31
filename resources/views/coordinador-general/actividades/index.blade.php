@@ -30,6 +30,9 @@
                 <select id="teamFilter" onchange="filterActivities()" 
                         class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
                     <option value="">Todos los equipos</option>
+                    @foreach($equipos as $equipo)
+                        <option value="{{ $equipo['nombre'] }}">{{ $equipo['nombre'] }}</option>
+                    @endforeach
                 </select>
             </div>
         </div>
@@ -38,11 +41,11 @@
     <!-- Kanban Board -->
     <div class="flex-1 p-6">
         <div class="text-sm text-gray-600 mb-4">
-            Mostrando <span id="activityCount">0</span> actividades de todos los equipos
+            Mostrando <span id="activityCount">{{ $tareas->count() }}</span> actividades de todos los equipos
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <!-- Pendientes Column -->
+            <!-- Pendientes/Incompleta Column -->
             <div class="bg-white rounded-lg shadow-lg hover:shadow-xl form-transition">
                 <div class="p-4 border-b border-gray-200">
                     <div class="flex items-center justify-between">
@@ -50,7 +53,7 @@
                         <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full" id="pendientes-count">0</span>
                     </div>
                 </div>
-                <div class="p-4 space-y-3 overflow-y-auto h-96 kanban-column" id="pendientes-column" data-estado="pendiente">
+                <div class="p-4 space-y-3 overflow-y-auto h-96 kanban-column" id="pendientes-column" data-estado="Incompleta">
                     <!-- Actividades se cargan con JavaScript -->
                 </div>
             </div>
@@ -63,7 +66,7 @@
                         <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full" id="en-proceso-count">0</span>
                     </div>
                 </div>
-                <div class="p-4 space-y-3 overflow-y-auto h-96 kanban-column" id="en-proceso-column" data-estado="en-proceso">
+                <div class="p-4 space-y-3 overflow-y-auto h-96 kanban-column" id="en-proceso-column" data-estado="En proceso">
                     <!-- Actividades se cargan con JavaScript -->
                 </div>
             </div>
@@ -76,20 +79,20 @@
                         <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full" id="completadas-count">0</span>
                     </div>
                 </div>
-                <div class="p-4 space-y-3 overflow-y-auto h-96 kanban-column" id="completadas-column" data-estado="completada">
+                <div class="p-4 space-y-3 overflow-y-auto h-96 kanban-column" id="completadas-column" data-estado="Completo">
                     <!-- Actividades se cargan con JavaScript -->
                 </div>
             </div>
 
-            <!-- Retrasadas Column -->
+            <!-- Suspendidas Column -->
             <div class="bg-white rounded-lg shadow-lg hover:shadow-xl form-transition">
                 <div class="p-4 border-b border-gray-200">
                     <div class="flex items-center justify-between">
-                        <h3 class="font-semibold text-gray-900">Retrasadas</h3>
-                        <span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full" id="retrasadas-count">0</span>
+                        <h3 class="font-semibold text-gray-900">Suspendidas</h3>
+                        <span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full" id="suspendidas-count">0</span>
                     </div>
                 </div>
-                <div class="p-4 space-y-3 overflow-y-auto h-96 kanban-column" id="retrasadas-column" data-estado="retrasada">
+                <div class="p-4 space-y-3 overflow-y-auto h-96 kanban-column" id="suspendidas-column" data-estado="Suspendida">
                     <!-- Actividades se cargan con JavaScript -->
                 </div>
             </div>
@@ -134,42 +137,68 @@
                 </div>
                 
                 <form id="createActivityForm" class="space-y-4">
+                    @csrf
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Título</label>
-                        <input type="text" name="titulo" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
+                        <input type="text" name="nombre" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
                     </div>
                     
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
-                        <textarea name="descripcion" rows="3" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition"></textarea>
+                        <textarea name="descripcion" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition"></textarea>
                     </div>
                     
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Equipo</label>
-                            <select name="equipo" id="equipoSelect" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
+                            <select name="equipo_id" id="equipoSelect" required onchange="loadMetasPorEquipo()" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
                                 <option value="">Seleccionar equipo...</option>
+                                @foreach($equipos as $equipo)
+                                    <option value="{{ $equipo['id'] }}">{{ $equipo['nombre'] }}</option>
+                                @endforeach
                             </select>
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Prioridad</label>
-                            <select name="prioridad" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
-                                <option value="Alta">Alta</option>
-                                <option value="Media">Media</option>
-                                <option value="Baja">Baja</option>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                            <select name="estado_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
+                                <option value="">Seleccionar estado...</option>
+                                @foreach($estados as $estado)
+                                    <option value="{{ $estado['id'] }}">{{ $estado['nombre'] }}</option>
+                                @endforeach
                             </select>
                         </div>
                     </div>
                     
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha límite</label>
-                        <input type="date" name="fechaLimite" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
+                    <!-- BOTONES DE PRUEBA MEJORADOS -->
+                    <div class="mt-2 p-2 bg-gray-50 rounded text-xs">
+                        <div class="font-medium text-gray-700 mb-2">🔧 Herramientas de Debug:</div>
+                        <div class="flex gap-2 flex-wrap">
+                            <button type="button" onclick="testSimpleRoute()" class="text-blue-600 hover:text-blue-800 underline">
+                                Test Simple
+                            </button>
+                            <button type="button" onclick="testParameterRoute()" class="text-blue-600 hover:text-blue-800 underline">
+                                Test Parámetro
+                            </button>
+                            <button type="button" onclick="testMetasRoute()" class="text-blue-600 hover:text-blue-800 underline">
+                                Test Metas
+                            </button>
+                            <button type="button" onclick="showRouteInfo()" class="text-green-600 hover:text-green-800 underline">
+                                Info Rutas
+                            </button>
+                        </div>
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Asignado a</label>
-                        <input type="text" name="asignadoA" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Asignado a (Meta)</label>
+                        <select name="meta_id" id="metaSelect" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
+                            <option value="">Primero selecciona un equipo...</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha límite</label>
+                        <input type="date" name="fecha_entrega" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
                     </div>
                 </form>
                 
@@ -206,9 +235,6 @@
                     <button onclick="closeDetailsModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800 tab-transition">
                         Cerrar
                     </button>
-                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg tab-transition">
-                        Editar
-                    </button>
                 </div>
             </div>
         </div>
@@ -223,139 +249,68 @@
     </div>
 </div>
 
+<!-- Datos del servidor -->
+<script type="application/json" id="tareas-data">@json($tareas)</script>
+<script type="application/json" id="equipos-data">@json($equipos)</script>
+<script type="application/json" id="estados-data">@json($estados)</script>
+
 <!-- Sortable.js para drag and drop -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
 <script>
-// Variables globales
+// Variables globales - Datos desde el servidor
 let actividades = [];
 let equiposDisponibles = [];
-let metasDisponibles = [];
+let estadosDisponibles = [];
 let filteredActividades = [];
-let nextId = 25;
 let sortableInstances = {};
 
-// Datos hardcodeados completos para carga instantánea
-const actividadesHardcoded = [
-    // Pendientes (6 actividades)
-    { id: 1, titulo: "Implementar autenticación", descripcion: "Desarrollar sistema de login y registro de usuarios", equipo: "Equipo Desarrollo", prioridad: "Alta", fechaLimite: "2024-02-15", asignadoA: "Carlos Ruiz", estado: "pendiente" },
-    { id: 2, titulo: "Diseñar landing page", descripcion: "Crear diseño para página principal del sitio web", equipo: "Equipo Marketing", prioridad: "Media", fechaLimite: "2024-02-20", asignadoA: "Ana García", estado: "pendiente" },
-    { id: 3, titulo: "Configurar base de datos", descripcion: "Establecer estructura de base de datos principal", equipo: "Equipo Desarrollo", prioridad: "Alta", fechaLimite: "2024-02-10", asignadoA: "Miguel Torres", estado: "pendiente" },
-    { id: 4, titulo: "Análisis de mercado", descripcion: "Investigar competencia y tendencias del mercado", equipo: "Equipo Ventas", prioridad: "Media", fechaLimite: "2024-02-25", asignadoA: "Laura Mendez", estado: "pendiente" },
-    { id: 5, titulo: "Preparar presentación", descripcion: "Crear slides para reunión con cliente importante", equipo: "Equipo Ventas", prioridad: "Alta", fechaLimite: "2024-02-12", asignadoA: "Roberto Silva", estado: "pendiente" },
-    { id: 6, titulo: "Documentar API", descripcion: "Crear documentación técnica completa de la API", equipo: "Equipo IT", prioridad: "Baja", fechaLimite: "2024-03-01", asignadoA: "Elena Vargas", estado: "pendiente" },
+// Cargar datos del servidor
+document.addEventListener('DOMContentLoaded', function() {
+    // Obtener datos desde elementos ocultos en el DOM
+    const tareasData = document.getElementById('tareas-data');
+    const equiposData = document.getElementById('equipos-data');
+    const estadosData = document.getElementById('estados-data');
     
-    // En Proceso (6 actividades)
-    { id: 7, titulo: "Desarrollar dashboard", descripcion: "Panel de control administrativo para gestión", equipo: "Equipo Desarrollo", prioridad: "Alta", fechaLimite: "2024-02-18", asignadoA: "Pedro López", estado: "en-proceso" },
-    { id: 8, titulo: "Campaña redes sociales", descripcion: "Estrategia de marketing digital en redes sociales", equipo: "Equipo Marketing", prioridad: "Media", fechaLimite: "2024-02-22", asignadoA: "Sofia Herrera", estado: "en-proceso" },
-    { id: 9, titulo: "Optimizar rendimiento", descripcion: "Mejorar velocidad de carga de la aplicación", equipo: "Equipo Desarrollo", prioridad: "Media", fechaLimite: "2024-02-28", asignadoA: "Diego Morales", estado: "en-proceso" },
-    { id: 10, titulo: "Seguimiento clientes", descripcion: "Contactar y dar seguimiento a leads potenciales", equipo: "Equipo Ventas", prioridad: "Alta", fechaLimite: "2024-02-16", asignadoA: "Carmen Jiménez", estado: "en-proceso" },
-    { id: 11, titulo: "Testing aplicación", descripcion: "Pruebas de funcionalidad y usabilidad", equipo: "Equipo Desarrollo", prioridad: "Alta", fechaLimite: "2024-02-20", asignadoA: "Andrés Castro", estado: "en-proceso" },
-    { id: 12, titulo: "Manual usuario", descripcion: "Guía de uso completa para clientes finales", equipo: "Equipo IT", prioridad: "Media", fechaLimite: "2024-02-26", asignadoA: "Valeria Ramos", estado: "en-proceso" },
-    
-    // Completadas (6 actividades)
-    { id: 13, titulo: "Configurar servidor", descripcion: "Setup inicial del hosting y configuración", equipo: "Equipo Desarrollo", prioridad: "Alta", fechaLimite: "2024-02-05", asignadoA: "Fernando Díaz", estado: "completada" },
-    { id: 14, titulo: "Crear logo empresa", descripcion: "Diseño de identidad visual corporativa", equipo: "Equipo Marketing", prioridad: "Media", fechaLimite: "2024-02-08", asignadoA: "Gabriela Soto", estado: "completada" },
-    { id: 15, titulo: "Definir arquitectura", descripcion: "Estructura técnica del sistema completo", equipo: "Equipo Desarrollo", prioridad: "Alta", fechaLimite: "2024-02-03", asignadoA: "Ricardo Peña", estado: "completada" },
-    { id: 16, titulo: "Estrategia contenido", descripcion: "Plan de publicaciones y contenido digital", equipo: "Equipo Marketing", prioridad: "Media", fechaLimite: "2024-02-07", asignadoA: "Mónica Reyes", estado: "completada" },
-    { id: 17, titulo: "Contactar proveedores", descripcion: "Negociar precios y términos comerciales", equipo: "Equipo Ventas", prioridad: "Baja", fechaLimite: "2024-02-06", asignadoA: "Javier Ortiz", estado: "completada" },
-    { id: 18, titulo: "Análisis competencia", descripcion: "Estudio detallado de mercado y competidores", equipo: "Equipo Marketing", prioridad: "Media", fechaLimite: "2024-02-09", asignadoA: "Patricia Luna", estado: "completada" },
-    
-    // Retrasadas (6 actividades)
-    { id: 19, titulo: "Integrar pasarela pago", descripcion: "Conectar sistema de pagos en línea", equipo: "Equipo Desarrollo", prioridad: "Alta", fechaLimite: "2024-01-30", asignadoA: "Alejandro Vega", estado: "retrasada" },
-    { id: 20, titulo: "Auditoría seguridad", descripcion: "Revisar vulnerabilidades del sistema", equipo: "Equipo IT", prioridad: "Alta", fechaLimite: "2024-01-28", asignadoA: "Cristina Flores", estado: "retrasada" },
-    { id: 21, titulo: "Capacitar equipo ventas", descripcion: "Training sobre nuevo producto y procesos", equipo: "Equipo Ventas", prioridad: "Media", fechaLimite: "2024-01-25", asignadoA: "Raúl Guerrero", estado: "retrasada" },
-    { id: 22, titulo: "Backup automático", descripcion: "Sistema de respaldos automatizado", equipo: "Equipo IT", prioridad: "Alta", fechaLimite: "2024-01-20", asignadoA: "Beatriz Campos", estado: "retrasada" },
-    { id: 23, titulo: "Optimizar SEO", descripcion: "Mejorar posicionamiento en buscadores", equipo: "Equipo Marketing", prioridad: "Media", fechaLimite: "2024-01-31", asignadoA: "Sergio Medina", estado: "retrasada" },
-    { id: 24, titulo: "Monitoreo sistema", descripcion: "Implementar alertas y métricas de rendimiento", equipo: "Equipo IT", prioridad: "Alta", fechaLimite: "2024-01-22", asignadoA: "Natalia Cruz", estado: "retrasada" }
-];
-
-const equiposHardcoded = ['Equipo Desarrollo', 'Equipo Marketing', 'Equipo Ventas', 'Equipo Operaciones', 'Equipo IT', 'Equipo RRHH'];
-
-// Inicializar con datos hardcodeados inmediatamente
-function initializeData() {
-    actividades = [...actividadesHardcoded];
-    equiposDisponibles = [...equiposHardcoded];
-    metasDisponibles = [
-        { id: 1, titulo: "Lanzamiento MVP", descripcion: "Versión mínima viable del producto" },
-        { id: 2, titulo: "Incrementar ventas 20%", descripcion: "Meta trimestral de crecimiento" },
-        { id: 3, titulo: "Mejorar satisfacción cliente", descripcion: "Alcanzar 95% de satisfacción" },
-        { id: 4, titulo: "Optimización de procesos", descripcion: "Reducir tiempos de entrega en 30%" }
-    ];
+    if (tareasData) actividades = JSON.parse(tareasData.textContent);
+    if (equiposData) equiposDisponibles = JSON.parse(equiposData.textContent);
+    if (estadosData) estadosDisponibles = JSON.parse(estadosData.textContent);
     
     filteredActividades = [...actividades];
-    nextId = Math.max(...actividades.map(a => a.id)) + 1;
     
-    // Renderizar inmediatamente
+    console.log('Datos cargados:', {
+        actividades: actividades.length,
+        equipos: equiposDisponibles.length,
+        estados: estadosDisponibles.length
+    });
+    
+    lucide.createIcons();
     loadActivities();
-    renderEquiposInSelects();
     generateTeamSummary();
     initSortable();
-}
-
-// Cargar datos desde el controlador en background
-async function loadDataFromServer() {
-    try {
-        const actividadesResponse = await fetch('/coordinador-general/api/actividades');
-        const equiposResponse = await fetch('/coordinador-general/api/actividades/equipos');
-        const metasResponse = await fetch('/coordinador-general/api/actividades/metas');
-        
-        if (actividadesResponse.ok && equiposResponse.ok && metasResponse.ok) {
-            const serverActividades = await actividadesResponse.json();
-            const serverEquipos = await equiposResponse.json();
-            const serverMetas = await metasResponse.json();
-            
-            // Solo actualizar si los datos del servidor son diferentes
-            if (JSON.stringify(serverActividades) !== JSON.stringify(actividades)) {
-                actividades = serverActividades;
-                filteredActividades = [...actividades];
-                loadActivities();
-                generateTeamSummary();
-                initSortable(); // Reinicializar sortable con los nuevos datos
-            }
-            
-            if (JSON.stringify(serverEquipos) !== JSON.stringify(equiposDisponibles)) {
-                equiposDisponibles = serverEquipos;
-                renderEquiposInSelects();
-            }
-            
-            if (JSON.stringify(serverMetas) !== JSON.stringify(metasDisponibles)) {
-                metasDisponibles = serverMetas;
-            }
-        }
-    } catch (error) {
-        console.log('Manteniendo datos hardcodeados debido a:', error.message);
-    }
-}
-
-// Renderizar equipos en selects
-function renderEquiposInSelects() {
-    const teamFilter = document.getElementById('teamFilter');
-    const equipoSelect = document.getElementById('equipoSelect');
-
-    const equiposHTML = equiposDisponibles.map(equipo => 
-        `<option value="${equipo}">${equipo}</option>`
-    ).join('');
-
-    teamFilter.innerHTML = '<option value="">Todos los equipos</option>' + equiposHTML;
-    equipoSelect.innerHTML = '<option value="">Seleccionar equipo...</option>' + equiposHTML;
-}
-
-// Initialize the board
-document.addEventListener('DOMContentLoaded', function() {
-    lucide.createIcons();
-    // Cargar datos inmediatamente
-    initializeData();
-    // Cargar datos del servidor en background
-    loadDataFromServer();
 });
+
+// Mapeo de estados de la base de datos a columnas del kanban
+const estadoToColumn = {
+    'Incompleta': 'pendientes',
+    'En proceso': 'en-proceso', 
+    'Completo': 'completadas',
+    'Suspendida': 'suspendidas'
+};
+
+const columnToEstado = {
+    'pendientes': 'Incompleta',
+    'en-proceso': 'En proceso',
+    'completadas': 'Completo', 
+    'suspendidas': 'Suspendida'
+};
 
 function loadActivities() {
     const columns = {
-        'pendiente': document.getElementById('pendientes-column'),
+        'pendientes': document.getElementById('pendientes-column'),
         'en-proceso': document.getElementById('en-proceso-column'),
-        'completada': document.getElementById('completadas-column'),
-        'retrasada': document.getElementById('retrasadas-column')
+        'completadas': document.getElementById('completadas-column'),
+        'suspendidas': document.getElementById('suspendidas-column')
     };
 
     // Clear columns
@@ -363,27 +318,28 @@ function loadActivities() {
 
     // Count activities by status
     const counts = {
-        'pendiente': 0,
+        'pendientes': 0,
         'en-proceso': 0,
-        'completada': 0,
-        'retrasada': 0
+        'completadas': 0,
+        'suspendidas': 0
     };
 
     // Load activities into columns
     filteredActividades.forEach(actividad => {
-        const column = columns[actividad.estado];
+        const columnKey = estadoToColumn[actividad.estado] || 'pendientes';
+        const column = columns[columnKey];
         if (column) {
             const activityCard = createActivityCard(actividad);
             column.appendChild(activityCard);
-            counts[actividad.estado]++;
+            counts[columnKey]++;
         }
     });
 
     // Update counts
-    document.getElementById('pendientes-count').textContent = counts['pendiente'];
+    document.getElementById('pendientes-count').textContent = counts['pendientes'];
     document.getElementById('en-proceso-count').textContent = counts['en-proceso'];
-    document.getElementById('completadas-count').textContent = counts['completada'];
-    document.getElementById('retrasadas-count').textContent = counts['retrasada'];
+    document.getElementById('completadas-count').textContent = counts['completadas'];
+    document.getElementById('suspendidas-count').textContent = counts['suspendidas'];
     document.getElementById('activityCount').textContent = filteredActividades.length;
 
     // Re-initialize icons
@@ -394,6 +350,7 @@ function createActivityCard(actividad) {
     const card = document.createElement('div');
     card.className = 'bg-white border border-gray-200 rounded-lg p-3 shadow-md hover:shadow-lg cursor-move form-transition hover-scale activity-card';
     card.setAttribute('data-id', actividad.id);
+    card.setAttribute('data-estado-id', actividad.estado_id);
     
     // Evitar que el click para arrastrar abra el modal de detalles
     card.addEventListener('click', function(e) {
@@ -403,27 +360,36 @@ function createActivityCard(actividad) {
         }
     });
 
-    const priorityColors = {
-        'Alta': 'bg-red-100 text-red-800',
-        'Media': 'bg-yellow-100 text-yellow-800',
-        'Baja': 'bg-green-100 text-green-800'
+    const statusColors = {
+        'Incompleta': 'bg-yellow-100 text-yellow-800',
+        'En proceso': 'bg-blue-100 text-blue-800',
+        'Completo': 'bg-green-100 text-green-800',
+        'Suspendida': 'bg-red-100 text-red-800'
     };
+
+    const isOverdue = actividad.esta_vencida;
+    const cardClass = isOverdue ? 'border-red-300 bg-red-50' : '';
 
     card.innerHTML = `
         <div class="flex items-start justify-between mb-2">
             <h4 class="font-medium text-gray-900 text-sm">${actividad.titulo}</h4>
-            <span class="text-xs px-2 py-1 rounded-full ${priorityColors[actividad.prioridad]}">${actividad.prioridad}</span>
+            <span class="text-xs px-2 py-1 rounded-full ${statusColors[actividad.estado] || 'bg-gray-100 text-gray-800'}">${actividad.estado}</span>
         </div>
-        <p class="text-gray-600 text-xs mb-3">${actividad.descripcion}</p>
-        <div class="flex items-center justify-between text-xs text-gray-500">
+        <p class="text-gray-600 text-xs mb-3">${actividad.descripcion || 'Sin descripción'}</p>
+        <div class="flex items-center justify-between text-xs text-gray-500 mb-2">
             <span class="bg-gray-100 px-2 py-1 rounded">${actividad.equipo}</span>
-            <span>${actividad.fechaLimite}</span>
+            ${actividad.fecha_entrega ? `<span class="${isOverdue ? 'text-red-600 font-medium' : ''}">${actividad.fecha_entrega}</span>` : '<span>Sin fecha</span>'}
         </div>
-        <div class="mt-2 text-xs text-gray-600">
-            <i data-lucide="user" class="w-3 h-3 inline mr-1"></i>
-            ${actividad.asignadoA}
+        <div class="text-xs text-gray-600">
+            <i data-lucide="target" class="w-3 h-3 inline mr-1"></i>
+            ${actividad.meta}
         </div>
+        ${isOverdue ? '<div class="mt-2 text-xs text-red-600 font-medium">¡Vencida!</div>' : ''}
     `;
+
+    if (isOverdue) {
+        card.classList.add('border-red-300', 'bg-red-50');
+    }
 
     return card;
 }
@@ -444,9 +410,9 @@ function initSortable() {
     
     // Inicializar Sortable en cada columna
     columns.forEach(column => {
-        const estado = column.getAttribute('data-estado');
+        const estadoNombre = column.getAttribute('data-estado');
         
-        sortableInstances[estado] = new Sortable(column, {
+        sortableInstances[estadoNombre] = new Sortable(column, {
             group: 'actividades', // Permite arrastrar entre columnas
             animation: 150, // Duración de la animación en ms
             ghostClass: 'bg-gray-100', // Clase para el elemento fantasma durante el arrastre
@@ -456,100 +422,104 @@ function initSortable() {
             // Cuando se completa el arrastre
             onEnd: function(evt) {
                 const actividadId = parseInt(evt.item.getAttribute('data-id'));
-                const nuevoEstado = evt.to.getAttribute('data-estado');
+                const nuevoEstadoNombre = evt.to.getAttribute('data-estado');
                 
-                // Actualizar el estado de la actividad en el array
-                updateActivityStatus(actividadId, nuevoEstado);
+                // Actualizar el estado de la actividad
+                updateActivityStatus(actividadId, nuevoEstadoNombre);
             }
         });
     });
 }
 
 // Actualizar el estado de una actividad
-function updateActivityStatus(actividadId, nuevoEstado) {
+async function updateActivityStatus(actividadId, nuevoEstadoNombre) {
+    // Encontrar el estado por nombre
+    const nuevoEstado = estadosDisponibles.find(e => e.nombre === nuevoEstadoNombre);
+    if (!nuevoEstado) {
+        showToast('Error: Estado no encontrado', 'error');
+        return;
+    }
+
     // Encontrar la actividad en el array
     const actividad = actividades.find(a => a.id === actividadId);
     
     if (actividad) {
         const estadoAnterior = actividad.estado;
         
-        // Actualizar el estado
-        actividad.estado = nuevoEstado;
-        
-        // Actualizar también en el array filtrado si existe
-        const actividadFiltrada = filteredActividades.find(a => a.id === actividadId);
-        if (actividadFiltrada) {
-            actividadFiltrada.estado = nuevoEstado;
+        try {
+            // Enviar actualización al servidor
+            const response = await fetch('/coordinador-general/actividades/actualizar-estado', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    id: actividadId,
+                    estado_id: nuevoEstado.id
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Actualizar el estado localmente
+                actividad.estado = nuevoEstadoNombre;
+                actividad.estado_id = nuevoEstado.id;
+                
+                // Actualizar también en el array filtrado si existe
+                const actividadFiltrada = filteredActividades.find(a => a.id === actividadId);
+                if (actividadFiltrada) {
+                    actividadFiltrada.estado = nuevoEstadoNombre;
+                    actividadFiltrada.estado_id = nuevoEstado.id;
+                }
+                
+                // Actualizar contadores
+                updateStatusCounts();
+                
+                // Actualizar resumen por equipo
+                generateTeamSummary();
+                
+                // Mostrar notificación
+                showToast(`Actividad "${actividad.titulo}" movida a ${nuevoEstadoNombre}`);
+                
+            } else {
+                showToast(data.error || 'Error al actualizar el estado', 'error');
+                // Recargar actividades para revertir el cambio visual
+                loadActivities();
+                initSortable();
+            }
+
+        } catch (error) {
+            console.error('Error al actualizar estado:', error);
+            showToast('Error de conexión al actualizar el estado', 'error');
+            // Recargar actividades para revertir el cambio visual
+            loadActivities();
+            initSortable();
         }
-        
-        // Actualizar contadores
-        updateStatusCounts();
-        
-        // Actualizar resumen por equipo
-        generateTeamSummary();
-        
-        // Mostrar notificación
-        const estadosLabels = {
-            'pendiente': 'Pendiente',
-            'en-proceso': 'En Proceso',
-            'completada': 'Completada',
-            'retrasada': 'Retrasada'
-        };
-        
-        showToast(`Actividad "${actividad.titulo}" movida a ${estadosLabels[nuevoEstado]}`);
-        
-        // Aquí se podría hacer una llamada al servidor para persistir el cambio
-        // saveActivityStatus(actividadId, nuevoEstado);
     }
 }
 
 // Actualizar contadores de actividades por estado
 function updateStatusCounts() {
     const counts = {
-        'pendiente': 0,
+        'pendientes': 0,
         'en-proceso': 0,
-        'completada': 0,
-        'retrasada': 0
+        'completadas': 0,
+        'suspendidas': 0
     };
     
     filteredActividades.forEach(actividad => {
-        if (counts[actividad.estado] !== undefined) {
-            counts[actividad.estado]++;
+        const columnKey = estadoToColumn[actividad.estado] || 'pendientes';
+        if (counts[columnKey] !== undefined) {
+            counts[columnKey]++;
         }
     });
     
-    document.getElementById('pendientes-count').textContent = counts['pendiente'];
+    document.getElementById('pendientes-count').textContent = counts['pendientes'];
     document.getElementById('en-proceso-count').textContent = counts['en-proceso'];
-    document.getElementById('completadas-count').textContent = counts['completada'];
-    document.getElementById('retrasadas-count').textContent = counts['retrasada'];
-}
-
-// Función para guardar el cambio de estado en el servidor (simulada)
-function saveActivityStatus(actividadId, nuevoEstado) {
-    // Aquí iría el código para enviar la actualización al servidor
-    console.log(`Guardando cambio de estado para actividad ${actividadId}: ${nuevoEstado}`);
-    
-    // Ejemplo de cómo sería con fetch:
-    /*
-    fetch('/coordinador-general/api/actividades/actualizar-estado', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify({
-            id: actividadId,
-            estado: nuevoEstado
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Actualización exitosa:', data);
-    })
-    .catch(error => {
-        console.error('Error al actualizar:', error);
-    });
-    */
+    document.getElementById('completadas-count').textContent = counts['completadas'];
+    document.getElementById('suspendidas-count').textContent = counts['suspendidas'];
 }
 
 function filterActivities() {
@@ -558,7 +528,7 @@ function filterActivities() {
 
     filteredActividades = actividades.filter(actividad => {
         const matchesSearch = actividad.titulo.toLowerCase().includes(searchTerm) || 
-                            actividad.descripcion.toLowerCase().includes(searchTerm);
+                            (actividad.descripcion && actividad.descripcion.toLowerCase().includes(searchTerm));
         const matchesTeam = !teamFilter || actividad.equipo === teamFilter;
 
         return matchesSearch && matchesTeam;
@@ -574,18 +544,18 @@ function generateTeamSummary() {
 
     // Calculate stats for each team
     equiposDisponibles.forEach(equipo => {
-        teamStats[equipo] = {
-            pendiente: 0,
-            'en-proceso': 0,
-            completada: 0,
-            retrasada: 0,
+        teamStats[equipo.nombre] = {
+            'Incompleta': 0,
+            'En proceso': 0,
+            'Completo': 0,
+            'Suspendida': 0,
             total: 0
         };
     });
 
     actividades.forEach(actividad => {
         if (teamStats[actividad.equipo]) {
-            teamStats[actividad.equipo][actividad.estado]++;
+            teamStats[actividad.equipo][actividad.estado] = (teamStats[actividad.equipo][actividad.estado] || 0) + 1;
             teamStats[actividad.equipo].total++;
         }
     });
@@ -594,10 +564,10 @@ function generateTeamSummary() {
     const summaryHTML = Object.entries(teamStats).map(([equipo, stats]) => {
         if (stats.total === 0) return '';
 
-        const pendientePercent = (stats.pendiente / stats.total) * 100;
-        const procesoPercent = (stats['en-proceso'] / stats.total) * 100;
-        const completadaPercent = (stats.completada / stats.total) * 100;
-        const retrasadaPercent = (stats.retrasada / stats.total) * 100;
+        const incompletaPercent = (stats['Incompleta'] / stats.total) * 100;
+        const procesoPercent = (stats['En proceso'] / stats.total) * 100;
+        const completoPercent = (stats['Completo'] / stats.total) * 100;
+        const suspendidaPercent = (stats['Suspendida'] / stats.total) * 100;
 
         return `
             <div>
@@ -607,23 +577,220 @@ function generateTeamSummary() {
                 </div>
                 <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
                     <div class="h-2 rounded-full flex">
-                        <div class="bg-yellow-500 h-2 rounded-l-full" style="width: ${pendientePercent}%"></div>
+                        <div class="bg-yellow-500 h-2 rounded-l-full" style="width: ${incompletaPercent}%"></div>
                         <div class="bg-blue-500 h-2" style="width: ${procesoPercent}%"></div>
-                        <div class="bg-green-500 h-2" style="width: ${completadaPercent}%"></div>
-                        <div class="bg-red-500 h-2 rounded-r-full" style="width: ${retrasadaPercent}%"></div>
+                        <div class="bg-green-500 h-2" style="width: ${completoPercent}%"></div>
+                        <div class="bg-red-500 h-2 rounded-r-full" style="width: ${suspendidaPercent}%"></div>
                     </div>
                 </div>
                 <div class="flex items-center justify-between text-xs text-gray-600">
-                    <span><span class="inline-block w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>Pendientes (${stats.pendiente})</span>
-                    <span><span class="inline-block w-2 h-2 bg-blue-500 rounded-full mr-1"></span>En progreso (${stats['en-proceso']})</span>
-                    <span><span class="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>Completadas (${stats.completada})</span>
-                    <span><span class="inline-block w-2 h-2 bg-red-500 rounded-full mr-1"></span>Retrasadas (${stats.retrasada})</span>
+                    <span><span class="inline-block w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>Pendientes (${stats['Incompleta'] || 0})</span>
+                    <span><span class="inline-block w-2 h-2 bg-blue-500 rounded-full mr-1"></span>En progreso (${stats['En proceso'] || 0})</span>
+                    <span><span class="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>Completadas (${stats['Completo'] || 0})</span>
+                    <span><span class="inline-block w-2 h-2 bg-red-500 rounded-full mr-1"></span>Suspendidas (${stats['Suspendida'] || 0})</span>
                 </div>
             </div>
         `;
     }).join('');
 
     teamSummary.innerHTML = summaryHTML;
+}
+
+// FUNCIONES DE PRUEBA MEJORADAS
+async function testSimpleRoute() {
+    console.log('=== TEST RUTA SIMPLE ===');
+    try {
+        const response = await fetch('/coordinador-general/test-simple');
+        const text = await response.text();
+        console.log('Respuesta cruda:', text);
+        
+        if (response.ok) {
+            const data = JSON.parse(text);
+            console.log('JSON parseado:', data);
+            alert('✅ Ruta simple OK: ' + data.message);
+        } else {
+            console.error('Error HTTP:', response.status, response.statusText);
+            alert('❌ Error HTTP: ' + response.status + ' - ' + text.substring(0, 100));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+async function testParameterRoute() {
+    console.log('=== TEST RUTA CON PARÁMETRO ===');
+    const equipoId = document.getElementById('equipoSelect').value || '1';
+    
+    try {
+        const url = `/coordinador-general/test-metas/${equipoId}`;
+        console.log('URL:', url);
+        
+        const response = await fetch(url);
+        const text = await response.text();
+        console.log('Respuesta cruda:', text);
+        
+        if (response.ok) {
+            const data = JSON.parse(text);
+            console.log('JSON parseado:', data);
+            alert('✅ Ruta con parámetro OK: ' + data.message);
+        } else {
+            console.error('Error HTTP:', response.status, response.statusText);
+            alert('❌ Error HTTP: ' + response.status + ' - ' + text.substring(0, 100));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+async function testMetasRoute() {
+    console.log('=== TEST RUTA METAS ===');
+    const equipoId = document.getElementById('equipoSelect').value;
+    
+    if (!equipoId) {
+        alert('Primero selecciona un equipo');
+        return;
+    }
+    
+    try {
+        const url = `/coordinador-general/actividades/metas-por-equipo/${equipoId}`;
+        console.log('URL:', url);
+        
+        const response = await fetch(url);
+        const text = await response.text();
+        console.log('Respuesta cruda:', text);
+        
+        if (response.ok) {
+            const data = JSON.parse(text);
+            console.log('JSON parseado:', data);
+            alert('✅ Ruta metas OK. Metas encontradas: ' + data.length);
+        } else {
+            console.error('Error HTTP:', response.status, response.statusText);
+            alert('❌ Error HTTP: ' + response.status + ' - ' + text.substring(0, 200));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+function showRouteInfo() {
+    const info = `
+🔍 INFORMACIÓN DE RUTAS:
+
+Base URL: ${window.location.origin}
+Ruta actual: ${window.location.pathname}
+
+Rutas de prueba:
+1. Simple: /coordinador-general/test-simple
+2. Parámetro: /coordinador-general/test-metas/{id}
+3. Metas: /coordinador-general/actividades/metas-por-equipo/{id}
+
+Equipos disponibles: ${equiposDisponibles.map(e => e.id + ':' + e.nombre).join(', ')}
+    `;
+    
+    alert(info);
+    console.log('INFO RUTAS:', {
+        baseUrl: window.location.origin,
+        currentPath: window.location.pathname,
+        equipos: equiposDisponibles
+    });
+}
+
+// Cargar metas por equipo - FUNCIÓN SIMPLIFICADA
+async function loadMetasPorEquipo() {
+    const equipoId = document.getElementById('equipoSelect').value;
+    const metaSelect = document.getElementById('metaSelect');
+    
+    console.log('=== INICIO loadMetasPorEquipo ===');
+    console.log('Equipo seleccionado:', equipoId);
+    
+    if (!equipoId) {
+        console.log('No hay equipo seleccionado');
+        metaSelect.innerHTML = '<option value="">Primero selecciona un equipo...</option>';
+        return;
+    }
+    
+    // Mostrar estado de carga
+    metaSelect.innerHTML = '<option value="">Cargando metas...</option>';
+    metaSelect.disabled = true;
+    
+    try {
+        const url = `/coordinador-general/actividades/metas-por-equipo/${equipoId}`;
+        console.log('URL construida:', url);
+        
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        console.log('Respuesta:', response.status, response.statusText);
+        
+        // Obtener el texto crudo primero
+        const responseText = await response.text();
+        console.log('Texto de respuesta:', responseText.substring(0, 200));
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${responseText.substring(0, 100)}`);
+        }
+        
+        // Intentar parsear como JSON
+        let metas;
+        try {
+            metas = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('Error al parsear JSON:', parseError);
+            throw new Error('Respuesta no es JSON válido: ' + responseText.substring(0, 100));
+        }
+        
+        console.log('Metas parseadas:', metas);
+        
+        // Habilitar el select
+        metaSelect.disabled = false;
+        
+        if (metas.error) {
+            console.error('Error en datos:', metas.error);
+            metaSelect.innerHTML = '<option value="">Error: ' + metas.error + '</option>';
+            showToast(metas.error, 'error');
+            return;
+        }
+        
+        if (!Array.isArray(metas)) {
+            console.error('Respuesta no es un array:', typeof metas, metas);
+            metaSelect.innerHTML = '<option value="">Error: Respuesta inválida del servidor</option>';
+            showToast('Error: Respuesta inválida del servidor', 'error');
+            return;
+        }
+        
+        if (metas.length === 0) {
+            console.log('No hay metas para este equipo');
+            metaSelect.innerHTML = '<option value="">No hay metas disponibles para este equipo</option>';
+            showToast('Este equipo no tiene metas asignadas. Crea una meta primero.', 'warning');
+            return;
+        }
+        
+        // Cargar las metas en el select
+        const optionsHtml = '<option value="">Seleccionar meta...</option>' + 
+            metas.map(meta => `<option value="${meta.id}" title="${meta.descripcion || ''}">${meta.nombre}</option>`).join('');
+        
+        metaSelect.innerHTML = optionsHtml;
+        
+        console.log('=== FIN loadMetasPorEquipo EXITOSO ===');
+        console.log('Metas cargadas:', metas.length);
+            
+    } catch (error) {
+        console.error('=== ERROR en loadMetasPorEquipo ===');
+        console.error('Error completo:', error);
+        
+        metaSelect.disabled = false;
+        metaSelect.innerHTML = '<option value="">Error de conexión</option>';
+        showToast('Error: ' + error.message, 'error');
+    }
 }
 
 function showActivityDetails(actividad) {
@@ -633,31 +800,18 @@ function showActivityDetails(actividad) {
 
     title.textContent = actividad.titulo;
 
-    const priorityColors = {
-        'Alta': 'bg-red-100 text-red-800',
-        'Media': 'bg-yellow-100 text-yellow-800',
-        'Baja': 'bg-green-100 text-green-800'
-    };
-
     const statusColors = {
-        'pendiente': 'bg-yellow-100 text-yellow-800',
-        'en-proceso': 'bg-blue-100 text-blue-800',
-        'completada': 'bg-green-100 text-green-800',
-        'retrasada': 'bg-red-100 text-red-800'
-    };
-
-    const statusLabels = {
-        'pendiente': 'Pendiente',
-        'en-proceso': 'En Proceso',
-        'completada': 'Completada',
-        'retrasada': 'Retrasada'
+        'Incompleta': 'bg-yellow-100 text-yellow-800',
+        'En proceso': 'bg-blue-100 text-blue-800',
+        'Completo': 'bg-green-100 text-green-800',
+        'Suspendida': 'bg-red-100 text-red-800'
     };
 
     details.innerHTML = `
         <div class="space-y-3">
             <div>
                 <label class="block text-sm font-medium text-gray-700">Descripción</label>
-                <p class="text-gray-900">${actividad.descripcion}</p>
+                <p class="text-gray-900">${actividad.descripcion || 'Sin descripción'}</p>
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
@@ -665,24 +819,27 @@ function showActivityDetails(actividad) {
                     <p class="text-gray-900">${actividad.equipo}</p>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Prioridad</label>
-                    <span class="inline-block px-2 py-1 text-xs rounded-full ${priorityColors[actividad.prioridad]}">${actividad.prioridad}</span>
+                    <label class="block text-sm font-medium text-gray-700">Estado</label>
+                    <span class="inline-block px-2 py-1 text-xs rounded-full ${statusColors[actividad.estado] || 'bg-gray-100 text-gray-800'}">${actividad.estado}</span>
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Estado</label>
-                    <span class="inline-block px-2 py-1 text-xs rounded-full ${statusColors[actividad.estado]}">${statusLabels[actividad.estado]}</span>
+                    <label class="block text-sm font-medium text-gray-700">Meta</label>
+                    <p class="text-gray-900">${actividad.meta}</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Fecha límite</label>
-                    <p class="text-gray-900">${actividad.fechaLimite}</p>
+                    <p class="text-gray-900 ${actividad.esta_vencida ? 'text-red-600 font-medium' : ''}">${actividad.fecha_entrega || 'Sin fecha límite'}</p>
                 </div>
             </div>
+            ${actividad.fecha_creacion ? `
             <div>
-                <label class="block text-sm font-medium text-gray-700">Asignado a</label>
-                <p class="text-gray-900">${actividad.asignadoA}</p>
+                <label class="block text-sm font-medium text-gray-700">Fecha de creación</label>
+                <p class="text-gray-900">${actividad.fecha_creacion}</p>
             </div>
+            ` : ''}
+            ${actividad.esta_vencida ? '<div class="text-red-600 font-medium text-sm">⚠️ Esta actividad está vencida</div>' : ''}
         </div>
     `;
 
@@ -726,34 +883,54 @@ function closeCreateModal() {
     }, 300);
 }
 
-function createActivity() {
+async function createActivity() {
     const form = document.getElementById('createActivityForm');
     const formData = new FormData(form);
 
-    const nuevaActividad = {
-        id: nextId++,
-        titulo: formData.get('titulo'),
-        descripcion: formData.get('descripcion'),
-        equipo: formData.get('equipo'),
-        prioridad: formData.get('prioridad'),
-        fechaLimite: formData.get('fechaLimite'),
-        asignadoA: formData.get('asignadoA'),
-        estado: 'pendiente'
-    };
+    try {
+        const response = await fetch('/coordinador-general/actividades', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: formData
+        });
 
-    actividades.push(nuevaActividad);
-    filteredActividades = [...actividades];
-    loadActivities();
-    generateTeamSummary();
-    initSortable(); // Reinicializar sortable después de añadir actividad
-    closeCreateModal();
-    showToast('Actividad creada correctamente');
-    form.reset();
+        const data = await response.json();
+
+        if (data.success) {
+            // Agregar la nueva actividad al array
+            actividades.push(data.tarea);
+            filteredActividades = [...actividades];
+            
+            loadActivities();
+            generateTeamSummary();
+            initSortable();
+            closeCreateModal();
+            showToast('Actividad creada correctamente');
+            form.reset();
+            
+            // Resetear el select de metas
+            document.getElementById('metaSelect').innerHTML = '<option value="">Primero selecciona un equipo...</option>';
+        } else {
+            showToast(data.error || 'Error al crear la actividad', 'error');
+        }
+    } catch (error) {
+        console.error('Error al crear actividad:', error);
+        showToast('Error de conexión al crear la actividad', 'error');
+    }
 }
 
-function showToast(message) {
+function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     const toastMessage = document.getElementById('toast-message');
+    
+    // Cambiar color según el tipo
+    if (type === 'error') {
+        toast.className = toast.className.replace('bg-green-500', 'bg-red-500');
+    } else {
+        toast.className = toast.className.replace('bg-red-500', 'bg-green-500');
+    }
     
     toastMessage.textContent = message;
     toast.classList.remove('translate-x-full', 'opacity-0');
@@ -801,6 +978,38 @@ function showToast(message) {
 
 .activity-card:active {
     cursor: grabbing;
+}
+
+/* Animaciones y transiciones */
+.slide-in {
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.hover-scale {
+    transition: transform 0.2s ease-in-out;
+}
+
+.hover-scale:hover {
+    transform: scale(1.02);
+}
+
+.form-transition {
+    transition: all 0.3s ease;
+}
+
+.tab-transition {
+    transition: all 0.2s ease-in-out;
 }
 </style>
 @endsection

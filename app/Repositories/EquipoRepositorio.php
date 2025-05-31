@@ -258,6 +258,8 @@ class EquipoRepositorio extends RepositorioBase
     /**
      * Eliminar equipo (eliminación permanente con manejo de dependencias)
      */
+
+
     public function delete(int $id): bool
     {
         try {
@@ -336,6 +338,64 @@ class EquipoRepositorio extends RepositorioBase
                   ->whereNull('deleted_at')
                   ->orderBy('nombre')
                   ->get();
+    }
+
+
+    /**
+     * Agregar miembro a equipo
+     */
+    public function agregarMiembro(int $equipoId, int $trabajadorId): bool
+    {
+        $equipo = $this->model->find($equipoId);
+        if (!$equipo) {
+            return false;
+        }
+
+        // Verificar si ya es miembro
+        $yaEsMiembro = $equipo->miembros()
+            ->where('trabajador_id', $trabajadorId)
+            ->where('activo', true)
+            ->exists();
+
+        if ($yaEsMiembro) {
+            return false;
+        }
+
+        $equipo->miembros()->create([
+            'trabajador_id' => $trabajadorId,
+            'activo' => true,
+            'fecha_union' => now()
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Remover miembro de equipo
+     */
+    
+    public function removerMiembro(int $equipoId, int $trabajadorId): bool
+    {
+        $equipo = $this->model->find($equipoId);
+        if (!$equipo) {
+            return false;
+        }
+
+        // Verificar si es miembro activo
+        $miembro = $equipo->miembros()
+            ->where('trabajador_id', $trabajadorId)
+            ->where('activo', true)
+            ->first();
+
+        if (!$miembro) {
+            return false; // No es miembro activo
+        }
+
+        // Desactivar al miembro (soft delete)
+        $miembro->activo = false;
+        $miembro->save();
+
+        return true;
     }
 
     /**

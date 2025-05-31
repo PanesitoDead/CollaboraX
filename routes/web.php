@@ -149,10 +149,22 @@ Route::middleware('auth')->group(function () {
 Route::get('/coordinador-general/metas', [MetasController::class, 'index'])->name('coordinador-general.metas');
 Route::get('/coordinador-general/configuracion', [ConfigurationController::class, 'index'])->name('coordinador-general.configuracion');
 Route::get('/coordinador-general/dashboard', [DashboarController::class, 'index'])->name('coordinador-general.dashboard');
-Route::get('/coordinador-general/actividades', [ActividadesController::class, 'index'])->name('coordinador-general.actividades');
 Route::get('/coordinador-general/equipos', [EquiposController::class, 'index'])->name('coordinador-general.equipos');
 Route::get('/coordinador-general/equipos/{id}', [EquiposController::class, 'show'])->name('coordinador-general.equipos.show');
 Route::get(url('/coordinador-general/equipos/{id}/edit'), [EquiposController::class, 'edit'])->name('coordinador-general.equipos.edit');
+
+// CRUD DE ACTIVIDADES
+Route::get('/coordinador-general/actividades', [ActividadesController::class, 'index'])->name('coordinador-general.actividades');
+Route::post('/coordinador-general/actividades', [ActividadesController::class, 'store'])->name('coordinador-general.actividades.store');
+Route::delete('/coordinador-general/actividades/{id}', [ActividadesController::class, 'destroy'])->name('coordinador-general.actividades.destroy');
+// Rutas API para actividades - CORREGIDAS CON EL PREFIJO
+Route::get('/coordinador-general/api/actividades', [ActividadesController::class, 'getActividades'])->name('api.actividades');
+Route::get('/coordinador-general/api/actividades/equipos', [ActividadesController::class, 'getEquipos'])->name('api.actividades.equipos');
+Route::get('/coordinador-general/actividades/metas-por-equipo/{equipoId}', [ActividadesController::class, 'getMetasPorEquipo'])->name('actividades.metas-por-equipo');
+Route::post('/coordinador-general/actividades/actualizar-estado', [ActividadesController::class, 'updateEstado'])->name('actividades.actualizar-estado');
+Route::get('/coordinador-general/actividades/metas-por-equipo/{equipoId}', [ActividadesController::class, 'getMetasPorEquipo'])
+        ->name('actividades.metas-por-equipo')
+        ->where('equipoId', '[0-9]+');
 
 //CRUD DE EQUIPOS
 Route::post('/coordinador-general/equipos', [EquiposController::class, 'store'])->name('coordinador-general.equipos.store');

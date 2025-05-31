@@ -25,19 +25,20 @@ class Tarea extends Model
 
 
 
-   // Accessor para verificar si está completada
-    public function getEstaCompletadaAttribute()
-    {
-        return $this->estado && $this->estado->nombre === 'Completo';
-    }
-
-    // Accessor para verificar si está vencida
+   // Accessor para verificar si está vencida
     public function getEstaVencidaAttribute()
     {
         if (!$this->fecha_entrega) {
             return false;
         }
-        
-        return $this->fecha_entrega < now() && !$this->esta_completada;
+
+        return \Carbon\Carbon::parse($this->fecha_entrega)->isPast() && 
+               (!$this->estado || $this->estado->nombre !== 'Completo');
+    }
+
+    // Accessor para verificar si está completada
+    public function getEstaCompletadaAttribute()
+    {
+        return $this->estado && $this->estado->nombre === 'Completo';
     }
 }

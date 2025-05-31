@@ -105,7 +105,7 @@ class MetaRepositorio extends RepositorioBase
 
 
     
-    /**
+   /**
      * Obtener todas las metas de una empresa específica
      * SOLO metas de equipos que tengan coordinadores de equipo válidos de esta empresa
      */
@@ -140,6 +140,38 @@ class MetaRepositorio extends RepositorioBase
         ->whereNull('deleted_at')
         ->orderBy('fecha_creacion', 'desc')
         ->get();
+    }
+
+    /**
+     * Obtener metas por equipo (mejorado con validaciones)
+     */
+    public function getByEquipo(int $equipoId): Collection
+    {
+        try {
+            Log::info('MetaRepositorio::getByEquipo iniciado', ['equipo_id' => $equipoId]);
+        
+            $metas = $this->model->with(['estado'])
+                ->where('equipo_id', $equipoId)
+                ->whereNull('deleted_at')
+                ->orderBy('fecha_creacion', 'desc')
+                ->get();
+            
+            Log::info('MetaRepositorio::getByEquipo completado', [
+                'equipo_id' => $equipoId,
+                'metas_encontradas' => $metas->count(),
+                'metas_ids' => $metas->pluck('id')->toArray()
+            ]);
+        
+            return $metas;
+        
+        } catch (\Exception $e) {
+            Log::error('Error en MetaRepositorio::getByEquipo', [
+                'equipo_id' => $equipoId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return collect([]); // Devolver colección vacía en caso de error
+        }
     }
 
     /**

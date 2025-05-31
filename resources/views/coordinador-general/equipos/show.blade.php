@@ -212,7 +212,7 @@
                         <i data-lucide="calendar" class="w-4 h-4 mr-2"></i>
                         Programar reunión
                     </button>
-                   
+            
                     <button onclick="confirmarEliminar({{ $equipo->id }}, '{{ $equipo->nombre }}')" class="w-full bg-red-50 text-red-600 py-2 px-3 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors flex items-center justify-center">
                         <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i>
                         Eliminar equipo
@@ -252,35 +252,14 @@
 </div>
 
 <script>
-// Variables globales
-let currentEquipoId = null;
-
 // Función para confirmación de eliminación
 function confirmarEliminar(id, nombre) {
-    currentEquipoId = id;
-    
     // Configurar el texto del modal
     document.getElementById('confirmDeleteText').textContent = `¿Estás seguro de que deseas eliminar el equipo "${nombre}"? Esta acción no se puede deshacer.`;
     
     // Configurar el botón de confirmación
     const confirmButton = document.getElementById('confirmDeleteButton');
     confirmButton.onclick = function() {
-        eliminarEquipo(id);
-    };
-    
-    // Mostrar el modal
-    document.getElementById('confirmDeleteModal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeConfirmDeleteModal() {
-    document.getElementById('confirmDeleteModal').classList.add('hidden');
-    document.body.style.overflow = 'auto';
-    currentEquipoId = null;
-}
-
-async function eliminarEquipo(id) {
-    try {
         // Crear formulario para eliminar
         const form = document.createElement('form');
         form.method = 'POST';
@@ -300,17 +279,18 @@ async function eliminarEquipo(id) {
         form.appendChild(methodField);
         document.body.appendChild(form);
         
-        // Cerrar modal antes de enviar
-        closeConfirmDeleteModal();
-        
         // Enviar formulario
         form.submit();
-        
-    } catch (error) {
-        console.error('Error al eliminar equipo:', error);
-        closeConfirmDeleteModal();
-        alert('Error al eliminar el equipo. Por favor, inténtalo de nuevo.');
-    }
+    };
+    
+    // Mostrar el modal
+    document.getElementById('confirmDeleteModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeConfirmDeleteModal() {
+    document.getElementById('confirmDeleteModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
 }
 
 // Close modal with Escape key
