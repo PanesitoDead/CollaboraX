@@ -11,7 +11,7 @@ class Invitacion extends Model
 
     protected $table = 'invitaciones';
 
-    protected $fillable = ['equipo_id', 'trabajador_id', 'fecha_invitacion', 'fecha_expiracion', 'fecha_respuesta'];
+    protected $fillable = ['equipo_id', 'trabajador_id', 'fecha_invitacion', 'fecha_expiracion', 'fecha_respuesta', 'estado'];
 
     public function equipo()
     {

@@ -47,4 +47,9 @@ class Trabajador extends Model
     {
         return $this->hasMany(Equipo::class, 'coordinador_id');
     }
+
+    public function getNombreCompletoAttribute()
+    {
+        return trim("{$this->nombres} {$this->apellido_paterno} {$this->apellido_materno}");
+    }
 }

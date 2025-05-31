@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Auth\RegistroRequest;
+use App\Models\Usuario;
 use App\Repositories\EmpresaRepositorio;
 use App\Repositories\PlanRepositorio;
 use App\Repositories\UsuarioRepositorio;
@@ -81,7 +82,7 @@ class AuthController extends Controller
             $usuario = $this->usuarioRepositorio->create([
                 'correo' => $correoGenerado,
                 'clave' => bcrypt($request->password),
-                'rol_id' => 1, // ROL DE EMPRESA
+                'rol_id' => 2, // ROL DE EMPRESA
                 'activo' => true,
                 'en_linea' => false,
                 'ultima_conexion' => now(),
@@ -126,15 +127,15 @@ class AuthController extends Controller
     private function redirectByRole($user)
     {
         switch ($user->rol->nombre) {
-            case 'super-admin':
+            case 'Super Admin':
                 return redirect()->route('super-admin.dashboard');
-            case 'admin':
+            case 'Admin':
                 return redirect()->route('admin.dashboard');
-            case 'coordinador-general':
+            case 'Coord. General':
                 return redirect()->route('coordinador-general.dashboard');
-            case 'coordinador-grupo':
-                return redirect()->route('coordinador-grupo.dashboard');
-            case 'colaborador':
+            case 'Coord. Equipo':
+                return redirect()->route('coord-equipo.dashboard');
+            case 'Colaborador':
                 return redirect()->route('colaborador.dashboard');
             default:
                 return redirect()->route('home');

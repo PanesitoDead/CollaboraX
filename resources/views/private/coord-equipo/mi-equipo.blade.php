@@ -22,7 +22,7 @@
                 </svg>
             </div>
             <div class="text-2xl font-bold">{{ $stats['miembros'] }}</div>
-            <p class="text-xs text-gray-500">{{ $stats['miembros_nuevos'] }} nuevos este mes</p>
+            <p class="text-xs text-gray-500">Miembros activos</p>
         </div>
 
         <div class="bg-white rounded-lg border border-gray-300 p-6">
@@ -33,7 +33,7 @@
                 </svg>
             </div>
             <div class="text-2xl font-bold">{{ $stats['metas_activas'] }}</div>
-            <p class="text-xs text-gray-500">{{ $stats['metas_completadas'] }} completada este mes</p>
+            <p class="text-xs text-gray-500">{{ $stats['metas_completadas'] }} completadas</p>
         </div>
 
         <div class="bg-white rounded-lg border border-gray-300 p-6">
@@ -55,7 +55,7 @@
                 </svg>
             </div>
             <div class="text-2xl font-bold">{{ $stats['rendimiento'] }}%</div>
-            <p class="text-xs text-gray-500">+{{ $stats['rendimiento_cambio'] }}% respecto al mes anterior</p>
+            <p class="text-xs text-gray-500">Rendimiento actual</p>
         </div>
     </div>
 
@@ -81,8 +81,8 @@
             <div class="mb-6">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <h3 class="text-lg font-medium">Equipo Desarrollo Frontend</h3>
-                        <p class="text-gray-600">Información general y rendimiento del equipo</p>
+                        <h3 class="text-lg font-medium">{{ $equipo->nombre }}</h3>
+                        <p class="text-gray-600">{{ $equipo->descripcion }}</p>
                     </div>
                     <div class="flex gap-2">
                         <button id="invitar-colaborador-btn" 
@@ -121,7 +121,7 @@
                             <div class="text-xs text-gray-500">Actividades completadas</div>
                         </div>
                         <div>
-                            <div class="font-medium">3</div>
+                            <div class="font-medium">{{ $stats['reuniones_pendientes'] }}</div>
                             <div class="text-xs text-gray-500">Reuniones pendientes</div>
                         </div>
                     </div>
@@ -142,38 +142,52 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         @foreach($miembros as $miembro)
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center mr-3">
-                                        <span class="text-sm font-medium">{{ substr($miembro['nombre'], 0, 2) }}</span>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center mr-3">
+                                            <span class="text-sm font-medium">
+                                                {{ substr($miembro->trabajador->nombres ?? 'NA', 0, 2) }}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-900">
+                                                {{ $miembro->trabajador->nombre_completo ?? 'Sin nombre' }}
+                                            </div>
+                                            <div class="text-sm text-gray-500">
+                                                {{ $miembro->trabajador->usuario->correo ?? 'Sin email' }}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div class="text-sm font-medium text-gray-900">{{ $miembro['nombre'] }}</div>
-                                        <div class="text-sm text-gray-500">{{ $miembro['email'] }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    @php
+                                        $rol = $miembro->trabajador->usuario->rol->nombre ?? 'Sin rol';
+                                    @endphp
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $rol === 'Coordinador' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' }}">
+                                        {{ $rol }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    @php
+                                        $completadas = $miembro->actividades_completadas ?? 0;
+                                        $totales = $miembro->actividades_totales ?? 1; // evita división por cero
+                                        $porcentaje = round(($completadas / $totales) * 100);
+                                    @endphp
+                                    <div class="flex items-center">
+                                        <span class="mr-2 text-sm">{{ $completadas }}/{{ $totales }}</span>
+                                        <div class="w-16 bg-gray-200 rounded-full h-2">
+                                            <div class="bg-blue-600 h-2 rounded-full" style="width: {{ $porcentaje }}%"></div>
+                                        </div>
                                     </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $miembro['rol'] === 'Coordinador' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' }}">
-                                    {{ $miembro['rol'] }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <span class="mr-2 text-sm">{{ $miembro['actividades_completadas'] }}/{{ $miembro['actividades_totales'] }}</span>
-                                    <div class="w-16 bg-gray-200 rounded-full h-2">
-                                        <div class="bg-blue-600 h-2 rounded-full" style="width: {{ ($miembro['actividades_completadas'] / $miembro['actividades_totales']) * 100 }}%"></div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">{{ $miembro['rendimiento'] }}%</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button class="text-blue-600 hover:text-blue-900">Ver Detalles</button>
-                            </td>
-                        </tr>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">{{ $miembro->rendimiento ?? 0 }}%</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button class="text-blue-600 hover:text-blue-900">Ver Detalles</button>
+                                </td>
+                            </tr>
                         @endforeach
                     </tbody>
                 </table>
@@ -212,12 +226,12 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center mr-3">
-                                        <span class="text-sm font-medium">{{ substr($invitacion['colaborador']['nombre'], 0, 2) }}</span>
+                                        <span class="text-sm font-medium">{{ substr($invitacion->trabajador->nombre_completo, 0, 2) }}</span>
                                     </div>
                                     <div>
-                                        <div class="text-sm font-medium text-gray-900">{{ $invitacion['colaborador']['nombre'] }}</div>
-                                        <div class="text-sm text-gray-500">{{ $invitacion['colaborador']['email'] }}</div>
-                                        <div class="text-sm text-gray-500">{{ $invitacion['colaborador']['rol'] }}</div>
+                                        <div class="text-sm font-medium text-gray-900">{{ $invitacion->trabajador->nombre_completo }}</div>
+                                        <div class="text-sm text-gray-500">{{ $invitacion->trabajador->usuario->correo }}</div>
+                                        <div class="text-sm text-gray-500">{{ $invitacion->trabajador->usuario->rol->nombre }}</div>
                                     </div>
                                 </div>
                             </td>
@@ -226,15 +240,15 @@
                                     <svg class="h-4 w-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                     </svg>
-                                    <span class="text-sm text-gray-900">{{ \Carbon\Carbon::parse($invitacion['fecha'])->format('d/m/Y H:i') }}</span>
+                                    <span class="text-sm text-gray-900">{{ \Carbon\Carbon::parse($invitacion->fecha_invitacion)->format('d/m/Y H:i') }}</span>
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                @if($invitacion['estado'] === 'pendiente')
+                                @if($invitacion->estado === 'PENDIENTE')
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                                         Pendiente
                                     </span>
-                                @elseif($invitacion['estado'] === 'aceptada')
+                                @elseif($invitacion->estado === 'ACEPTADA')
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                         Aceptada
                                     </span>
@@ -246,8 +260,8 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex space-x-2">
-                                    @if($invitacion['estado'] === 'pendiente')
-                                        <form action="{{ route('coord-equipo.equipo.cancelar-invitacion', $invitacion['id']) }}" method="POST" class="inline">
+                                    @if($invitacion->estado === 'PENDIENTE')
+                                        <form action="{{ route('coord-equipo.equipo.cancelar-invitacion', $invitacion->id) }}" method="POST" class="inline">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="text-red-600 hover:text-red-900">
@@ -424,7 +438,7 @@
 </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Script cargado');
@@ -655,4 +669,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-@endsection
+@endpush
