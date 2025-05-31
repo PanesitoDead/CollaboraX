@@ -63,39 +63,39 @@
                 <header class="px-6 py-4 bg-gray-50 border-b border-gray-200">
                     <div class="flex justify-between items-start">
                         <div class="flex items-center space-x-4">
-                            <span class="w-2 h-2 rounded-full bg-{{ $area['color'] }}-500"></span>
-                            <h2 class="text-lg font-semibold text-gray-900">{{ $area['nombre'] }}</h2>
-                            <p class="text-sm text-gray-500">Cód. {{ $area['codigo'] }}</p>
+                            <span class="w-2 h-2 rounded-full bg-{{ $area->color }}-500"></span>
+                            <h2 class="text-lg font-semibold text-gray-900">{{ $area->nombre }}</h2>
+                            <p class="text-sm text-gray-500">Cód. {{ $area->codigo }}</p>
                         </div>
                         <div class="flex space-x-2">
-                            <button onclick="editArea({{ $area['id'] }})" aria-label="Editar {{ $area['nombre'] }}" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                            <button onclick="editArea({{ $area->id }})" aria-label="Editar {{ $area->nombre }}" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
                             <i data-lucide="edit-2" class="w-4 h-4 text-gray-500 hover:text-gray-700"></i>
                             </button>
-                            <button onclick="deleteArea({{ $area['id'] }})" aria-label="Eliminar {{ $area['nombre'] }}" class="p-2 rounded-lg hover:bg-red-50 transition-colors">
+                            <button onclick="deleteArea({{ $area->id }})" aria-label="Eliminar {{ $area->nombre }}" class="p-2 rounded-lg hover:bg-red-50 transition-colors">
                             <i data-lucide="trash" class="w-4 h-4 text-gray-500 hover:text-red-600"></i>
                             </button>
                         </div>
                     </div>
-                    <p class="mt-1 text-sm text-gray-600">{{ $area['descripcion'] }}</p>
+                    <p class="mt-1 text-sm text-gray-600">{{ $area->descripcion }}</p>
                     <div class="mt-4 flex justify-between items-center">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $area['estado']=='activa'? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                        {{ ucfirst($area['estado']) }}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $area->activo==1? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                        {{ $area->activo== 1 ? 'Activo' : 'Inactivo' }}
                     </span>
-                    <time datetime="{{ $area['fecha_creacion'] }}" class="text-xs text-gray-500">Creada {{ $area['fecha_creacion'] }}</time>
+                    <time datetime="{{ $area->fecha_creacion }}" class="text-xs text-gray-500">Creada {{ $area->fecha_creacion }}</time>
                     </div>
                 </header>
 
                 <!-- Coordinador -->
                 <section class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-sm font-medium text-gray-700 mb-3">Coordinador General</h3>
-                    @if($area['coordinador'])
+                    @if($area->coordinador)
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-full bg-{{ $area['color'] }}-100 flex items-center justify-center">
-                        <span class="text-sm font-medium text-{{ $area['color'] }}-600">{{ $area['coordinador']['initials'] }}</span>
+                        <div class="w-10 h-10 rounded-full bg-{{ $area->color }}-100 flex items-center justify-center">
+                        <span class="text-sm font-medium text-{{ $area->color }}-600">{{ $area->coordinador->nombre }}</span>
                         </div>
                         <div>
-                        <p class="text-sm font-semibold text-gray-900">{{ $area['coordinador']['nombre'] }}</p>
-                        <p class="text-xs text-gray-500">{{ $area['coordinador']['email'] }}</p>
+                        <p class="text-sm font-semibold text-gray-900">{{ $area->coordinador->nombre }}</p>
+                        <p class="text-xs text-gray-500">{{ $area->coordinador->correo }}</p>
                         </div>
                     </div>
                     @else
@@ -105,7 +105,7 @@
                         </div>
                         <div>
                         <p class="text-sm">Sin coordinador asignado</p>
-                        <button onclick="assignCoordinator({{ $area['id'] }})" class="mt-1 text-xs font-medium text-blue-600 hover:text-blue-800">
+                        <button onclick="assignCoordinator({{ $area->id }})" class="mt-1 text-xs font-medium text-blue-600 hover:text-blue-800">
                             Asignar coordinador
                         </button>
                         </div>
@@ -117,15 +117,15 @@
                 <footer class="px-6 py-4">
                     <div class="grid grid-cols-3 gap-4 mb-6 text-center">
                     <div>
-                        <p class="text-2xl font-bold text-blue-600">{{ $area['equipos'] }}</p>
+                        <p class="text-2xl font-bold text-blue-600">{{ $area->nro_equipos }}</p>
                         <p class="text-xs text-gray-500">Equipos</p>
                     </div>
                     <div>
-                        <p class="text-2xl font-bold text-green-600">{{ $area['colaboradores'] }}</p>
+                        <p class="text-2xl font-bold text-green-600">{{ $area->nro_colaboradores }}</p>
                         <p class="text-xs text-gray-500">Colaboradores</p>
                     </div>
                     <div>
-                        <p class="text-2xl font-bold text-orange-500">{{ $area['metas_activas'] }}</p>
+                        <p class="text-2xl font-bold text-orange-500">{{ $area->nro_metas_activas }}</p>
                         <p class="text-xs text-gray-500">Metas Activas</p>
                     </div>
                     </div>
@@ -136,7 +136,7 @@
                         <span class="text-sm font-bold text-gray-900">{{ $area['rendimiento'] }}%</span>
                     </div>
                     <div class="w-full bg-gray-200 rounded-full h-2">
-                        <div class="bg-{{ $area['color'] }}-600 h-2 rounded-full" style="width: {{ $area['rendimiento'] }}%"></div>
+                        <div class="bg-{{ $area->color }}-600 h-2 rounded-full" style="width: {{ $area['rendimiento'] }}%"></div>
                     </div>
                     </div>
 
