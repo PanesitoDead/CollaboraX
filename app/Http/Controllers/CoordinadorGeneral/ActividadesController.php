@@ -84,92 +84,23 @@ class ActividadesController extends Controller
         }
     }
 
-    public function getActividades()
-    {
-        try {
-            $empresaId = 1;
-            $tareas = $this->tareaRepositorio->getAllByEmpresa($empresaId);
-
-            $tareasTransformadas = $tareas->map(function($tarea) {
-                return [
-                    'id' => $tarea->id,
-                    'titulo' => $tarea->nombre,
-                    'descripcion' => $tarea->descripcion,
-                    'estado' => $tarea->estado ? strtolower(str_replace(' ', '-', $tarea->estado->nombre)) : 'pendiente',
-                    'estado_nombre' => $tarea->estado ? $tarea->estado->nombre : 'Pendiente',
-                    'estado_id' => $tarea->estado_id,
-                    'meta' => $tarea->meta ? $tarea->meta->nombre : 'Sin meta',
-                    'meta_id' => $tarea->meta_id,
-                    'equipo' => $tarea->meta && $tarea->meta->equipo ? $tarea->meta->equipo->nombre : 'Sin equipo',
-                    'equipo_id' => $tarea->meta && $tarea->meta->equipo ? $tarea->meta->equipo->id : null,
-                    'fecha_creacion' => $tarea->fecha_creacion ? \Carbon\Carbon::parse($tarea->fecha_creacion)->format('Y-m-d') : null,
-                    'fecha_entrega' => $tarea->fecha_entrega ? \Carbon\Carbon::parse($tarea->fecha_entrega)->format('Y-m-d') : null,
-                    'esta_vencida' => $tarea->esta_vencida,
-                    'esta_completada' => $tarea->esta_completada
-                ];
-            });
-
-            return response()->json($tareasTransformadas);
-
-        } catch (\Exception $e) {
-            Log::error('Error en getActividades', ['error' => $e->getMessage()]);
-            return response()->json(['error' => 'Error al cargar actividades'], 500);
-        }
-    }
-
-    public function getEquipos()
-    {
-        try {
-            $empresaId = 1;
-            $equipos = $this->equipoRepositorio->getAllByEmpresa($empresaId);
-
-            $equiposTransformados = $equipos->map(function($equipo) {
-                return [
-                    'id' => $equipo->id,
-                    'nombre' => $equipo->nombre
-                ];
-            });
-
-            return response()->json($equiposTransformados);
-
-        } catch (\Exception $e) {
-            Log::error('Error en getEquipos', ['error' => $e->getMessage()]);
-            return response()->json(['error' => 'Error al cargar equipos'], 500);
-        }
-    }
-
     public function getMetasPorEquipo($equipoId)
     {
-        // LOGGING MEJORADO PARA DEBUGGING
-        Log::info('=== INICIO getMetasPorEquipo ===', [
-            'equipo_id' => $equipoId,
-            'request_url' => request()->url(),
-            'request_method' => request()->method(),
-            'request_headers' => request()->headers->all(),
-            'user_agent' => request()->userAgent()
-        ]);
-        
         try {
             // Validar que el equipoId sea un número válido
             if (!is_numeric($equipoId) || $equipoId <= 0) {
-                Log::error('ID de equipo inválido', ['equipo_id' => $equipoId]);
                 return response()->json(['error' => 'ID de equipo inválido'], 400);
             }
 
             // Verificar que el equipo existe
             $equipo = $this->equipoRepositorio->getById($equipoId);
-            Log::info('Resultado búsqueda equipo', ['equipo_encontrado' => $equipo ? true : false]);
             
             if (!$equipo) {
-                Log::error('Equipo no encontrado', ['equipo_id' => $equipoId]);
                 return response()->json(['error' => 'Equipo no encontrado'], 404);
             }
 
-            Log::info('Equipo encontrado', ['equipo_id' => $equipoId, 'equipo_nombre' => $equipo->nombre]);
-
             // Obtener las metas del equipo
             $metas = $this->metaRepositorio->getByEquipo($equipoId);
-            Log::info('Metas obtenidas', ['equipo_id' => $equipoId, 'metas_count' => $metas->count()]);
 
             // Transformar las metas para la respuesta
             $metasTransformadas = $metas->map(function($meta) {
@@ -181,22 +112,14 @@ class ActividadesController extends Controller
                 ];
             });
 
-            Log::info('=== FIN getMetasPorEquipo EXITOSO ===', [
-                'equipo_id' => $equipoId, 
-                'metas_transformadas' => $metasTransformadas->toArray()
-            ]);
-
             return response()->json($metasTransformadas);
 
         } catch (\Exception $e) {
-            Log::error('=== ERROR en getMetasPorEquipo ===', [
-                'error' => $e->getMessage(), 
-                'trace' => $e->getTraceAsString(),
-                'equipo_id' => $equipoId,
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
+            Log::error('Error en getMetasPorEquipo', [
+                'error' => $e->getMessage(),
+                'equipo_id' => $equipoId
             ]);
-            return response()->json(['error' => 'Error interno del servidor: ' . $e->getMessage()], 500);
+            return response()->json(['error' => 'Error interno del servidor'], 500);
         }
     }
 
@@ -220,6 +143,9 @@ class ActividadesController extends Controller
                 'fecha_entrega' => $request->fecha_entrega
             ]);
 
+            // Cargar relaciones para la respuesta
+            $tarea->load(['meta.equipo', 'estado']);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Actividad creada exitosamente',
@@ -227,17 +153,92 @@ class ActividadesController extends Controller
                     'id' => $tarea->id,
                     'titulo' => $tarea->nombre,
                     'descripcion' => $tarea->descripcion,
-                    'estado' => $tarea->estado ? strtolower(str_replace(' ', '-', $tarea->estado->nombre)) : 'pendiente',
-                    'estado_nombre' => $tarea->estado ? $tarea->estado->nombre : 'Pendiente',
+                    'estado' => $tarea->estado ? $tarea->estado->nombre : 'Sin estado',
+                    'estado_id' => $tarea->estado_id,
                     'meta' => $tarea->meta ? $tarea->meta->nombre : 'Sin meta',
+                    'meta_id' => $tarea->meta_id,
                     'equipo' => $tarea->meta && $tarea->meta->equipo ? $tarea->meta->equipo->nombre : 'Sin equipo',
-                    'fecha_entrega' => $tarea->fecha_entrega ? \Carbon\Carbon::parse($tarea->fecha_entrega)->format('Y-m-d') : null
+                    'equipo_id' => $tarea->meta && $tarea->meta->equipo ? $tarea->meta->equipo->id : null,
+                    'fecha_creacion' => $tarea->fecha_creacion ? \Carbon\Carbon::parse($tarea->fecha_creacion)->format('Y-m-d') : null,
+                    'fecha_entrega' => $tarea->fecha_entrega ? \Carbon\Carbon::parse($tarea->fecha_entrega)->format('Y-m-d') : null,
+                    'esta_vencida' => $tarea->esta_vencida,
+                    'esta_completada' => $tarea->esta_completada
                 ]
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error en store actividad', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return response()->json(['error' => 'Error al crear la actividad: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function show($id)
+    {
+        try {
+            $tarea = $this->tareaRepositorio->getById($id);
+            
+            if (!$tarea) {
+                return response()->json(['error' => 'Actividad no encontrada'], 404);
+            }
+
+            return response()->json([
+                'id' => $tarea->id,
+                'titulo' => $tarea->nombre,
+                'descripcion' => $tarea->descripcion,
+                'estado' => $tarea->estado ? $tarea->estado->nombre : 'Sin estado',
+                'estado_id' => $tarea->estado_id,
+                'meta' => $tarea->meta ? $tarea->meta->nombre : 'Sin meta',
+                'meta_id' => $tarea->meta_id,
+                'equipo' => $tarea->meta && $tarea->meta->equipo ? $tarea->meta->equipo->nombre : 'Sin equipo',
+                'equipo_id' => $tarea->meta && $tarea->meta->equipo ? $tarea->meta->equipo->id : null,
+                'fecha_creacion' => $tarea->fecha_creacion ? \Carbon\Carbon::parse($tarea->fecha_creacion)->format('d/m/Y') : null,
+                'fecha_entrega' => $tarea->fecha_entrega ? \Carbon\Carbon::parse($tarea->fecha_entrega)->format('Y-m-d') : null,
+                'esta_vencida' => $tarea->esta_vencida,
+                'esta_completada' => $tarea->esta_completada
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error en show actividad', ['error' => $e->getMessage(), 'id' => $id]);
+            return response()->json(['error' => 'Error al cargar la actividad'], 500);
+        }
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'nombre' => 'required|string|max:255',
+            'descripcion' => 'nullable|string|max:1000',
+            'meta_id' => 'required|integer|exists:metas,id',
+            'estado_id' => 'required|integer|exists:estados,id',
+            'fecha_entrega' => 'nullable|date'
+        ]);
+
+        try {
+            $actualizado = $this->tareaRepositorio->update($id, [
+                'nombre' => $request->nombre,
+                'descripcion' => $request->descripcion,
+                'meta_id' => $request->meta_id,
+                'estado_id' => $request->estado_id,
+                'fecha_entrega' => $request->fecha_entrega
+            ]);
+
+            if (!$actualizado) {
+                return response()->json(['error' => 'Actividad no encontrada'], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Actividad actualizada exitosamente'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error en update actividad', [
+                'error' => $e->getMessage(),
+                'id' => $id,
+                'data' => $request->all()
+            ]);
+            
+            return response()->json(['error' => 'Error al actualizar la actividad: ' . $e->getMessage()], 500);
         }
     }
 

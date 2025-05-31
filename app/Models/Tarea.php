@@ -13,6 +13,7 @@ class Tarea extends Model
 
     protected $fillable = ['meta_id', 'estado_id', 'nombre', 'descripcion', 'fecha_creacion', 'fecha_entrega'];
 
+    protected $dates = ['fecha_creacion', 'fecha_entrega', 'deleted_at'];
     public function meta()
     {
         return $this->belongsTo(Meta::class);

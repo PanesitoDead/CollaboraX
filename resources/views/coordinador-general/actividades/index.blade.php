@@ -170,25 +170,6 @@
                         </div>
                     </div>
                     
-                    <!-- BOTONES DE PRUEBA MEJORADOS -->
-                    <div class="mt-2 p-2 bg-gray-50 rounded text-xs">
-                        <div class="font-medium text-gray-700 mb-2">🔧 Herramientas de Debug:</div>
-                        <div class="flex gap-2 flex-wrap">
-                            <button type="button" onclick="testSimpleRoute()" class="text-blue-600 hover:text-blue-800 underline">
-                                Test Simple
-                            </button>
-                            <button type="button" onclick="testParameterRoute()" class="text-blue-600 hover:text-blue-800 underline">
-                                Test Parámetro
-                            </button>
-                            <button type="button" onclick="testMetasRoute()" class="text-blue-600 hover:text-blue-800 underline">
-                                Test Metas
-                            </button>
-                            <button type="button" onclick="showRouteInfo()" class="text-green-600 hover:text-green-800 underline">
-                                Info Rutas
-                            </button>
-                        </div>
-                    </div>
-                    
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Asignado a (Meta)</label>
                         <select name="meta_id" id="metaSelect" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
@@ -236,6 +217,27 @@
                         Cerrar
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Delete Modal -->
+<div id="confirmDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 form-transition">
+        <div class="p-6 text-center">
+            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="alert-triangle" class="w-6 h-6 text-red-600"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">Confirmar eliminación</h3>
+            <p id="confirmDeleteText" class="text-gray-600 mb-6">¿Estás seguro de que deseas eliminar esta actividad?</p>
+            <div class="flex space-x-3">
+                <button type="button" onclick="closeConfirmDeleteModal()" class="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                    Cancelar
+                </button>
+                <button type="button" id="confirmDeleteButton" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                    Eliminar
+                </button>
             </div>
         </div>
     </div>
@@ -354,26 +356,22 @@ function createActivityCard(actividad) {
     
     // Evitar que el click para arrastrar abra el modal de detalles
     card.addEventListener('click', function(e) {
-        // Solo mostrar detalles si no estamos arrastrando
-        if (!card.classList.contains('sortable-drag')) {
+        // Solo mostrar detalles si no estamos arrastrando y no se hizo click en un botón
+        if (!card.classList.contains('sortable-drag') && !e.target.closest('button')) {
             showActivityDetails(actividad);
         }
     });
 
-    const statusColors = {
-        'Incompleta': 'bg-yellow-100 text-yellow-800',
-        'En proceso': 'bg-blue-100 text-blue-800',
-        'Completo': 'bg-green-100 text-green-800',
-        'Suspendida': 'bg-red-100 text-red-800'
-    };
-
     const isOverdue = actividad.esta_vencida;
-    const cardClass = isOverdue ? 'border-red-300 bg-red-50' : '';
 
     card.innerHTML = `
         <div class="flex items-start justify-between mb-2">
-            <h4 class="font-medium text-gray-900 text-sm">${actividad.titulo}</h4>
-            <span class="text-xs px-2 py-1 rounded-full ${statusColors[actividad.estado] || 'bg-gray-100 text-gray-800'}">${actividad.estado}</span>
+            <h4 class="font-medium text-gray-900 text-sm flex-1 mr-2">${actividad.titulo}</h4>
+            <div class="flex space-x-1">
+                <button onclick="event.stopPropagation(); deleteActivity(${actividad.id}, '${actividad.titulo}')" class="text-red-600 hover:text-red-800 p-1" title="Eliminar">
+                    <i data-lucide="trash-2" class="w-3 h-3"></i>
+                </button>
+            </div>
         </div>
         <p class="text-gray-600 text-xs mb-3">${actividad.descripcion || 'Sin descripción'}</p>
         <div class="flex items-center justify-between text-xs text-gray-500 mb-2">
@@ -596,118 +594,12 @@ function generateTeamSummary() {
     teamSummary.innerHTML = summaryHTML;
 }
 
-// FUNCIONES DE PRUEBA MEJORADAS
-async function testSimpleRoute() {
-    console.log('=== TEST RUTA SIMPLE ===');
-    try {
-        const response = await fetch('/coordinador-general/test-simple');
-        const text = await response.text();
-        console.log('Respuesta cruda:', text);
-        
-        if (response.ok) {
-            const data = JSON.parse(text);
-            console.log('JSON parseado:', data);
-            alert('✅ Ruta simple OK: ' + data.message);
-        } else {
-            console.error('Error HTTP:', response.status, response.statusText);
-            alert('❌ Error HTTP: ' + response.status + ' - ' + text.substring(0, 100));
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('❌ Error: ' + error.message);
-    }
-}
-
-async function testParameterRoute() {
-    console.log('=== TEST RUTA CON PARÁMETRO ===');
-    const equipoId = document.getElementById('equipoSelect').value || '1';
-    
-    try {
-        const url = `/coordinador-general/test-metas/${equipoId}`;
-        console.log('URL:', url);
-        
-        const response = await fetch(url);
-        const text = await response.text();
-        console.log('Respuesta cruda:', text);
-        
-        if (response.ok) {
-            const data = JSON.parse(text);
-            console.log('JSON parseado:', data);
-            alert('✅ Ruta con parámetro OK: ' + data.message);
-        } else {
-            console.error('Error HTTP:', response.status, response.statusText);
-            alert('❌ Error HTTP: ' + response.status + ' - ' + text.substring(0, 100));
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('❌ Error: ' + error.message);
-    }
-}
-
-async function testMetasRoute() {
-    console.log('=== TEST RUTA METAS ===');
-    const equipoId = document.getElementById('equipoSelect').value;
-    
-    if (!equipoId) {
-        alert('Primero selecciona un equipo');
-        return;
-    }
-    
-    try {
-        const url = `/coordinador-general/actividades/metas-por-equipo/${equipoId}`;
-        console.log('URL:', url);
-        
-        const response = await fetch(url);
-        const text = await response.text();
-        console.log('Respuesta cruda:', text);
-        
-        if (response.ok) {
-            const data = JSON.parse(text);
-            console.log('JSON parseado:', data);
-            alert('✅ Ruta metas OK. Metas encontradas: ' + data.length);
-        } else {
-            console.error('Error HTTP:', response.status, response.statusText);
-            alert('❌ Error HTTP: ' + response.status + ' - ' + text.substring(0, 200));
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('❌ Error: ' + error.message);
-    }
-}
-
-function showRouteInfo() {
-    const info = `
-🔍 INFORMACIÓN DE RUTAS:
-
-Base URL: ${window.location.origin}
-Ruta actual: ${window.location.pathname}
-
-Rutas de prueba:
-1. Simple: /coordinador-general/test-simple
-2. Parámetro: /coordinador-general/test-metas/{id}
-3. Metas: /coordinador-general/actividades/metas-por-equipo/{id}
-
-Equipos disponibles: ${equiposDisponibles.map(e => e.id + ':' + e.nombre).join(', ')}
-    `;
-    
-    alert(info);
-    console.log('INFO RUTAS:', {
-        baseUrl: window.location.origin,
-        currentPath: window.location.pathname,
-        equipos: equiposDisponibles
-    });
-}
-
-// Cargar metas por equipo - FUNCIÓN SIMPLIFICADA
+// Cargar metas por equipo
 async function loadMetasPorEquipo() {
     const equipoId = document.getElementById('equipoSelect').value;
     const metaSelect = document.getElementById('metaSelect');
     
-    console.log('=== INICIO loadMetasPorEquipo ===');
-    console.log('Equipo seleccionado:', equipoId);
-    
     if (!equipoId) {
-        console.log('No hay equipo seleccionado');
         metaSelect.innerHTML = '<option value="">Primero selecciona un equipo...</option>';
         return;
     }
@@ -718,7 +610,6 @@ async function loadMetasPorEquipo() {
     
     try {
         const url = `/coordinador-general/actividades/metas-por-equipo/${equipoId}`;
-        console.log('URL construida:', url);
         
         const response = await fetch(url, {
             method: 'GET',
@@ -729,46 +620,35 @@ async function loadMetasPorEquipo() {
             }
         });
         
-        console.log('Respuesta:', response.status, response.statusText);
-        
-        // Obtener el texto crudo primero
         const responseText = await response.text();
-        console.log('Texto de respuesta:', responseText.substring(0, 200));
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${responseText.substring(0, 100)}`);
         }
         
-        // Intentar parsear como JSON
         let metas;
         try {
             metas = JSON.parse(responseText);
         } catch (parseError) {
-            console.error('Error al parsear JSON:', parseError);
             throw new Error('Respuesta no es JSON válido: ' + responseText.substring(0, 100));
         }
-        
-        console.log('Metas parseadas:', metas);
         
         // Habilitar el select
         metaSelect.disabled = false;
         
         if (metas.error) {
-            console.error('Error en datos:', metas.error);
             metaSelect.innerHTML = '<option value="">Error: ' + metas.error + '</option>';
             showToast(metas.error, 'error');
             return;
         }
         
         if (!Array.isArray(metas)) {
-            console.error('Respuesta no es un array:', typeof metas, metas);
             metaSelect.innerHTML = '<option value="">Error: Respuesta inválida del servidor</option>';
             showToast('Error: Respuesta inválida del servidor', 'error');
             return;
         }
         
         if (metas.length === 0) {
-            console.log('No hay metas para este equipo');
             metaSelect.innerHTML = '<option value="">No hay metas disponibles para este equipo</option>';
             showToast('Este equipo no tiene metas asignadas. Crea una meta primero.', 'warning');
             return;
@@ -779,14 +659,8 @@ async function loadMetasPorEquipo() {
             metas.map(meta => `<option value="${meta.id}" title="${meta.descripcion || ''}">${meta.nombre}</option>`).join('');
         
         metaSelect.innerHTML = optionsHtml;
-        
-        console.log('=== FIN loadMetasPorEquipo EXITOSO ===');
-        console.log('Metas cargadas:', metas.length);
             
     } catch (error) {
-        console.error('=== ERROR en loadMetasPorEquipo ===');
-        console.error('Error completo:', error);
-        
         metaSelect.disabled = false;
         metaSelect.innerHTML = '<option value="">Error de conexión</option>';
         showToast('Error: ' + error.message, 'error');
@@ -799,13 +673,6 @@ function showActivityDetails(actividad) {
     const details = document.getElementById('activityDetails');
 
     title.textContent = actividad.titulo;
-
-    const statusColors = {
-        'Incompleta': 'bg-yellow-100 text-yellow-800',
-        'En proceso': 'bg-blue-100 text-blue-800',
-        'Completo': 'bg-green-100 text-green-800',
-        'Suspendida': 'bg-red-100 text-red-800'
-    };
 
     details.innerHTML = `
         <div class="space-y-3">
@@ -820,7 +687,7 @@ function showActivityDetails(actividad) {
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Estado</label>
-                    <span class="inline-block px-2 py-1 text-xs rounded-full ${statusColors[actividad.estado] || 'bg-gray-100 text-gray-800'}">${actividad.estado}</span>
+                    <p class="text-gray-900">${actividad.estado}</p>
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
@@ -833,12 +700,10 @@ function showActivityDetails(actividad) {
                     <p class="text-gray-900 ${actividad.esta_vencida ? 'text-red-600 font-medium' : ''}">${actividad.fecha_entrega || 'Sin fecha límite'}</p>
                 </div>
             </div>
-            ${actividad.fecha_creacion ? `
             <div>
                 <label class="block text-sm font-medium text-gray-700">Fecha de creación</label>
-                <p class="text-gray-900">${actividad.fecha_creacion}</p>
+                <p class="text-gray-900">${actividad.fecha_creacion || 'Sin fecha'}</p>
             </div>
-            ` : ''}
             ${actividad.esta_vencida ? '<div class="text-red-600 font-medium text-sm">⚠️ Esta actividad está vencida</div>' : ''}
         </div>
     `;
@@ -880,6 +745,8 @@ function closeCreateModal() {
     
     setTimeout(() => {
         modal.classList.add('hidden');
+        document.getElementById('createActivityForm').reset();
+        document.getElementById('metaSelect').innerHTML = '<option value="">Primero selecciona un equipo...</option>';
     }, 300);
 }
 
@@ -908,10 +775,6 @@ async function createActivity() {
             initSortable();
             closeCreateModal();
             showToast('Actividad creada correctamente');
-            form.reset();
-            
-            // Resetear el select de metas
-            document.getElementById('metaSelect').innerHTML = '<option value="">Primero selecciona un equipo...</option>';
         } else {
             showToast(data.error || 'Error al crear la actividad', 'error');
         }
@@ -921,6 +784,53 @@ async function createActivity() {
     }
 }
 
+function deleteActivity(activityId, activityName) {
+    // Configurar el texto del modal
+    document.getElementById('confirmDeleteText').textContent = `¿Estás seguro de que deseas eliminar la actividad "${activityName}"?`;
+    
+    // Configurar el botón de confirmación
+    const confirmButton = document.getElementById('confirmDeleteButton');
+    confirmButton.onclick = async function() {
+        try {
+            const response = await fetch(`/coordinador-general/actividades/${activityId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showToast('Actividad eliminada exitosamente');
+                closeConfirmDeleteModal();
+                
+                // Remover la actividad del array local
+                actividades = actividades.filter(a => a.id !== activityId);
+                filteredActividades = filteredActividades.filter(a => a.id !== activityId);
+                
+                // Recargar la vista
+                loadActivities();
+                generateTeamSummary();
+                initSortable();
+            } else {
+                showToast(data.error || 'Error al eliminar la actividad', 'error');
+            }
+        } catch (error) {
+            console.error('Error al eliminar actividad:', error);
+            showToast('Error de conexión al eliminar la actividad', 'error');
+        }
+    };
+    
+    // Mostrar el modal
+    document.getElementById('confirmDeleteModal').classList.remove('hidden');
+}
+
+function closeConfirmDeleteModal() {
+    document.getElementById('confirmDeleteModal').classList.add('hidden');
+}
+
 function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     const toastMessage = document.getElementById('toast-message');
@@ -928,8 +838,10 @@ function showToast(message, type = 'success') {
     // Cambiar color según el tipo
     if (type === 'error') {
         toast.className = toast.className.replace('bg-green-500', 'bg-red-500');
+    } else if (type === 'warning') {
+        toast.className = toast.className.replace('bg-green-500', 'bg-yellow-500').replace('bg-red-500', 'bg-yellow-500');
     } else {
-        toast.className = toast.className.replace('bg-red-500', 'bg-green-500');
+        toast.className = toast.className.replace('bg-red-500', 'bg-green-500').replace('bg-yellow-500', 'bg-green-500');
     }
     
     toastMessage.textContent = message;
@@ -941,6 +853,15 @@ function showToast(message, type = 'success') {
         toast.classList.add('translate-x-full', 'opacity-0');
     }, 3000);
 }
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeCreateModal();
+        closeDetailsModal();
+        closeConfirmDeleteModal();
+    }
+});
 </script>
 
 <style>
