@@ -8,11 +8,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class MiembroEquipo extends Model
 {
     use SoftDeletes;
-
+    public $timestamps = false;
     protected $table = 'miembros_equipo';
 
     protected $fillable = ['equipo_id', 'trabajador_id', 'fecha_union', 'activo'];
 
+    protected $dates = ['fecha_union', 'deleted_at'];
+
+    protected $casts = [
+        'activo' => 'boolean'
+
+    ];
     public function equipo()
     {
         return $this->belongsTo(Equipo::class);

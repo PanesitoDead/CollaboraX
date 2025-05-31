@@ -13,6 +13,8 @@ class Meta extends Model
 
     protected $fillable = ['equipo_id', 'estado_id', 'nombre', 'descripcion', 'fecha_creacion', 'fecha_entrega'];
 
+    protected $dates = ['fecha_creacion', 'fecha_entrega', 'deleted_at'];
+    
     public function equipo()
     {
         return $this->belongsTo(Equipo::class);

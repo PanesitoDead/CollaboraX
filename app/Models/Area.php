@@ -14,7 +14,8 @@ class Area extends Model
     public $timestamps = false;
 
     protected $fillable = ['empresa_id', 'nombre', 'descripcion', 'codigo', 'color', 'activo', 'fecha_creacion'];
-
+    
+    protected $casts = ['fecha_creacion', 'deleted_at'];
     public function empresa()
     {
         return $this->belongsTo(Empresa::class);

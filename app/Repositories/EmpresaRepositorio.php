@@ -12,6 +12,8 @@ class EmpresaRepositorio extends RepositorioBase
         parent::__construct($model);
     }
 
+    
+
     protected function aplicarRango(Builder $consulta, ?array $range): void
     {
         if ($range['field'] && $range['values']) {
