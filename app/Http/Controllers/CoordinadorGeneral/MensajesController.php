@@ -3,323 +3,394 @@
 namespace App\Http\Controllers\CoordinadorGeneral;
 
 use App\Http\Controllers\Controller;
+use App\Repositories\MensajeRepositorio;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class MensajesController extends Controller
 {
+    protected $mensajeRepositorio;
+
+    public function __construct(MensajeRepositorio $mensajeRepositorio)
+    {
+        $this->mensajeRepositorio = $mensajeRepositorio;
+    }
+
     public function index()
     {
-        // Datos de contactos con conversaciones
-        $contacts = [
-            [
-                'id' => 1,
-                'name' => 'Laura Sánchez',
-                'avatar' => '/placeholder.svg?height=40&width=40',
-                'online' => true,
-                'lastMessage' => '¿Podemos revisar los avances del proyecto?',
-                'time' => '10:30',
-                'unreadCount' => 3,
-                'important' => false
-            ],
-            [
-                'id' => 2,
-                'name' => 'Carlos Méndez',
-                'avatar' => '/placeholder.svg?height=40&width=40',
-                'online' => false,
-                'lastMessage' => 'Ya terminé las tareas asignadas',
-                'time' => '09:15',
-                'unreadCount' => 0,
-                'important' => false
-            ],
-            [
-                'id' => 3,
-                'name' => 'Ana Rodríguez',
-                'avatar' => '/placeholder.svg?height=40&width=40',
-                'online' => true,
-                'lastMessage' => 'Necesito ayuda con el informe',
-                'time' => 'Ayer',
-                'unreadCount' => 1,
-                'important' => true
-            ],
-            [
-                'id' => 4,
-                'name' => 'Grupo de Diseño',
-                'avatar' => '/placeholder.svg?height=40&width=40',
-                'online' => false,
-                'lastMessage' => 'Miguel: Compartí los nuevos mockups',
-                'time' => 'Ayer',
-                'unreadCount' => 0,
-                'important' => true
-            ],
-            [
-                'id' => 5,
-                'name' => 'Javier López',
-                'avatar' => '/placeholder.svg?height=40&width=40',
-                'online' => false,
-                'lastMessage' => '¿Cuándo es la próxima reunión?',
-                'time' => 'Lun',
-                'unreadCount' => 0,
-                'important' => false
-            ],
-            [
-                'id' => 6,
-                'name' => 'Equipo de Desarrollo',
-                'avatar' => '/placeholder.svg?height=40&width=40',
-                'online' => false,
-                'lastMessage' => 'Tú: Revisemos el sprint backlog',
-                'time' => 'Dom',
-                'unreadCount' => 0,
-                'important' => false
-            ],
-        ];
+        try {
+            // Por ahora usaremos empresa ID = 1 y coordinador ID = 1 para pruebas
+            $empresaId = 1;
+            $coordinadorId = 1; // En producción esto vendría del usuario autenticado
 
-        // Todos los contactos disponibles para nuevo chat
-        $allContacts = [
-            [
-                'id' => 7,
-                'name' => 'María González',
-                'role' => 'Diseñadora'
-            ],
-            [
-                'id' => 8,
-                'name' => 'Pedro Ramírez',
-                'role' => 'Desarrollador'
-            ],
-            [
-                'id' => 9,
-                'name' => 'Sofía Torres',
-                'role' => 'Product Manager'
-            ],
-            [
-                'id' => 10,
-                'name' => 'Alejandro Díaz',
-                'role' => 'QA Tester'
-            ]
-        ];
+            // Obtener conversaciones del coordinador
+            $conversaciones = $this->mensajeRepositorio->getConversacionesByCoordinador($coordinadorId, $empresaId);
+            
+            // Obtener todos los trabajadores de la empresa para nuevos chats
+            $todosTrabajadores = $this->mensajeRepositorio->getTrabajadoresByEmpresa($empresaId);
+            
+            // Obtener estadísticas
+            $estadisticas = $this->mensajeRepositorio->getEstadisticas($coordinadorId, $empresaId);
 
-        // Mensajes por contacto
-        $messages = [
-            // Laura Sánchez
-            1 => [
-                [
-                    'id' => 101,
-                    'sent' => true,
-                    'text' => 'Hola Laura, ¿cómo vas con las tareas asignadas?',
-                    'time' => '10:15',
-                    'read' => true
-                ],
-                [
-                    'id' => 102,
-                    'sent' => false,
-                    'text' => 'Hola! Estoy avanzando bien, ya terminé la documentación del API.',
-                    'time' => '10:17',
-                    'read' => true
-                ],
-                [
-                    'id' => 103,
-                    'sent' => true,
-                    'text' => 'Excelente. ¿Necesitas ayuda con algo más?',
-                    'time' => '10:18',
-                    'read' => true
-                ],
-                [
-                    'id' => 104,
-                    'sent' => false,
-                    'text' => 'Sí, tengo algunas dudas sobre el diseño de la base de datos. Te envío el diagrama que hice.',
-                    'time' => '10:20',
-                    'attachment' => [
-                        'name' => 'diagrama-db.pdf',
-                        'size' => '2.4 MB'
-                    ],
-                    'read' => true
-                ],
-                [
-                    'id' => 105,
-                    'sent' => true,
-                    'text' => 'Gracias, lo revisaré y te doy feedback. Mientras tanto, aquí tienes la documentación actualizada del proyecto.',
-                    'time' => '10:25',
-                    'attachment' => [
-                        'name' => 'documentacion-proyecto-v2.docx',
-                        'size' => '1.8 MB'
-                    ],
-                    'read' => true
-                ],
-                [
-                    'id' => 106,
-                    'sent' => false,
-                    'text' => '¿Podemos tener una reunión rápida para discutir los cambios en el sprint?',
-                    'time' => '10:30',
-                    'read' => false
+            // Transformar conversaciones para la vista manteniendo el formato original
+            $contacts = $conversaciones->map(function($conversacion) {
+                $trabajador = $conversacion['trabajador'];
+                $ultimoMensaje = $conversacion['ultimo_mensaje'];
+                
+                // Determinar si está en línea (simulado por ahora)
+                $enLinea = $trabajador->usuario && $trabajador->usuario->en_linea;
+                
+                // Formatear tiempo del último mensaje
+                $tiempo = 'Sin mensajes';
+                if ($ultimoMensaje) {
+                    $fechaMensaje = \Carbon\Carbon::parse($ultimoMensaje->fecha . ' ' . $ultimoMensaje->hora);
+                    if ($fechaMensaje->isToday()) {
+                        $tiempo = $fechaMensaje->format('H:i');
+                    } elseif ($fechaMensaje->isYesterday()) {
+                        $tiempo = 'Ayer';
+                    } else {
+                        $tiempo = $fechaMensaje->format('d/m');
+                    }
+                }
+
+                return [
+                    'id' => $trabajador->id,
+                    'name' => $trabajador->nombre_completo,
+                    'avatar' => '/placeholder.svg?height=40&width=40', // Por ahora placeholder
+                    'online' => $enLinea,
+                    'lastMessage' => $ultimoMensaje ? $ultimoMensaje->contenido : 'Sin mensajes',
+                    'time' => $tiempo,
+                    'unreadCount' => $conversacion['mensajes_no_leidos'],
+                    'important' => false, // Por ahora no implementado
+                    'group' => false // Individual chat
+                ];
+            });
+
+            // Si no hay conversaciones, mostrar algunos trabajadores disponibles
+            if ($contacts->isEmpty()) {
+                $contacts = $todosTrabajadores->take(5)->map(function($trabajador) {
+                    return [
+                        'id' => $trabajador->id,
+                        'name' => $trabajador->nombre_completo,
+                        'avatar' => '/placeholder.svg?height=40&width=40',
+                        'online' => false,
+                        'lastMessage' => 'Inicia una conversación',
+                        'time' => '',
+                        'unreadCount' => 0,
+                        'important' => false,
+                        'group' => false
+                    ];
+                });
+            }
+
+            // Transformar todos los trabajadores para nuevos chats
+            $allContacts = $todosTrabajadores->map(function($trabajador) {
+                return [
+                    'id' => $trabajador->id,
+                    'name' => $trabajador->nombre_completo,
+                    'role' => $trabajador->usuario && $trabajador->usuario->rol ? $trabajador->usuario->rol->nombre : 'Sin rol'
+                ];
+            });
+
+            // Obtener mensajes reales para los contactos existentes
+            $messages = [];
+            foreach ($contacts as $contact) {
+                $mensajesContacto = $this->mensajeRepositorio->getMensajesEntreUsuarios($coordinadorId, $contact['id'], 20);
+                
+                $messages[$contact['id']] = $mensajesContacto->map(function($mensaje) use ($coordinadorId) {
+                    $esEnviado = $mensaje->remitente_id == $coordinadorId;
+                    
+                    $fechaHora = \Carbon\Carbon::parse($mensaje->fecha . ' ' . $mensaje->hora);
+                    $tiempo = $fechaHora->format('H:i');
+
+                    $mensajeData = [
+                        'id' => $mensaje->id,
+                        'sent' => $esEnviado,
+                        'text' => $mensaje->contenido,
+                        'time' => $tiempo,
+                        'read' => $mensaje->leido
+                    ];
+
+                    // Agregar archivo si existe
+                    if ($mensaje->archivo) {
+                        $mensajeData['attachment'] = [
+                            'name' => $mensaje->archivo->nombre ?? 'archivo',
+                            'size' => $mensaje->archivo->tamaño ?? 'Desconocido',
+                            'type' => $mensaje->archivo->tipo ?? 'application/octet-stream'
+                        ];
+                    }
+
+                    return $mensajeData;
+                })->toArray();
+            }
+
+            // Estadísticas para las pestañas
+            $stats = [
+                'unread' => $estadisticas['mensajes_no_leidos'],
+                'important' => 0 // Por ahora no implementado
+            ];
+
+            return view('coordinador-general.mensajes.index', compact('contacts', 'allContacts', 'messages', 'stats'));
+
+        } catch (\Exception $e) {
+            Log::error('Error en mensajes index', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            
+            // En caso de error, mostrar vista con datos vacíos
+            return view('coordinador-general.mensajes.index', [
+                'contacts' => collect([]),
+                'allContacts' => collect([]),
+                'messages' => [],
+                'stats' => [
+                    'unread' => 0,
+                    'important' => 0
                 ]
-            ],
-            // Carlos Méndez
-            2 => [
-                [
-                    'id' => 201,
-                    'sent' => true,
-                    'text' => 'Hola Carlos, ¿cómo va todo con el proyecto de marketing?',
-                    'time' => '09:00',
-                    'read' => true
-                ],
-                [
-                    'id' => 202,
-                    'sent' => false,
-                    'text' => 'Todo bien, acabo de terminar las tareas asignadas para esta semana.',
-                    'time' => '09:10',
-                    'read' => true
-                ],
-                [
-                    'id' => 203,
-                    'sent' => true,
-                    'text' => 'Excelente trabajo. ¿Podrías enviarme un resumen de los resultados?',
-                    'time' => '09:12',
-                    'read' => true
-                ],
-                [
-                    'id' => 204,
-                    'sent' => false,
-                    'text' => 'Ya terminé las tareas asignadas. Te envío el informe por correo.',
-                    'time' => '09:15',
-                    'read' => true
-                ]
-            ],
-            // Ana Rodríguez
-            3 => [
-                [
-                    'id' => 301,
-                    'sent' => false,
-                    'text' => 'Necesito ayuda con el informe trimestral, ¿tienes un momento?',
-                    'time' => 'Ayer 15:30',
-                    'read' => true
-                ],
-                [
-                    'id' => 302,
-                    'sent' => true,
-                    'text' => 'Claro, ¿qué necesitas específicamente?',
-                    'time' => 'Ayer 15:45',
-                    'read' => true
-                ],
-                [
-                    'id' => 303,
-                    'sent' => false,
-                    'text' => 'No entiendo cómo calcular las métricas de rendimiento según el nuevo formato',
-                    'time' => 'Ayer 16:00',
-                    'read' => true
-                ]
-            ]
-        ];
+            ])->with('error', 'Error al cargar los mensajes');
+        }
+    }
 
-        // Estadísticas para las pestañas
-        $stats = [
-            'unread' => 2, // Número de conversaciones no leídas
-            'important' => 2 // Número de conversaciones importantes
-        ];
+    public function getMessages($contactId)
+    {
+        try {
+            $coordinadorId = 1; // En producción del usuario autenticado
+            $empresaId = 1;
 
-        return view('coordinador-general.mensajes.index', compact('contacts', 'allContacts', 'messages', 'stats'));
+            // Verificar que el contacto pertenece a la empresa
+            if (!$this->mensajeRepositorio->trabajadorPerteneceAEmpresa($contactId, $empresaId)) {
+                return response()->json(['error' => 'Contacto no válido'], 403);
+            }
+
+            // Obtener mensajes entre el coordinador y el contacto
+            $mensajes = $this->mensajeRepositorio->getMensajesEntreUsuarios($coordinadorId, $contactId);
+
+            // Marcar mensajes como leídos
+            $this->mensajeRepositorio->marcarComoLeidos($contactId, $coordinadorId);
+
+            // Transformar mensajes para la vista
+            $mensajesTransformados = $mensajes->map(function($mensaje) use ($coordinadorId) {
+                $esEnviado = $mensaje->remitente_id == $coordinadorId;
+                
+                $fechaHora = \Carbon\Carbon::parse($mensaje->fecha . ' ' . $mensaje->hora);
+                $tiempo = $fechaHora->format('H:i');
+
+                $mensajeData = [
+                    'id' => $mensaje->id,
+                    'sent' => $esEnviado,
+                    'text' => $mensaje->contenido,
+                    'time' => $tiempo,
+                    'read' => $mensaje->leido
+                ];
+
+                // Agregar archivo si existe
+                if ($mensaje->archivo) {
+                    $mensajeData['attachment'] = [
+                        'name' => $mensaje->archivo->nombre ?? 'archivo',
+                        'size' => $mensaje->archivo->tamaño ?? 'Desconocido',
+                        'type' => $mensaje->archivo->tipo ?? 'application/octet-stream'
+                    ];
+                }
+
+                return $mensajeData;
+            });
+
+            return response()->json([
+                'success' => true,
+                'messages' => $mensajesTransformados
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al obtener mensajes', [
+                'error' => $e->getMessage(),
+                'contactId' => $contactId
+            ]);
+            return response()->json(['error' => 'Error al cargar los mensajes'], 500);
+        }
     }
 
     public function send(Request $request)
     {
-        // Validar la solicitud
         $request->validate([
             'contact_id' => 'required|integer',
-            'message' => 'required|string'
+            'message' => 'nullable|string|max:1000'
         ]);
 
-        // En un entorno real, aquí guardaríamos el mensaje en la base de datos
-        // y lo enviaríamos a través de un sistema de mensajería en tiempo real
+        try {
+            $coordinadorId = 1; // En producción del usuario autenticado
+            $empresaId = 1;
 
-        // Simulamos una respuesta exitosa
-        return response()->json([
-            'success' => true,
-            'message' => [
-                'id' => rand(1000, 9999),
-                'sent' => true,
-                'text' => $request->message,
-                'time' => now()->format('H:i'),
-                'read' => false
-            ],
-            'autoReply' => [
-                'id' => rand(1000, 9999),
-                'sent' => false,
-                'text' => $this->generateAutoReply(),
-                'time' => now()->addMinutes(1)->format('H:i'),
-                'read' => true
-            ]
-        ]);
+            // Verificar que el contacto pertenece a la empresa
+            if (!$this->mensajeRepositorio->trabajadorPerteneceAEmpresa($request->contact_id, $empresaId)) {
+                return response()->json(['error' => 'Contacto no válido'], 403);
+            }
+
+            $mensaje = null;
+            
+            // Solo crear mensaje si hay contenido de texto
+            if ($request->filled('message')) {
+                // Crear el mensaje
+                $mensaje = $this->mensajeRepositorio->create([
+                    'remitente_id' => $coordinadorId,
+                    'destinatario_id' => $request->contact_id,
+                    'contenido' => $request->message
+                ]);
+            }
+
+            // Manejar archivos si existen
+            $attachments = [];
+            if ($request->hasFile('files')) {
+                foreach ($request->file('files') as $file) {
+                    // Aquí podrías guardar el archivo y crear un registro en la tabla archivos
+                    // Por ahora solo simulamos la respuesta
+                    $attachments[] = [
+                        'name' => $file->getClientOriginalName(),
+                        'size' => $this->formatFileSize($file->getSize()),
+                        'type' => $file->getMimeType()
+                    ];
+                }
+            }
+
+            // Formatear respuesta
+            $response = [
+                'success' => true,
+                'message' => [
+                    'id' => $mensaje ? $mensaje->id : rand(1000, 9999),
+                    'sent' => true,
+                    'text' => $request->message ?? '',
+                    'time' => now()->format('H:i'),
+                    'read' => false
+                ]
+            ];
+
+            // Agregar archivos adjuntos a la respuesta si existen
+            if (!empty($attachments)) {
+                $response['message']['attachments'] = $attachments;
+            }
+
+            return response()->json($response);
+
+        } catch (\Exception $e) {
+            Log::error('Error al enviar mensaje', [
+                'error' => $e->getMessage(),
+                'data' => $request->all()
+            ]);
+            return response()->json(['error' => 'Error al enviar el mensaje'], 500);
+        }
     }
 
     public function newChat(Request $request)
     {
-        // Validar la solicitud
         $request->validate([
             'contact_id' => 'required|integer',
-            'message' => 'required|string'
+            'message' => 'required|string|max:1000'
         ]);
 
-        // En un entorno real, aquí crearíamos una nueva conversación
-        // y enviaríamos el primer mensaje
+        try {
+            $coordinadorId = 1; // En producción del usuario autenticado
+            $empresaId = 1;
 
-        // Simulamos una respuesta exitosa
-        return response()->json([
-            'success' => true,
-            'message' => 'Chat iniciado correctamente'
-        ]);
+            // Verificar que el contacto pertenece a la empresa
+            if (!$this->mensajeRepositorio->trabajadorPerteneceAEmpresa($request->contact_id, $empresaId)) {
+                return response()->json(['error' => 'Contacto no válido'], 403);
+            }
+
+            // Crear el primer mensaje de la conversación
+            $mensaje = $this->mensajeRepositorio->create([
+                'remitente_id' => $coordinadorId,
+                'destinatario_id' => $request->contact_id,
+                'contenido' => $request->message
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Chat iniciado correctamente'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al crear nuevo chat', [
+                'error' => $e->getMessage(),
+                'data' => $request->all()
+            ]);
+            return response()->json(['error' => 'Error al iniciar el chat'], 500);
+        }
     }
 
     public function search(Request $request)
     {
-        // Validar la solicitud
         $request->validate([
             'query' => 'required|string|min:2'
         ]);
 
-        // En un entorno real, aquí buscaríamos en la base de datos
-        // Simulamos una respuesta con resultados filtrados
-        $query = strtolower($request->query('query'));
-        
-        // Datos de contactos con conversaciones (mismos que en index)
-        $contacts = [
-            [
-                'id' => 1,
-                'name' => 'Laura Sánchez',
-                'avatar' => '/placeholder.svg?height=40&width=40',
-                'online' => true,
-                'lastMessage' => '¿Podemos revisar los avances del proyecto?',
-                'time' => '10:30',
-                'unreadCount' => 3,
-                'important' => false
-            ],
-            // ... otros contactos
-        ];
-        
-        // Filtrar contactos que coincidan con la búsqueda
-        $filteredContacts = array_filter($contacts, function($contact) use ($query) {
-            return stripos(strtolower($contact['name']), $query) !== false || 
-                   stripos(strtolower($contact['lastMessage']), $query) !== false;
-        });
-        
-        return response()->json([
-            'success' => true,
-            'contacts' => array_values($filteredContacts)
-        ]);
+        try {
+            $empresaId = 1;
+            
+            // Buscar trabajadores
+            $trabajadores = $this->mensajeRepositorio->buscarTrabajadores($request->input('query'), $empresaId);
+
+            // Transformar resultados manteniendo el formato original
+            $resultados = $trabajadores->map(function($trabajador) {
+                return [
+                    'id' => $trabajador->id,
+                    'name' => $trabajador->nombre_completo,
+                    'avatar' => '/placeholder.svg?height=40&width=40',
+                    'online' => $trabajador->usuario && $trabajador->usuario->en_linea,
+                    'lastMessage' => 'Resultado de búsqueda',
+                    'time' => '',
+                    'unreadCount' => 0,
+                    'important' => false,
+                    'group' => false
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'contacts' => $resultados
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error en búsqueda de contactos', [
+                'error' => $e->getMessage(),
+                'query' => $request->input('query')
+            ]);
+            return response()->json(['error' => 'Error en la búsqueda'], 500);
+        }
     }
 
-    private function generateAutoReply()
+    public function markAsRead(Request $request)
     {
-        $replies = [
-            'Gracias por tu mensaje. Lo revisaré pronto.',
-            'Recibido. Te responderé en cuanto pueda.',
-            'Entendido, trabajaré en ello.',
-            'Perfecto, gracias por la información.',
-            '¿Podríamos agendar una reunión para discutir esto?',
-            'Necesito más detalles sobre este tema.',
-            'Excelente, continuemos con el plan.',
-            'Voy a consultar con el equipo y te aviso.',
-            'Esto es justo lo que necesitábamos.',
-            'Déjame verificar y te confirmo.'
-        ];
+        $request->validate([
+            'contact_id' => 'required|integer'
+        ]);
 
-        return $replies[array_rand($replies)];
+        try {
+            $coordinadorId = 1; // En producción del usuario autenticado
+            $empresaId = 1;
+
+            // Verificar que el contacto pertenece a la empresa
+            if (!$this->mensajeRepositorio->trabajadorPerteneceAEmpresa($request->contact_id, $empresaId)) {
+                return response()->json(['error' => 'Contacto no válido'], 403);
+            }
+
+            // Marcar mensajes como leídos
+            $this->mensajeRepositorio->marcarComoLeidos($request->contact_id, $coordinadorId);
+
+            return response()->json(['success' => true]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al marcar como leído', [
+                'error' => $e->getMessage(),
+                'contact_id' => $request->contact_id
+            ]);
+            return response()->json(['error' => 'Error al marcar como leído'], 500);
+        }
     }
+
+    private function formatFileSize($bytes)
+    {
+        if ($bytes === 0) return '0 Bytes';
+        $k = 1024;
+        $sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        $i = floor(log($bytes) / log($k));
+        return round($bytes / pow($k, $i), 2) . ' ' . $sizes[$i];
+    }
+
+    
 }

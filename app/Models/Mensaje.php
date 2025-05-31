@@ -10,7 +10,7 @@ class Mensaje extends Model
     use SoftDeletes;
 
     protected $table = 'mensajes';
-
+    public $timestamps = false;
     protected $fillable = ['remitente_id', 'destinatario_id', 'contenido', 'fecha', 'hora', 'leido', 'archivo_id'];
 
     public function remitente()

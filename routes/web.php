@@ -95,7 +95,7 @@ Route::get('/colaborador/configuracion', [\App\Http\Controllers\colaborador\Conf
 
 //  Coordinador de Equipo
     Route::get('/coord-equipo/dashboard', [CoordEquipoController::class, 'dashboard'])->name('coord-equipo.dashboard');
-    
+
     Route::post('/coord-equipo/actividades', [CoordEquipoController::class, 'crearActividad'])->name('coord-equipo.actividades.store');
     Route::post('/coord-equipo/metas', [CoordEquipoController::class, 'crearMeta'])->name('coord-equipo.metas.store');
     Route::get('/coord-equipo/configuracion', [CoordEquipoController::class, 'dashboard'])->name('coord-equipo.configuracion');
@@ -194,6 +194,8 @@ Route::delete('/coordinador-general/metas/{id}', [MetasController::class, 'destr
 
 // Rutas de mensajes para coordinador general
 Route::get('/coordinador-general/mensajes', [MensajesController::class, 'index'])->name('coordinador-general.mensajes');
+Route::get('/coordinador-general/mensajes/{contactId}/messages', [MensajesController::class, 'getMessages'])->name('mensajes.get-messages');
 Route::post('/coordinador-general/mensajes/send', [MensajesController::class, 'send'])->name('coordinador-general.mensajes.send');
 Route::post('/coordinador-general/mensajes/new-chat', [MensajesController::class, 'newChat'])->name('coordinador-general.mensajes.new-chat');
 Route::get('/coordinador-general/mensajes/search', [MensajesController::class, 'search'])->name('coordinador-general.mensajes.search');
+Route::post('/coordinador-general/mensajes/mark-read', [MensajesController::class, 'markAsRead'])->name('coordinador-general.mensajes.mark-read');
