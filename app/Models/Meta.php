@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Meta extends Model
 {
     use SoftDeletes;
-
+    public $timestamps = false;
     protected $table = 'metas';
 
     protected $fillable = ['equipo_id', 'estado_id', 'nombre', 'descripcion', 'fecha_creacion', 'fecha_entrega'];
@@ -28,5 +28,34 @@ class Meta extends Model
     public function tareas()
     {
         return $this->hasMany(Tarea::class);
+    }
+
+    // Accessor para calcular progreso basado en tareas
+    public function getProgresoAttribute()
+    {
+        $totalTareas = $this->tareas->count();
+        if ($totalTareas === 0) {
+            return 0;
+        }
+
+        $tareasCompletadas = $this->tareas->filter(function($tarea) {
+            return $tarea->estado && $tarea->estado->nombre === 'Completo';
+        })->count();
+
+        return round(($tareasCompletadas / $totalTareas) * 100);
+    }
+
+    // Accessor para contar tareas completadas
+    public function getTareasCompletadasCountAttribute()
+    {
+        return $this->tareas->filter(function($tarea) {
+            return $tarea->estado && $tarea->estado->nombre === 'Completo';
+        })->count();
+    }
+
+    // Accessor para contar total de tareas
+    public function getTotalTareasCountAttribute()
+    {
+        return $this->tareas->count();
     }
 }

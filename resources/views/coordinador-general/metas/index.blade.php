@@ -26,15 +26,15 @@
             </div>
             <select id="estadoFilter" onchange="filterMetas()" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
                 <option value="">Todos los estados</option>
-                <option value="Pendiente">Pendiente</option>
-                <option value="En Progreso">En Progreso</option>
-                <option value="Completada">Completada</option>
+                @foreach($estados as $estado)
+                <option value="{{ $estado->nombre }}">{{ $estado->nombre }}</option>
+                @endforeach
             </select>
-            <select id="prioridadFilter" onchange="filterMetas()" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
-                <option value="">Todas las prioridades</option>
-                <option value="Alta">Alta</option>
-                <option value="Media">Media</option>
-                <option value="Baja">Baja</option>
+            <select id="equipoFilter" onchange="filterMetas()" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
+                <option value="">Todos los equipos</option>
+                @foreach($equipos as $equipo)
+                <option value="{{ $equipo['nombre'] }}">{{ $equipo['nombre'] }}</option>
+                @endforeach
             </select>
         </div>
     </div>
@@ -42,18 +42,23 @@
     <!-- Metas Grid -->
     <div class="flex-1 p-6">
         <div id="metasGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            @foreach($metas as $index => $meta)
-                <div class="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg form-transition hover-scale cursor-pointer" 
-                     data-meta-id="{{ $meta['id'] }}" onclick="openDetailsModalById({{ $meta['id'] }})">
+            @foreach($metas as $meta)
+                <div class="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg form-transition hover-scale cursor-pointer meta-card" 
+                     data-meta-id="{{ $meta['id'] }}" 
+                     data-estado="{{ $meta['estado'] }}"
+                     data-equipo="{{ $meta['equipo'] }}"
+                     onclick="openDetailsModalById({{ $meta['id'] }})">
                     <div class="flex items-start justify-between mb-4">
                         <h3 class="text-lg font-semibold text-gray-900">{{ $meta['titulo'] }}</h3>
                         <span class="px-2 py-1 text-xs font-medium rounded-full 
-                            @if($meta['estado'] == 'Pendiente') bg-yellow-100 text-yellow-800
-                            @elseif($meta['estado'] == 'En Progreso') bg-blue-100 text-blue-800
-                            @elseif($meta['estado'] == 'Completada') bg-green-100 text-green-800
+                            @if($meta['estado'] == 'Incompleta') bg-yellow-100 text-yellow-800
+                            @elseif($meta['estado'] == 'En proceso') bg-blue-100 text-blue-800
+                            @elseif($meta['estado'] == 'Completo') bg-green-100 text-green-800
+                            @elseif($meta['estado'] == 'Suspendida') bg-red-100 text-red-800
+                            @else bg-gray-100 text-gray-800
                             @endif">{{ $meta['estado'] }}</span>
                     </div>
-                    <p class="text-gray-600 text-sm mb-4">{{ $meta['descripcion'] }}</p>
+                    <p class="text-gray-600 text-sm mb-4">{{ $meta['descripcion'] ?: 'Sin descripción' }}</p>
                     
                     <div class="mb-4">
                         <div class="flex items-center justify-between mb-2">
@@ -73,36 +78,54 @@
 
                     <div class="space-y-2 mb-4">
                         <div class="flex items-center justify-between">
-                            <span class="text-sm text-gray-500">Tipo:</span>
-                            <span class="text-sm font-medium text-gray-900">{{ $meta['tipo'] }}</span>
+                            <span class="text-sm text-gray-500">Equipo:</span>
+                            <span class="text-sm font-medium text-gray-900">{{ $meta['equipo'] }}</span>
                         </div>
                         <div class="flex items-center justify-between">
-                            <span class="text-sm text-gray-500">Prioridad:</span>
-                            <span class="px-2 py-1 text-xs font-medium rounded-full 
-                                @if($meta['prioridad'] == 'Alta') bg-red-100 text-red-800
-                                @elseif($meta['prioridad'] == 'Media') bg-yellow-100 text-yellow-800
-                                @elseif($meta['prioridad'] == 'Baja') bg-green-100 text-green-800
-                                @endif">{{ $meta['prioridad'] }}</span>
+                            <span class="text-sm text-gray-500">Tareas:</span>
+                            <span class="text-sm font-medium text-gray-900">{{ $meta['tareas_completadas'] }}/{{ $meta['tareas_count'] }}</span>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm text-gray-500">Grupo Asignado:</span>
-                            <span class="text-sm font-medium text-gray-900">{{ $meta['responsable'] }}</span>
-                        </div>
+                        @if($meta['fecha_entrega'])
                         <div class="flex items-center justify-between">
                             <span class="text-sm text-gray-500">Fecha límite:</span>
-                            <span class="text-sm font-medium text-gray-900">{{ \Carbon\Carbon::parse($meta['fecha_limite'])->format('d/m/Y') }}</span>
+                            <span class="text-sm font-medium text-gray-900">{{ \Carbon\Carbon::parse($meta['fecha_entrega'])->format('d/m/Y') }}</span>
                         </div>
+                        @endif
+                        @if($meta['fecha_creacion'])
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-500">Creada:</span>
+                            <span class="text-sm font-medium text-gray-900">{{ \Carbon\Carbon::parse($meta['fecha_creacion'])->format('d/m/Y') }}</span>
+                        </div>
+                        @endif
                     </div>
 
                     <div class="border-t pt-3">
-                        <div class="flex flex-wrap gap-1">
-                            @foreach($meta['equipos'] as $equipo)
-                                <span class="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">{{ $equipo }}</span>
-                            @endforeach
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-gray-500">ID: {{ $meta['id'] }}</span>
+                            <div class="flex space-x-2">
+                                <button onclick="event.stopPropagation(); editMeta({{ $meta['id'] }})" class="text-blue-600 hover:text-blue-800 text-xs">
+                                    <i data-lucide="edit" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="event.stopPropagation(); deleteMeta({{ $meta['id'] }})" class="text-red-600 hover:text-red-800 text-xs">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             @endforeach
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-12">
+            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="target" class="w-12 h-12 text-gray-400"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No se encontraron metas</h3>
+            <p class="text-gray-500 mb-6">Intenta ajustar los filtros de búsqueda o crear una nueva meta.</p>
+            <button onclick="openCreateModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                Crear primera meta
+            </button>
         </div>
     </div>
 </div>
@@ -118,58 +141,45 @@
                 </button>
             </div>
         </div>
-        <form id="createMetaForm" class="p-6 space-y-4">
+        <form id="createMetaForm" action="{{ route('coordinador-general.metas.store') }}" method="POST" class="p-6 space-y-4">
+            @csrf
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Título</label>
-                    <input type="text" name="titulo" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nombre de la Meta</label>
+                    <input type="text" name="nombre" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
-                    <select name="tipo" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
-                        <option value="Mensual">Mensual</option>
-                        <option value="Trimestral">Trimestral</option>
-                        <option value="Semestral">Semestral</option>
-                        <option value="Anual">Anual</option>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Equipo Asignado</label>
+                    <select name="equipo_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
+                        <option value="">Seleccionar equipo...</option>
+                        @foreach($equipos as $equipo)
+                            <option value="{{ $equipo['id'] }}">{{ $equipo['nombre'] }}</option>
+                        @endforeach
                     </select>
                 </div>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
-                <textarea name="descripcion" rows="3" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition"></textarea>
+                <textarea name="descripcion" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition"></textarea>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Prioridad</label>
-                    <select name="prioridad" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
-                        <option value="Alta">Alta</option>
-                        <option value="Media">Media</option>
-                        <option value="Baja">Baja</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Grupo Asignado</label>
-                    <select name="responsable" id="grupo_asignado" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
-                        <option value="">Seleccionar grupo...</option>
-                        @foreach($equiposDisponibles as $equipo)
-                            <option value="{{ $equipo }}">{{ $equipo }}</option>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                    <select name="estado_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
+                        <option value="">Seleccionar estado...</option>
+                        @foreach($estados as $estado)
+                            <option value="{{ $estado->id }}">{{ $estado->nombre }}</option>
                         @endforeach
                     </select>
                 </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Fecha Inicio</label>
-                    <input type="date" name="fecha_inicio" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
-                </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Fecha Límite</label>
-                    <input type="date" name="fecha_limite" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
+                    <input type="date" name="fecha_entrega" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
                 </div>
             </div>
             
             <div class="flex justify-end space-x-3 pt-4">
-                <button type="button" onclick="closeCreateModal()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 tab-transition">
+                <button type="button" onclick="closeCreateModal()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-150 tab-transition">
                     Cancelar
                 </button>
                 <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 tab-transition">
@@ -180,23 +190,77 @@
     </div>
 </div>
 
+<!-- Modal Editar Meta -->
+<div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-medium text-gray-900">Editar Meta</h3>
+                <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 tab-transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+        <form id="editMetaForm" class="p-6 space-y-4">
+            @csrf
+            @method('PUT')
+            <input type="hidden" id="edit_meta_id" name="meta_id">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nombre de la Meta</label>
+                    <input type="text" id="edit_nombre" name="nombre" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Equipo Asignado</label>
+                    <select id="edit_equipo_id" name="equipo_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
+                        <option value="">Seleccionar equipo...</option>
+                        @foreach($equipos as $equipo)
+                            <option value="{{ $equipo['id'] }}">{{ $equipo['nombre'] }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+                <textarea id="edit_descripcion" name="descripcion" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition"></textarea>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                    <select id="edit_estado_id" name="estado_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
+                        <option value="">Seleccionar estado...</option>
+                        @foreach($estados as $estado)
+                            <option value="{{ $estado->id }}">{{ $estado->nombre }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Fecha Límite</label>
+                    <input type="date" id="edit_fecha_entrega" name="fecha_entrega" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 pt-4">
+                <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 tab-transition">
+                    Cancelar
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 tab-transition">
+                    Actualizar Meta
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Detalles Meta -->
 <div id="detailsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
     <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div class="p-6 border-b border-gray-200">
             <div class="flex items-center justify-between">
                 <h3 id="modalTitle" class="text-lg font-medium text-gray-900"></h3>
-                <div class="flex items-center space-x-2">
-                    <button onclick="editMeta(currentMeta)" class="text-blue-600 hover:text-blue-800 tab-transition">
-                        <i data-lucide="edit" class="w-5 h-5"></i>
-                    </button>
-                    <button onclick="deleteMeta(currentMeta.id)" class="text-red-600 hover:text-red-800 tab-transition">
-                        <i data-lucide="trash-2" class="w-5 h-5"></i>
-                    </button>
-                    <button onclick="closeDetailsModal()" class="text-gray-400 hover:text-gray-600 tab-transition">
-                        <i data-lucide="x" class="w-6 h-6"></i>
-                    </button>
-                </div>
+                <button onclick="closeDetailsModal()" class="text-gray-400 hover:text-gray-600 tab-transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
             </div>
         </div>
         <div id="modalContent" class="p-6">
@@ -206,151 +270,132 @@
 </div>
 
 <!-- Toast Notification -->
-<div id="toast" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full opacity-0 transition-all duration-300 z-50">
+<div id="toast" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full opacity-0 transition-all duration-150 z-50">
     <div class="flex items-center">
         <i data-lucide="check-circle" class="w-5 h-5 mr-2"></i>
         <span id="toast-message">Operación realizada correctamente</span>
     </div>
 </div>
 
-<!-- Script con datos del servidor -->
-<script>
-// Datos del servidor
-window.metasData = @json($metas);
-window.equiposData = @json($equiposDisponibles);
-</script>
+<!-- Confirm Delete Modal -->
+<div id="confirmDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 form-transition">
+        <div class="p-6 text-center">
+            <!-- Icono de advertencia -->
+            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="alert-triangle" class="w-6 h-6 text-red-600"></i>
+            </div>
+            
+            <!-- Título -->
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">Confirmar eliminación</h3>
+            
+            <!-- Texto descriptivo -->
+            <p id="confirmDeleteText" class="text-gray-600 mb-6">¿Estás seguro de que deseas eliminar esta meta?</p>
+            
+            <!-- Botones -->
+            <div class="flex space-x-3">
+                <button type="button" onclick="closeConfirmDeleteModal()" class="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                    Cancelar
+                </button>
+                <button type="button" id="confirmDeleteButton" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 // Variables globales
-let metas = window.metasData || [];
-let equiposDisponibles = window.equiposData || [];
-let filteredMetas = [...metas];
 let currentMeta = null;
-let nextId = metas.length > 0 ? Math.max(...metas.map(m => m.id)) + 1 : 1;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     lucide.createIcons();
-    // Los datos ya están cargados desde el controlador
-    renderMetas();
+    
+    @if(session('success'))
+        showToast("{{ session('success') }}");
+    @endif
+    
+    @if(session('error'))
+        showToast("{{ session('error') }}", 'error');
+    @endif
 });
 
 // Función para abrir modal por ID
-function openDetailsModalById(metaId) {
-    const meta = metas.find(m => m.id === metaId);
-    if (meta) {
-        openDetailsModal(meta);
-    }
-}
-
-// Renderizar metas (para filtros)
-function renderMetas() {
-    const grid = document.getElementById('metasGrid');
-    grid.innerHTML = '';
-
-    filteredMetas.forEach(meta => {
-        const metaCard = createMetaCard(meta);
-        grid.appendChild(metaCard);
-    });
-
-    // Reinicializar iconos de Lucide
-    lucide.createIcons();
-}
-
-// Crear tarjeta de meta
-function createMetaCard(meta) {
-    const div = document.createElement('div');
-    div.className = 'bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg form-transition hover-scale cursor-pointer';
-    div.onclick = () => openDetailsModal(meta);
-
-    const estadoColor = {
-        'Pendiente': 'bg-yellow-100 text-yellow-800',
-        'En Progreso': 'bg-blue-100 text-blue-800',
-        'Completada': 'bg-green-100 text-green-800'
-    };
-
-    const prioridadColor = {
-        'Alta': 'bg-red-100 text-red-800',
-        'Media': 'bg-yellow-100 text-yellow-800',
-        'Baja': 'bg-green-100 text-green-800'
-    };
-
-    const progressColor = meta.progreso >= 75 ? 'bg-green-500' : meta.progreso >= 50 ? 'bg-blue-500' : meta.progreso >= 25 ? 'bg-yellow-500' : 'bg-red-500';
-
-    div.innerHTML = `
-        <div class="flex items-start justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">${meta.titulo}</h3>
-            <span class="px-2 py-1 text-xs font-medium rounded-full ${estadoColor[meta.estado]}">${meta.estado}</span>
-        </div>
-        <p class="text-gray-600 text-sm mb-4">${meta.descripcion}</p>
+async function openDetailsModalById(metaId) {
+    try {
+        const response = await fetch(`/coordinador-general/metas/${metaId}`);
+        const meta = await response.json();
         
-        <div class="mb-4">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-medium text-gray-700">Progreso</span>
-                <span class="text-sm font-medium text-gray-900">${meta.progreso}%</span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-2">
-                <div class="${progressColor} h-2 rounded-full transition-all duration-300" style="width: ${meta.progreso}%"></div>
-            </div>
-        </div>
-
-        <div class="space-y-2 mb-4">
-            <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-500">Tipo:</span>
-                <span class="text-sm font-medium text-gray-900">${meta.tipo}</span>
-            </div>
-            <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-500">Prioridad:</span>
-                <span class="px-2 py-1 text-xs font-medium rounded-full ${prioridadColor[meta.prioridad]}">${meta.prioridad}</span>
-            </div>
-            <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-500">Grupo Asignado:</span>
-                <span class="text-sm font-medium text-gray-900">${meta.responsable}</span>
-            </div>
-            <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-500">Fecha límite:</span>
-                <span class="text-sm font-medium text-gray-900">${new Date(meta.fecha_limite).toLocaleDateString()}</span>
-            </div>
-        </div>
-
-        <div class="border-t pt-3">
-            <div class="flex flex-wrap gap-1">
-                ${meta.equipos.map(equipo => 
-                    `<span class="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">${equipo}</span>`
-                ).join('')}
-            </div>
-        </div>
-    `;
-
-    return div;
+        if (meta.error) {
+            showToast(meta.error, 'error');
+            return;
+        }
+        
+        openDetailsModal(meta);
+    } catch (error) {
+        console.error('Error al cargar meta:', error);
+        showToast('Error al cargar los detalles de la meta', 'error');
+    }
 }
 
 // Filtrar metas
 function filterMetas() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const estadoFilter = document.getElementById('estadoFilter').value;
-    const prioridadFilter = document.getElementById('prioridadFilter').value;
+    const equipoFilter = document.getElementById('equipoFilter').value;
+    const metaCards = document.querySelectorAll('.meta-card');
+    let visibleCount = 0;
 
-    filteredMetas = metas.filter(meta => {
-        const matchesSearch = meta.titulo.toLowerCase().includes(searchTerm) || 
-                            meta.descripcion.toLowerCase().includes(searchTerm);
-        const matchesEstado = !estadoFilter || meta.estado === estadoFilter;
-        const matchesPrioridad = !prioridadFilter || meta.prioridad === prioridadFilter;
+    metaCards.forEach(card => {
+        const titulo = card.querySelector('h3').textContent.toLowerCase();
+        const descripcion = card.querySelector('p').textContent.toLowerCase();
+        const estado = card.dataset.estado;
+        const equipo = card.dataset.equipo;
 
-        return matchesSearch && matchesEstado && matchesPrioridad;
+        const matchesSearch = titulo.includes(searchTerm) || descripcion.includes(searchTerm);
+        const matchesEstado = !estadoFilter || estado === estadoFilter;
+        const matchesEquipo = !equipoFilter || equipo === equipoFilter;
+
+        if (matchesSearch && matchesEstado && matchesEquipo) {
+            card.style.display = 'block';
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
     });
 
-    renderMetas();
+    // Show/hide empty state
+    const emptyState = document.getElementById('emptyState');
+    if (visibleCount === 0) {
+        emptyState.classList.remove('hidden');
+    } else {
+        emptyState.classList.add('hidden');
+    }
 }
 
 // Modal functions
 function openCreateModal() {
     document.getElementById('createModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
 }
 
 function closeCreateModal() {
     document.getElementById('createModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
     document.getElementById('createMetaForm').reset();
+}
+
+function openEditModal() {
+    document.getElementById('editModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    document.getElementById('editMetaForm').reset();
 }
 
 function openDetailsModal(meta) {
@@ -361,25 +406,18 @@ function openDetailsModal(meta) {
 
     title.textContent = meta.titulo;
 
-    const estadoColor = {
-        'Pendiente': 'bg-yellow-100 text-yellow-800',
-        'En Progreso': 'bg-blue-100 text-blue-800',
-        'Completada': 'bg-green-100 text-green-800'
+    const estadoColors = {
+        'Incompleta': 'bg-yellow-100 text-yellow-800',
+        'En proceso': 'bg-blue-100 text-blue-800',
+        'Completo': 'bg-green-100 text-green-800',
+        'Suspendida': 'bg-red-100 text-red-800'
     };
-
-    const prioridadColor = {
-        'Alta': 'bg-red-100 text-red-800',
-        'Media': 'bg-yellow-100 text-yellow-800',
-        'Baja': 'bg-green-100 text-green-800'
-    };
-
-    const progressColor = meta.progreso >= 75 ? 'bg-green-500' : meta.progreso >= 50 ? 'bg-blue-500' : meta.progreso >= 25 ? 'bg-yellow-500' : 'bg-red-500';
 
     content.innerHTML = `
         <div class="space-y-6">
             <div>
                 <h4 class="text-sm font-medium text-gray-900 mb-2">Descripción</h4>
-                <p class="text-gray-600">${meta.descripcion}</p>
+                <p class="text-gray-600">${meta.descripcion || 'Sin descripción'}</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -388,19 +426,11 @@ function openDetailsModal(meta) {
                     <div class="space-y-3">
                         <div class="flex items-center justify-between">
                             <span class="text-sm text-gray-500">Estado:</span>
-                            <span class="px-2 py-1 text-xs font-medium rounded-full ${estadoColor[meta.estado]}">${meta.estado}</span>
+                            <span class="px-2 py-1 text-xs font-medium rounded-full ${estadoColors[meta.estado] || 'bg-gray-100 text-gray-800'}">${meta.estado}</span>
                         </div>
                         <div class="flex items-center justify-between">
-                            <span class="text-sm text-gray-500">Prioridad:</span>
-                            <span class="px-2 py-1 text-xs font-medium rounded-full ${prioridadColor[meta.prioridad]}">${meta.prioridad}</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm text-gray-500">Tipo:</span>
-                            <span class="text-sm font-medium text-gray-900">${meta.tipo}</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm text-gray-500">Grupo Asignado:</span>
-                            <span class="text-sm font-medium text-gray-900">${meta.responsable}</span>
+                            <span class="text-sm text-gray-500">Equipo:</span>
+                            <span class="text-sm font-medium text-gray-900">${meta.equipo}</span>
                         </div>
                     </div>
                 </div>
@@ -408,100 +438,162 @@ function openDetailsModal(meta) {
                 <div>
                     <h4 class="text-sm font-medium text-gray-900 mb-3">Fechas</h4>
                     <div class="space-y-3">
+                        ${meta.fecha_creacion ? `
                         <div class="flex items-center justify-between">
-                            <span class="text-sm text-gray-500">Fecha inicio:</span>
-                            <span class="text-sm font-medium text-gray-900">${new Date(meta.fecha_inicio).toLocaleDateString()}</span>
+                            <span class="text-sm text-gray-500">Fecha creación:</span>
+                            <span class="text-sm font-medium text-gray-900">${meta.fecha_creacion}</span>
                         </div>
+                        ` : ''}
+                        ${meta.fecha_entrega ? `
                         <div class="flex items-center justify-between">
                             <span class="text-sm text-gray-500">Fecha límite:</span>
-                            <span class="text-sm font-medium text-gray-900">${new Date(meta.fecha_limite).toLocaleDateString()}</span>
+                            <span class="text-sm font-medium text-gray-900">${meta.fecha_entrega}</span>
                         </div>
+                        ` : ''}
                     </div>
                 </div>
             </div>
 
+            ${meta.tareas && meta.tareas.length > 0 ? `
             <div>
-                <h4 class="text-sm font-medium text-gray-900 mb-3">Progreso</h4>
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-sm text-gray-500">Completado</span>
-                    <span class="text-sm font-medium text-gray-900">${meta.progreso}%</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-3">
-                    <div class="${progressColor} h-3 rounded-full transition-all duration-300" style="width: ${meta.progreso}%"></div>
+                <h4 class="text-sm font-medium text-gray-900 mb-3">Tareas Asociadas</h4>
+                <div class="space-y-2">
+                    ${meta.tareas.map(tarea => `
+                        <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                            <span class="text-sm text-gray-900">${tarea.nombre}</span>
+                            <span class="px-2 py-1 text-xs font-medium rounded-full ${estadoColors[tarea.estado] || 'bg-gray-100 text-gray-800'}">${tarea.estado}</span>
+                        </div>
+                    `).join('')}
                 </div>
             </div>
-
-            <div>
-                <h4 class="text-sm font-medium text-gray-900 mb-3">Equipos Asignados</h4>
-                <div class="flex flex-wrap gap-2">
-                    ${meta.equipos.map(equipo => 
-                        `<span class="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full">${equipo}</span>`
-                    ).join('')}
-                </div>
-            </div>
+            ` : ''}
         </div>
     `;
 
     modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
 }
 
 function closeDetailsModal() {
     document.getElementById('detailsModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
     currentMeta = null;
 }
 
 // CRUD Operations
-function createMeta() {
-    const form = document.getElementById('createMetaForm');
-    const formData = new FormData(form);
-    
-    // Obtener equipos seleccionados
-    const equiposSeleccionados = [];
-    const equiposCheckboxes = form.querySelectorAll('input[name="equipos"]:checked');
-    equiposCheckboxes.forEach(checkbox => {
-        equiposSeleccionados.push(checkbox.value);
-    });
+async function editMeta(metaId) {
+    try {
+        const response = await fetch(`/coordinador-general/metas/${metaId}`);
+        const meta = await response.json();
+        
+        if (meta.error) {
+            showToast(meta.error, 'error');
+            return;
+        }
 
-    const nuevaMeta = {
-        id: nextId++,
-        titulo: formData.get('titulo'),
-        descripcion: formData.get('descripcion'),
-        tipo: formData.get('tipo'),
-        prioridad: formData.get('prioridad'),
-        responsable: formData.get('responsable'),
-        fecha_inicio: formData.get('fecha_inicio'),
-        fecha_limite: formData.get('fecha_limite'),
-        estado: 'Pendiente',
-        progreso: 0,
-        equipos: equiposSeleccionados
-    };
+        // Llenar el formulario de edición
+        document.getElementById('edit_meta_id').value = meta.id;
+        document.getElementById('edit_nombre').value = meta.titulo;
+        document.getElementById('edit_descripcion').value = meta.descripcion || '';
+        document.getElementById('edit_equipo_id').value = meta.equipo_id;
+        document.getElementById('edit_estado_id').value = meta.estado_id;
+        
+        // Convertir fecha para input date
+        if (meta.fecha_entrega) {
+            const fechaParts = meta.fecha_entrega.split('/');
+            if (fechaParts.length === 3) {
+                const fechaFormatted = `${fechaParts[2]}-${fechaParts[1].padStart(2, '0')}-${fechaParts[0].padStart(2, '0')}`;
+                document.getElementById('edit_fecha_entrega').value = fechaFormatted;
+            }
+        }
 
-    metas.push(nuevaMeta);
-    filteredMetas = [...metas];
-    renderMetas();
-    closeCreateModal();
-    showToast('Meta creada correctamente');
-}
-
-function editMeta(meta) {
-    // Implementar edición
-    showToast('Función de edición en desarrollo');
-}
-
-function deleteMeta(metaId) {
-    if (confirm('¿Estás seguro de que quieres eliminar esta meta?')) {
-        metas = metas.filter(m => m.id !== metaId);
-        filteredMetas = [...metas];
-        renderMetas();
-        closeDetailsModal();
-        showToast('Meta eliminada correctamente');
+        openEditModal();
+    } catch (error) {
+        console.error('Error al cargar meta para editar:', error);
+        showToast('Error al cargar los datos de la meta', 'error');
     }
 }
 
+function deleteMeta(metaId) {
+    // Obtener el nombre de la meta para mostrar en el modal
+    const metaCard = document.querySelector(`.meta-card[data-meta-id="${metaId}"]`);
+    const metaNombre = metaCard ? metaCard.querySelector('h3').textContent : 'esta meta';
+    
+    // Configurar el texto del modal
+    document.getElementById('confirmDeleteText').textContent = `¿Estás seguro de que deseas eliminar la meta "${metaNombre}"?`;
+    
+    // Configurar el botón de confirmación
+    const confirmButton = document.getElementById('confirmDeleteButton');
+    confirmButton.onclick = async function() {
+        try {
+            const response = await fetch(`/coordinador-general/metas/${metaId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                showToast(data.error, 'error');
+            } else {
+                showToast('Meta eliminada exitosamente');
+                closeConfirmDeleteModal();
+                // Recargar la página para actualizar la lista
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }
+        } catch (error) {
+            console.error('Error al eliminar meta:', error);
+            showToast('Error al eliminar la meta', 'error');
+        }
+    };
+    
+    // Mostrar el modal
+    document.getElementById('confirmDeleteModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeConfirmDeleteModal() {
+    document.getElementById('confirmDeleteModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
 // Event Listeners
-document.getElementById('createMetaForm').addEventListener('submit', function(e) {
+document.getElementById('editMetaForm').addEventListener('submit', async function(e) {
     e.preventDefault();
-    createMeta();
+    
+    const metaId = document.getElementById('edit_meta_id').value;
+    const formData = new FormData(this);
+    
+    try {
+        const response = await fetch(`/coordinador-general/metas/${metaId}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            showToast(data.error, 'error');
+        } else {
+            showToast('Meta actualizada exitosamente');
+            closeEditModal();
+            // Recargar la página para actualizar la lista
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        }
+    } catch (error) {
+        console.error('Error al actualizar meta:', error);
+        showToast('Error al actualizar la meta', 'error');
+    }
 });
 
 // Toast notification
@@ -525,5 +617,15 @@ function showToast(message, type = 'success') {
         toast.classList.add('translate-x-full', 'opacity-0');
     }, 3000);
 }
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeCreateModal();
+        closeEditModal();
+        closeDetailsModal();
+        closeConfirmDeleteModal();
+    }
+});
 </script>
 @endsection

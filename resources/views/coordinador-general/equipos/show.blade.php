@@ -174,14 +174,11 @@
                 </div>
             </div>
             
-            <!-- Miembros -->
+            <!-- Miembros (Solo visualización) -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 slide-in">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-semibold text-gray-900">Miembros del Equipo</h2>
-                    <button onclick="openMiembrosModal({{ $equipo->id }})" class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
-                        <i data-lucide="user-plus" class="w-4 h-4 mr-1"></i>
-                        Gestionar
-                    </button>
+                    <span class="text-sm text-gray-500">Solo lectura</span>
                 </div>
                 
                 <div class="space-y-3">
@@ -196,10 +193,10 @@
                                     <p class="text-xs text-gray-500">{{ $miembro->es_coordinador ? 'Coordinador' : 'Miembro' }}</p>
                                 </div>
                             </div>
-                            @if(!$miembro->es_coordinador)
-                                <button class="text-gray-400 hover:text-gray-600">
-                                    <i data-lucide="more-vertical" class="w-4 h-4"></i>
-                                </button>
+                            @if($miembro->es_coordinador)
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    Coordinador
+                                </span>
                             @endif
                         </div>
                     @endforeach
@@ -215,10 +212,7 @@
                         <i data-lucide="calendar" class="w-4 h-4 mr-2"></i>
                         Programar reunión
                     </button>
-                    <button class="w-full bg-green-50 text-green-600 py-2 px-3 rounded-lg text-sm font-medium hover:bg-green-100 transition-colors flex items-center justify-center">
-                        <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
-                        Generar reporte
-                    </button>
+                   
                     <button onclick="confirmarEliminar({{ $equipo->id }}, '{{ $equipo->nombre }}')" class="w-full bg-red-50 text-red-600 py-2 px-3 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors flex items-center justify-center">
                         <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i>
                         Eliminar equipo
@@ -229,15 +223,64 @@
     </div>
 </div>
 
+<!-- Confirm Delete Modal -->
+<div id="confirmDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 form-transition">
+        <div class="p-6 text-center">
+            <!-- Icono de advertencia -->
+            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="alert-triangle" class="w-6 h-6 text-red-600"></i>
+            </div>
+            
+            <!-- Título -->
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">Confirmar eliminación</h3>
+            
+            <!-- Texto descriptivo -->
+            <p id="confirmDeleteText" class="text-gray-600 mb-6">¿Estás seguro de que deseas eliminar este equipo?</p>
+            
+            <!-- Botones -->
+            <div class="flex space-x-3">
+                <button type="button" onclick="closeConfirmDeleteModal()" class="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                    Cancelar
+                </button>
+                <button type="button" id="confirmDeleteButton" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-// Funciones para gestión de miembros y confirmación de eliminación
-function openMiembrosModal(equipoId) {
-    // Implementar modal de gestión de miembros
-    console.log('Abrir modal de miembros para equipo:', equipoId);
+// Variables globales
+let currentEquipoId = null;
+
+// Función para confirmación de eliminación
+function confirmarEliminar(id, nombre) {
+    currentEquipoId = id;
+    
+    // Configurar el texto del modal
+    document.getElementById('confirmDeleteText').textContent = `¿Estás seguro de que deseas eliminar el equipo "${nombre}"? Esta acción no se puede deshacer.`;
+    
+    // Configurar el botón de confirmación
+    const confirmButton = document.getElementById('confirmDeleteButton');
+    confirmButton.onclick = function() {
+        eliminarEquipo(id);
+    };
+    
+    // Mostrar el modal
+    document.getElementById('confirmDeleteModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
 }
 
-function confirmarEliminar(id, nombre) {
-    if (confirm(`¿Estás seguro de que deseas eliminar el equipo "${nombre}"?`)) {
+function closeConfirmDeleteModal() {
+    document.getElementById('confirmDeleteModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    currentEquipoId = null;
+}
+
+async function eliminarEquipo(id) {
+    try {
         // Crear formulario para eliminar
         const form = document.createElement('form');
         form.method = 'POST';
@@ -256,9 +299,26 @@ function confirmarEliminar(id, nombre) {
         form.appendChild(csrfToken);
         form.appendChild(methodField);
         document.body.appendChild(form);
+        
+        // Cerrar modal antes de enviar
+        closeConfirmDeleteModal();
+        
+        // Enviar formulario
         form.submit();
+        
+    } catch (error) {
+        console.error('Error al eliminar equipo:', error);
+        closeConfirmDeleteModal();
+        alert('Error al eliminar el equipo. Por favor, inténtalo de nuevo.');
     }
 }
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeConfirmDeleteModal();
+    }
+});
 
 // Inicializar iconos de Lucide
 document.addEventListener('DOMContentLoaded', function() {
@@ -289,6 +349,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .hover-scale:hover {
     transform: scale(1.02);
+}
+
+.form-transition {
+    transition: all 0.3s ease-in-out;
 }
 </style>
 @endsection

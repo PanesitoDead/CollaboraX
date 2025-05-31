@@ -98,7 +98,7 @@ class EquipoRepositorio extends RepositorioBase
 
 
 
-    /**
+     /**
      * Obtener todos los equipos de una empresa específica con sus relaciones
      * SOLO equipos que tengan al menos un coordinador de equipo válido
      */
@@ -451,50 +451,9 @@ class EquipoRepositorio extends RepositorioBase
         ];
     }
 
-    /**
-     * Agregar miembro a equipo
-     */
-    public function agregarMiembro(int $equipoId, int $trabajadorId): bool
-    {
-        $equipo = $this->model->find($equipoId);
-        if (!$equipo) {
-            return false;
-        }
+   
 
-        // Verificar si ya es miembro
-        $yaEsMiembro = $equipo->miembros()
-            ->where('trabajador_id', $trabajadorId)
-            ->where('activo', true)
-            ->exists();
-
-        if ($yaEsMiembro) {
-            return false;
-        }
-
-        $equipo->miembros()->create([
-            'trabajador_id' => $trabajadorId,
-            'activo' => true,
-            'fecha_union' => now()
-        ]);
-
-        return true;
-    }
-
-    /**
-     * Remover miembro de equipo
-     */
-    public function removerMiembro(int $equipoId, int $trabajadorId): bool
-    {
-        $equipo = $this->model->find($equipoId);
-        if (!$equipo) {
-            return false;
-        }
-
-        return $equipo->miembros()
-            ->where('trabajador_id', $trabajadorId)
-            ->update(['activo' => false]);
-    }
-
+    
     /**
      * Verificar si un trabajador pertenece a una empresa específica
      */
@@ -600,6 +559,39 @@ class EquipoRepositorio extends RepositorioBase
                     'empresa_nombre' => $trabajador->empresa_nombre
                 ];
             });
+    }
+
+    /**
+     * Obtener equipos que NO tienen metas asignadas
+     */
+    public function getEquiposSinMetas(int $empresaId): Collection
+    {
+        return $this->model->with([
+            'coordinador.usuario.rol',
+            'area'
+        ])
+        ->whereHas('area', function($query) use ($empresaId) {
+            $query->where('empresa_id', $empresaId);
+        })
+        // FILTRO: Solo equipos con coordinadores válidos
+        ->whereHas('coordinador', function($query) use ($empresaId) {
+            $query->whereHas('miembrosEquipo', function($miembrosQuery) use ($empresaId) {
+                $miembrosQuery->where('activo', true)
+                    ->whereHas('equipo.area', function($areaQuery) use ($empresaId) {
+                        $areaQuery->where('empresa_id', $empresaId);
+                    });
+            })
+            ->whereHas('usuario.rol', function($rolQuery) {
+                $rolQuery->whereIn('nombre', ['Coord. Equipo', 'Coordinador de Equipo']);
+            });
+        })
+        // FILTRO CLAVE: Solo equipos SIN metas asignadas
+        ->whereDoesntHave('metas', function($query) {
+            $query->whereNull('deleted_at');
+        })
+        ->whereNull('deleted_at')
+        ->orderBy('nombre')
+        ->get();
     }
 
     

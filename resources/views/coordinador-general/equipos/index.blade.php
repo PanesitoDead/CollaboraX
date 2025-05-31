@@ -69,7 +69,7 @@
                     <div id="dropdown-{{ $equipo['id'] }}" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
                         <a href="{{ route('coordinador-general.equipos.show', $equipo['id']) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Ver detalles</a>
                         <a href="{{ route('coordinador-general.equipos.edit', $equipo['id']) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Editar equipo</a>
-                        <a href="#" onclick="openMiembrosModal({{ $equipo['id'] }})" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Gestionar miembros</a>
+                       
                         <hr class="my-1">
                         <a href="#" onclick="confirmarEliminar({{ $equipo['id'] }}, '{{ $equipo['nombre'] }}')" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Eliminar equipo</a>
                     </div>
@@ -255,56 +255,10 @@
     </div>
 </div>
 
-<!-- Miembros Modal -->
-<div id="miembrosModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 form-transition">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold text-gray-900">Gestionar Miembros</h2>
-            <button onclick="closeMiembrosModal()" class="text-gray-400 hover:text-gray-600">
-                <i data-lucide="x" class="w-6 h-6"></i>
-            </button>
-        </div>
-        
-        <div class="mb-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-2">Agregar nuevo miembro</h3>
-            <form id="addMemberForm" class="flex flex-col sm:flex-row gap-3">
-                <div class="flex-1">
-                    <select id="newMemberId" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option value="">Seleccionar trabajador</option>
-                        @foreach($coordinadores as $trabajador)
-                        <option value="{{ $trabajador['id'] }}">{{ $trabajador['nombre'] }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <button type="button" onclick="agregarMiembro()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                    Agregar
-                </button>
-            </form>
-        </div>
-        
-        <div class="border-t border-gray-200 pt-4">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Miembros actuales</h3>
-            <div class="overflow-y-auto max-h-64">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha ingreso</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200" id="miembrosTableBody">
-                        <!-- Miembros se cargarán dinámicamente -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 <!-- Toast Notification -->
-<div id="toast" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full opacity-0 transition-all duration-300 z-50">
+<div id="toast" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full opacity-0 transition-all duration-150 z-50">
     <div class="flex items-center">
         <i data-lucide="check-circle" class="w-5 h-5 mr-2"></i>
         <span id="toast-message">Operación completada exitosamente</span>
