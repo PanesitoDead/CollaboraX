@@ -94,14 +94,13 @@ Route::get('/colaborador/configuracion', [\App\Http\Controllers\colaborador\Conf
 //  Coordinador de Equipo
     Route::get('/coord-equipo/dashboard', [CoordEquipoController::class, 'dashboard'])->name('coord-equipo.dashboard');
     Route::post('/coord-equipo/actividades', [CoordEquipoController::class, 'crearActividad'])->name('coord-equipo.actividades.store');
-    Route::post('/coord-equipo/reuniones', [CoordEquipoController::class, 'crearReunion'])->name('coord-equipo.reuniones.store');
     Route::post('/coord-equipo/metas', [CoordEquipoController::class, 'crearMeta'])->name('coord-equipo.metas.store');
     Route::get('/coord-equipo/configuracion', [CoordEquipoController::class, 'dashboard'])->name('coord-equipo.configuracion');
 
     Route::get('/coord-equipo/equipo', [EquipoCoordinadorController::class, 'index'])->name('coord-equipo.equipo');
     Route::post('/coord-equipo/equipo/invitar', [EquipoCoordinadorController::class, 'invitarColaboradores'])->name('coord-equipo.equipo.invitar');
     Route::delete('/coord-equipo/equipo/invitaciones/{id}', [EquipoCoordinadorController::class, 'cancelarInvitacion'])->name('coord-equipo.equipo.cancelar-invitacion');
-    Route::post('/coord-equipo/equipo/reunion', [EquipoCoordinadorController::class, 'programarReunion'])->name('coord-equipo.equipo.reunion');
+    //Route::post('/coord-equipo/equipo/reunion', [EquipoCoordinadorController::class, 'programarReunion'])->name('coord-equipo.equipo.reunion');
 
     Route::get('/coord-equipo/reuniones', [ReunionesCoordinadorController::class, 'index'])->name('coord-equipo.reuniones');
     Route::post('/coord-equipo/reuniones', [ReunionesCoordinadorController::class, 'store'])->name('coord-equipo.reuniones.store');

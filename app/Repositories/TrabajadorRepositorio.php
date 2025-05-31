@@ -18,10 +18,25 @@ class TrabajadorRepositorio extends RepositorioBase
         return MiembroEquipo::with(['trabajador.usuario.rol'])->where('equipo_id', $idEquipo)->get();
     }
 
-
     public function countMiembrosEquipo($idEquipo)
     {
         return MiembroEquipo::where('equipo_id', $idEquipo)->count();
+    }
+
+    // public function getColaboradoresDisponibles()
+    // {
+    //     return Trabajador::whereHas('usuario.rol', function ($query) {
+    //             $query->where('nombre', 'Colaborador');
+    //         })
+    //         ->whereNotIn('id', function ($query) {
+    //             $query->select('trabajador_id')->from('miembros_equipo');
+    //         })
+    //         ->get();
+    // }
+
+    public function getColaboradoresDisponibles()
+    {
+        return Trabajador::all();
     }
 
     protected function aplicarRango(Builder $consulta, ?array $range): void

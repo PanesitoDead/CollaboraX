@@ -31,7 +31,7 @@
                 </svg>
             </div>
             <div class="text-2xl font-bold">{{ $stats['reuniones_programadas'] }}</div>
-            <p class="text-xs text-gray-500">Para esta semana</p>
+            <p class="text-xs text-gray-500">Reuniones activas</p>
         </div>
 
         <div class="bg-white rounded-lg border border-gray-300 p-6">
@@ -42,7 +42,7 @@
                 </svg>
             </div>
             <div class="text-2xl font-bold">{{ $stats['reuniones_completadas'] }}</div>
-            <p class="text-xs text-gray-500">Este mes</p>
+            <p class="text-xs text-gray-500">En total</p>
         </div>
 
         <div class="bg-white rounded-lg border border-gray-300 p-6">
@@ -99,51 +99,56 @@
                 <p class="text-gray-600">Reuniones programadas para los próximos días</p>
             </div>
             <div class="space-y-4">
-                @foreach($reuniones as $reunion)
+                @foreach($reunionesProgramadas as $reunion)
                 <div class="flex items-center justify-between rounded-lg border border-gray-300 p-4">
                     <div class="flex items-start gap-4">
                         <div class="flex flex-col items-center">
                             <div class="text-sm font-medium text-gray-900">
-                                {{ \Carbon\Carbon::parse($reunion['fecha'])->format('d') }}
+                                {{ \Carbon\Carbon::parse($reunion->fecha)->format('d') }}
                             </div>
                             <div class="text-xs text-gray-500">
-                                {{ \Carbon\Carbon::parse($reunion['fecha'])->format('M') }}
+                                {{ \Carbon\Carbon::parse($reunion->fecha)->format('M') }}
                             </div>
                         </div>
                         <div class="flex-1">
                             <div class="flex items-center gap-2">
-                                <h4 class="font-medium">{{ $reunion['titulo'] }}</h4>
+                                <h4 class="font-medium">{{ $reunion->asunto }}</h4>
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                    @if($reunion['tipo'] === 'recurrente') bg-blue-100 text-blue-800
-                                    @elseif($reunion['tipo'] === 'planificacion') bg-green-100 text-green-800
+                                    @if($reunion->modalidad->nombre === 'Virtual') bg-blue-100 text-blue-800
+                                    @elseif($reunion->modalidad->nombre === 'Presencial') bg-green-100 text-green-800
                                     @else bg-gray-100 text-gray-800 @endif">
-                                    {{ ucfirst($reunion['tipo']) }}
+                                    {{ ucfirst($reunion->modalidad->nombre) }}
                                 </span>
                             </div>
-                            <p class="text-sm text-gray-600 mt-1">{{ $reunion['descripcion'] }}</p>
+                            @php
+                                $partes = [];
+
+                                if (!empty($reunion->descripcion)) {
+                                    $partes[] = $reunion->descripcion;
+                                }
+
+                                if (!empty($reunion->sala)) {
+                                    $partes[] = $reunion->sala;
+                                }
+                            @endphp
+
+                            @if (!empty($partes))
+                                <p class="text-sm text-gray-600 mt-1">{{ implode(' - ', $partes) }}</p>
+                            @endif
+
                             <div class="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                                <span>{{ $reunion['hora'] }} - {{ $reunion['duracion'] }} min</span>
+                                <span>{{ \Carbon\Carbon::parse($reunion->hora)->format('H:i') }} - {{ $reunion->duracion }} min</span>
                                 <div class="flex items-center gap-1">
                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                                     </svg>
-                                    <span>{{ count($reunion['participantes']) }} participantes</span>
                                 </div>
-                            </div>
-                            <div class="flex items-center gap-2 mt-2">
-                                @foreach(array_slice($reunion['participantes'], 0, 3) as $participante)
-                                <img src="{{ $participante['avatar'] }}" alt="{{ $participante['name'] }}" 
-                                     class="h-6 w-6 rounded-full border border-gray-200">
-                                @endforeach
-                                @if(count($reunion['participantes']) > 3)
-                                <span class="text-xs text-gray-500">+{{ count($reunion['participantes']) - 3 }} más</span>
-                                @endif
                             </div>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        @if($reunion['link_reunion'])
-                        <form action="{{ route('coord-equipo.reuniones.join', $reunion['id']) }}" method="POST" class="inline">
+                        @if($reunion->link_reunion)
+                        <form action="{{ route('coord-equipo.reuniones.join', $reunion->id) }}" method="POST" class="inline">
                             @csrf
                             <button type="submit" 
                                     class="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700">
@@ -151,11 +156,11 @@
                             </button>
                         </form>
                         @endif
-                        <button onclick="openReprogramarModal({{ $reunion['id'] }})" 
+                        <button onclick="openReprogramarModal({{ $reunion->id }})" 
                                 class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
                             Reprogramar
                         </button>
-                        <form action="{{ route('coord-equipo.reuniones.cancel', $reunion['id']) }}" method="POST" class="inline">
+                        <form action="{{ route('coord-equipo.reuniones.cancel', $reunion->id) }}" method="POST" class="inline">
                             @csrf
                             <button type="submit" 
                                     class="px-3 py-1 text-sm border border-red-300 text-red-600 rounded-md hover:bg-red-50"
@@ -176,43 +181,56 @@
                 <p class="text-gray-600">Historial de reuniones realizadas</p>
             </div>
             <div class="space-y-4">
-                @foreach($reuniones as $reunion)
+                @foreach($reunionesCompletadas as $reunion)
                 <div class="flex items-center justify-between rounded-lg border border-gray-300 p-4">
                     <div class="flex items-start gap-4">
                         <div class="flex flex-col items-center">
                             <div class="text-sm font-medium text-gray-900">
-                                {{ \Carbon\Carbon::parse($reunion['fecha'])->format('d') }}
+                                {{ \Carbon\Carbon::parse($reunion->fecha)->format('d') }}
                             </div>
                             <div class="text-xs text-gray-500">
-                                {{ \Carbon\Carbon::parse($reunion['fecha'])->format('M') }}
+                                {{ \Carbon\Carbon::parse($reunion->fecha)->format('M') }}
                             </div>
                         </div>
                         <div class="flex-1">
                             <div class="flex items-center gap-2">
-                                <h4 class="font-medium">{{ $reunion['titulo'] }}</h4>
+                                <h4 class="font-medium">{{ $reunion->asunto }}</h4>
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                     Completada
                                 </span>
                             </div>
-                            <p class="text-sm text-gray-600 mt-1">{{ $reunion['descripcion'] }}</p>
+                             @php
+                                $partes = [];
+
+                                if (!empty($reunion->descripcion)) {
+                                    $partes[] = $reunion->descripcion;
+                                }
+
+                                if (!empty($reunion->sala)) {
+                                    $partes[] = $reunion->sala;
+                                }
+                            @endphp
+
+                            @if (!empty($partes))
+                                <p class="text-sm text-gray-600 mt-1">{{ implode(' - ', $partes) }}</p>
+                            @endif
                             <div class="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                                <span>{{ $reunion['hora'] }} - {{ $reunion['duracion'] }} min</span>
+                                <span>{{ \Carbon\Carbon::parse($reunion->hora)->format('H:i') }} - {{ $reunion->duracion }} min</span>
                                 <div class="flex items-center gap-1">
                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                                     </svg>
-                                    <span>{{ count($reunion['participantes']) }} participantes</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        @if($reunion['grabacion'])
+                        {{-- @if($reunion['grabacion'])
                         <a href="{{ $reunion['grabacion'] }}" target="_blank" 
                            class="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
                             Ver Grabación
                         </a>
-                        @endif
+                        @endif --}}
                         <button class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
                             Ver Detalles
                         </button>
@@ -236,123 +254,67 @@
 </div>
 
 {{-- Modal para Nueva Reunión --}}
-<div id="reunionModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+<div id="reunionModal" class="fixed inset-0 hidden z-50" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-black/50" onclick="closeReunionModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[70vh] overflow-y-auto">
             <form action="{{ route('coord-equipo.reuniones.store') }}" method="POST">
                 @csrf
                 <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-medium">Programar Nueva Reunión</h3>
+                    <h3 class="text-lg font-medium">Programar Reunión</h3>
                     <p class="text-sm text-gray-500 mt-1">
-                        Configura los detalles de la reunión con tu equipo
+                        Programa una reunión con tu equipo.
                     </p>
                 </div>
                 
                 <div class="px-6 py-4 space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="md:col-span-2">
-                            <label for="titulo" class="block text-sm font-medium text-gray-700">Título de la reunión</label>
-                            <input type="text" name="titulo" id="titulo" required 
-                                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="Ej: Revisión semanal del equipo">
-                        </div>
+                    <div>
+                        <label for="titulo" class="block text-sm font-medium text-gray-700">Título</label>
+                        <input type="text" name="titulo" id="titulo" required 
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Reunión de equipo">
+                    </div>
 
-                        <div class="md:col-span-2">
-                            <label for="descripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
-                            <textarea name="descripcion" id="descripcion" rows="3" 
-                                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                                      placeholder="Describe el objetivo y agenda de la reunión"></textarea>
-                        </div>
+                    <div>
+                        <label for="fecha" class="block text-sm font-medium text-gray-700">Fecha y hora</label>
+                        <input type="datetime-local" name="fecha" id="fecha" required 
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
 
-                        <div>
-                            <label for="fecha" class="block text-sm font-medium text-gray-700">Fecha</label>
-                            <input type="date" name="fecha" id="fecha" required 
-                                   min="{{ date('Y-m-d') }}"
-                                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                        </div>
+                    <div>
+                        <label for="duracion" class="block text-sm font-medium text-gray-700">Duración (minutos)</label>
+                        <select name="duracion" id="duracion" required 
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="30">30 minutos</option>
+                            <option value="60">1 hora</option>
+                            <option value="90">1.5 horas</option>
+                            <option value="120">2 horas</option>
+                        </select>
+                    </div>
 
-                        <div>
-                            <label for="hora" class="block text-sm font-medium text-gray-700">Hora</label>
-                            <input type="time" name="hora" id="hora" required 
-                                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                        </div>
+                    <div>
+                        <label for="modalidad_id" class="block text-sm font-medium text-gray-700">Modalidad</label>
+                        <select name="modalidad_id" id="modalidad_id" required 
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="" disabled selected>Seleccione una modalidad</option>
+                            @foreach($modalidades as $modalidad)
+                                <option value="{{ $modalidad->id }}">{{ $modalidad->nombre }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
-                        <div>
-                            <label for="duracion" class="block text-sm font-medium text-gray-700">Duración (minutos)</label>
-                            <select name="duracion" id="duracion" required 
-                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                <option value="15">15 minutos</option>
-                                <option value="30">30 minutos</option>
-                                <option value="45">45 minutos</option>
-                                <option value="60" selected>1 hora</option>
-                                <option value="90">1.5 horas</option>
-                                <option value="120">2 horas</option>
-                            </select>
-                        </div>
+                    <div>
+                        <label for="descripcion" class="block text-sm font-medium text-gray-700">Descripción (opcional)</label>
+                        <textarea name="descripcion" id="descripcion" rows="3" 
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Agenda de la reunión..."></textarea>
+                    </div>
 
-                        <div>
-                            <label for="tipo" class="block text-sm font-medium text-gray-700">Tipo de reunión</label>
-                            <select name="tipo" id="tipo" required 
-                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                <option value="reunion">Reunión general</option>
-                                <option value="planificacion">Planificación</option>
-                                <option value="seguimiento">Seguimiento</option>
-                                <option value="recurrente">Reunión recurrente</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label for="plataforma" class="block text-sm font-medium text-gray-700">Plataforma</label>
-                            <select name="plataforma" id="plataforma" required 
-                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                <option value="google-meet">Google Meet</option>
-                                <option value="zoom">Zoom</option>
-                                <option value="teams">Microsoft Teams</option>
-                            </select>
-                        </div>
-
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Participantes</label>
-                            <div class="space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
-                                @foreach($miembros_equipo as $miembro)
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="participantes[]" value="{{ $miembro['id'] }}" 
-                                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                                    <span class="ml-2 text-sm">{{ $miembro['name'] }} ({{ $miembro['email'] }})</span>
-                                </label>
-                                @endforeach
-                            </div>
-                        </div>
-
-                        <div class="md:col-span-2">
-                            <div class="flex items-center">
-                                <input type="checkbox" name="es_recurrente" id="es_recurrente" 
-                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                                <label for="es_recurrente" class="ml-2 block text-sm text-gray-700">
-                                    Reunión recurrente
-                                </label>
-                            </div>
-                        </div>
-
-                        <div id="frecuencia-container" class="hidden">
-                            <label for="frecuencia" class="block text-sm font-medium text-gray-700">Frecuencia</label>
-                            <select name="frecuencia" id="frecuencia" 
-                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                <option value="semanal">Semanal</option>
-                                <option value="quincenal">Quincenal</option>
-                                <option value="mensual">Mensual</option>
-                            </select>
-                        </div>
-
-                        <div class="md:col-span-2">
-                            <div class="flex items-center">
-                                <input type="checkbox" name="enviar_recordatorio" id="enviar_recordatorio" checked 
-                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                                <label for="enviar_recordatorio" class="ml-2 block text-sm text-gray-700">
-                                    Enviar recordatorio por email
-                                </label>
-                            </div>
-                        </div>
+                    <div>
+                        <label for="sala" class="block text-sm font-medium text-gray-700">Sala (opcional)</label>
+                        <input type="text" name="sala" id="sala"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Ejemplo: Sala de Zoom o Aula virtual N°1">
                     </div>
                 </div>
 
@@ -372,9 +334,10 @@
 </div>
 
 {{-- Modal para Reprogramar Reunión --}}
-<div id="reprogramarModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+<div id="reprogramarModal" class="fixed inset-0 hidden z-50" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-black/50"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[70vh] overflow-y-auto">
             <form id="reprogramar-form" method="POST">
                 @csrf
                 <div class="px-6 py-4 border-b border-gray-200">
@@ -422,7 +385,7 @@
 </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Tab functionality
@@ -468,7 +431,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Reprogramar modal
     window.openReprogramarModal = function(reunionId) {
         const form = document.getElementById('reprogramar-form');
-        form.action = `/coordinador-grupo/reuniones/${reunionId}/reschedule`;
+        form.action = `/coord-equipo/reuniones/${reunionId}/reschedule`;
         reprogramarModal.classList.remove('hidden');
     };
 
@@ -505,4 +468,4 @@ document.addEventListener('DOMContentLoaded', function() {
     showTab('programadas');
 });
 </script>
-@endsection
+@endpush

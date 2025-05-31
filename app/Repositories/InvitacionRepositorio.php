@@ -17,6 +17,20 @@ class InvitacionRepositorio extends RepositorioBase
         return $this->model->where('equipo_id', $equipo)->get();
     }
 
+    public function cancelarInivitacion(int $id): bool
+    {
+        $invitacion = $this->getById($id);
+        if (!$invitacion) {
+            return false;
+        }
+        
+        $invitacion->estado = 'CANCELADA';
+        $invitacion->save();
+
+        return $this->delete($id);
+    }
+
+
     protected function aplicarRango(Builder $consulta, ?array $range): void
     {
         if ($range['field'] && $range['values']) {

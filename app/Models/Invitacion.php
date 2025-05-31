@@ -10,6 +10,7 @@ class Invitacion extends Model
     use SoftDeletes;
 
     protected $table = 'invitaciones';
+    public $timestamps = false;
 
     protected $fillable = ['equipo_id', 'trabajador_id', 'fecha_invitacion', 'fecha_expiracion', 'fecha_respuesta', 'estado'];
 

@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\coordEquipo;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CoordEquipo\InvitarColaboradoresRequest;
+use App\Http\Requests\CoordEquipo\ProgramarReunionRequest;
 use App\Repositories\EquipoRepositorio;
 use App\Repositories\InvitacionRepositorio;
 use App\Repositories\MetaRepositorio;
+use App\Repositories\ModalidadRepositorio;
 use App\Repositories\ReunionRepositorio;
 use App\Repositories\TrabajadorRepositorio;
 use Auth;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Validator;
 
@@ -20,14 +24,16 @@ class EquipoCoordinadorController extends Controller
     protected MetaRepositorio $metaRepositorio;
     protected ReunionRepositorio $reunionRepositorio;
     protected InvitacionRepositorio $invitacionRepositorio;
+    protected ModalidadRepositorio $modalidadRepositorio;
 
-    public function __construct(TrabajadorRepositorio $trabajadorRepositorio, EquipoRepositorio $equipoRepositorio, MetaRepositorio $metaRepositorio, ReunionRepositorio $reunionRepositorio, InvitacionRepositorio $invitacionRepositorio)
+    public function __construct(TrabajadorRepositorio $trabajadorRepositorio, EquipoRepositorio $equipoRepositorio, MetaRepositorio $metaRepositorio, ReunionRepositorio $reunionRepositorio, InvitacionRepositorio $invitacionRepositorio, ModalidadRepositorio $modalidadRepositorio)
     {
         $this->trabajadorRepositorio = $trabajadorRepositorio;
         $this->equipoRepositorio = $equipoRepositorio;
         $this->metaRepositorio = $metaRepositorio;
         $this->reunionRepositorio = $reunionRepositorio;
         $this->invitacionRepositorio = $invitacionRepositorio;
+        $this->modalidadRepositorio = $modalidadRepositorio;
     }
 
     public function index()
@@ -39,6 +45,8 @@ class EquipoCoordinadorController extends Controller
         $miembros = $this->trabajadorRepositorio->getMiembrosEquipo($equipo->id);
         $cantidadMiembros = $this->trabajadorRepositorio->countMiembrosEquipo($equipo->id);
         $invitaciones = $this->invitacionRepositorio->getInvitacionesPorEquipo($equipo->id);
+        $colaboradores_disponibles = $this->trabajadorRepositorio->getColaboradoresDisponibles();
+        $modalidades = $this->modalidadRepositorio->getAll();
 
         $metas = $this->metaRepositorio->getMetasPorEquipo($equipo->id);
         $reunionesPendientes = $this->reunionRepositorio->countReunionesPendientesPorEquipo($equipo->id);
@@ -71,144 +79,80 @@ class EquipoCoordinadorController extends Controller
             'reuniones_pendientes' => $reunionesPendientes
         ];
 
-        // Invitaciones
-        // $invitaciones = [
-        //     [
-        //         'id' => 1,
-        //         'colaborador' => [
-        //             'id' => 201,
-        //             'nombre' => 'Lucía Ramírez',
-        //             'email' => 'lucia.ramirez@empresa.cx.com',
-        //             'rol' => 'Diseñador UX'
-        //         ],
-        //         'fecha' => '2025-05-18 14:30:00',
-        //         'estado' => 'pendiente'
-        //     ],
-        //     [
-        //         'id' => 2,
-        //         'colaborador' => [
-        //             'id' => 202,
-        //             'nombre' => 'Gabriel Herrera',
-        //             'email' => 'gabriel.herrera@empresa.cx.com',
-        //             'rol' => 'Desarrollador Backend'
-        //         ],
-        //         'fecha' => '2025-05-17 10:15:00',
-        //         'estado' => 'aceptada'
-        //     ],
-        //     [
-        //         'id' => 3,
-        //         'colaborador' => [
-        //             'id' => 203,
-        //             'nombre' => 'Daniela Vargas',
-        //             'email' => 'daniela.vargas@empresa.cx.com',
-        //             'rol' => 'QA Engineer'
-        //         ],
-        //         'fecha' => '2025-05-15 16:45:00',
-        //         'estado' => 'rechazada'
-        //     ]
-        // ];
-
-        // Colaboradores disponibles para invitar
-        $colaboradores_disponibles = [
-            [
-                'id' => 101,
-                'nombre' => 'Diego Morales',
-                'email' => 'diego.morales@empresa.cx.com',
-                'departamento' => 'Desarrollo',
-                'rol' => 'Desarrollador Frontend',
-                'avatar' => '/placeholder-32px.png'
-            ],
-            [
-                'id' => 102,
-                'nombre' => 'Sofía Gutiérrez',
-                'email' => 'sofia.gutierrez@empresa.cx.com',
-                'departamento' => 'Diseño',
-                'rol' => 'Diseñador UX/UI',
-                'avatar' => '/placeholder-32px.png'
-            ],
-            [
-                'id' => 103,
-                'nombre' => 'Alejandro Torres',
-                'email' => 'alejandro.torres@empresa.cx.com',
-                'departamento' => 'Desarrollo',
-                'rol' => 'Desarrollador Backend',
-                'avatar' => '/placeholder-32px.png'
-            ],
-            [
-                'id' => 104,
-                'nombre' => 'Valentina Ruiz',
-                'email' => 'valentina.ruiz@empresa.cx.com',
-                'departamento' => 'QA',
-                'rol' => 'Tester',
-                'avatar' => '/placeholder-32px.png'
-            ],
-            [
-                'id' => 105,
-                'nombre' => 'Javier Mendoza',
-                'email' => 'javier.mendoza@empresa.cx.com',
-                'departamento' => 'Desarrollo',
-                'rol' => 'Desarrollador Full Stack',
-                'avatar' => '/placeholder-32px.png'
-            ]
-        ];
-
         return view('private.coord-equipo.mi-equipo', compact(
             'stats', 
             'equipo',
             'miembros', 
             'invitaciones', 
-            'colaboradores_disponibles'
+            'colaboradores_disponibles',
+            'modalidades'
         ));
     }
 
-    public function invitarColaboradores(Request $request)
+    public function invitarColaboradores(InvitarColaboradoresRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'colaboradores' => 'required|array|min:1',
-            'colaboradores.*' => 'required|integer|exists:users,id'
-        ]);
+        $usuario = Auth::user();
+        $trabajador = $this->trabajadorRepositorio->findOneBy('usuario_id', $usuario->id);
+        $equipo = $this->equipoRepositorio->findOneBy('coordinador_id', $trabajador->id);
 
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
+        if (!$equipo) {
+            return redirect()->back()->withErrors('No se encontró un equipo asociado al coordinador.');
         }
 
-        // Lógica para enviar invitaciones
-        foreach ($request->colaboradores as $colaboradorId) {
-            // Crear invitación en la base de datos
-            // Enviar notificación al colaborador
+        $colaboradorIds = $request->input('colaboradores');
+        $fechaExpiracion = Carbon::now()->addDays(5);
+
+        foreach ($colaboradorIds as $colaboradorId) {
+            $this->invitacionRepositorio->create([
+                'equipo_id' => $equipo->id,
+                'trabajador_id' => $colaboradorId,
+                'fecha_expiracion' => $fechaExpiracion,
+                'estado' => 'PENDIENTE',
+            ]);
         }
 
-        return redirect()->back()
-            ->with('success', 'Invitaciones enviadas correctamente');
+        return redirect()->back()->with('success', 'Invitaciones enviadas correctamente.');
     }
+
 
     public function cancelarInvitacion($id)
     {
-        // Lógica para cancelar invitación
-        return redirect()->back()
-            ->with('success', 'Invitación cancelada correctamente');
-    }
+        $cancelado = $this->invitacionRepositorio->cancelarInivitacion($id);
 
-    public function programarReunion(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'titulo' => 'required|string|max:255',
-            'fecha' => 'required|date|after:now',
-            'duracion' => 'required|integer|min:15|max:480',
-            'participantes' => 'required|array|min:1',
-            'descripcion' => 'nullable|string|max:1000'
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
+        if (!$cancelado) {
+            return redirect()->back()->withErrors('La invitación no existe o ya fue cancelada.');
         }
 
-        // Lógica para crear reunión
-        return redirect()->back()
-            ->with('success', 'Reunión programada correctamente');
+        return redirect()->back()->with('success', 'Invitación cancelada correctamente.');
     }
+
+    // public function programarReunion(ProgramarReunionRequest $request)
+    // {
+    //     $usuario = Auth::user();
+    //     $trabajador = $this->trabajadorRepositorio->findOneBy('usuario_id', $usuario->id);
+    //     $equipo = $this->equipoRepositorio->findOneBy('coordinador_id', $trabajador->id);
+
+    //     if (!$equipo) {
+    //         return redirect()->back()->withErrors('No se encontró el equipo del coordinador.');
+    //     }
+
+    //     $fechaHora = Carbon::parse($request->input('fecha'));
+    //     $fecha = $fechaHora->toDateString();
+    //     $hora = $fechaHora->toTimeString();
+
+    //     $datos = [
+    //         'equipo_id'     => $equipo->id,
+    //         'fecha'         => $fecha,
+    //         'hora'          => $hora,
+    //         'duracion'      => $request->input('duracion'),
+    //         'descripcion'   => $request->input('descripcion'),
+    //         'asunto'        => $request->input('titulo'),
+    //         'modalidad_id'  => $request->input('modalidad_id'),
+    //         'sala'          => $request->input('sala'),
+    //     ];
+
+    //     $this->reunionRepositorio->create($datos);
+
+    //     return redirect()->back()->with('success', 'Reunión programada exitosamente.');
+    // }
 }

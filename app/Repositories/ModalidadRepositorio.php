@@ -2,48 +2,15 @@
 
  namespace App\Repositories;
 
-use App\Models\Reunion;
+use App\Models\Modalidad;
 use Illuminate\Database\Eloquent\Builder;
 
-class ReunionRepositorio extends RepositorioBase
+class ModalidadRepositorio extends RepositorioBase
 {
-    public function __construct(Reunion $model)
+    public function __construct(Modalidad $model)
     {
         parent::__construct($model);
     }
-
-    public function getReunionesPendientesPorEquipo($equipoId)
-    {
-        return $this->model->where('equipo_id', $equipoId)
-            ->whereRaw("STR_TO_DATE(CONCAT(fecha, ' ', hora), '%Y-%m-%d %H:%i:%s') > NOW()")
-            ->get();
-    }
-
-    public function countReunionesPendientesPorEquipo($equipoId)
-    {
-        return $this->model->where('equipo_id', $equipoId)
-            ->whereRaw("STR_TO_DATE(CONCAT(fecha, ' ', hora), '%Y-%m-%d %H:%i:%s') > NOW()")
-            ->count();
-    }
-
-    public function cancelarReunion(int $id): bool
-    {
-        $reunion = $this->getById($id);
-
-        if (!$reunion) {
-            return false;
-        }
-
-        if (in_array($reunion->estado, ['CANCELADA', 'COMPLETADA'])) {
-            return false;
-        }
-
-        $reunion->estado = 'CANCELADA';
-        $reunion->save();
-
-        return $this->delete($id);
-    }
-
 
     protected function aplicarRango(Builder $consulta, ?array $range): void
     {

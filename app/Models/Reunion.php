@@ -10,8 +10,9 @@ class Reunion extends Model
     use SoftDeletes;
 
     protected $table = 'reuniones';
+    public $timestamps = false;
 
-    protected $fillable = ['equipo_id', 'fecha', 'hora', 'duracion', 'descripcion', 'asunto', 'modalidad_id', 'sala'];
+    protected $fillable = ['equipo_id', 'fecha', 'hora', 'duracion', 'descripcion', 'asunto', 'modalidad_id', 'sala', 'estado', 'observacion'];
 
     public function equipo()
     {
