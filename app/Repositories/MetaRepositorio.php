@@ -24,6 +24,27 @@ class MetaRepositorio extends RepositorioBase
     {
         return $this->model->where('equipo_id', $equipo)->with('tareas')->get();
     }
+
+    public function getMetasConProgresoPorEquipo(int $equipoId)
+    {
+        $metas = $this->getMetasPorEquipo($equipoId);
+
+        return $metas->map(function ($meta) {
+            $tareasTotales = $meta->tareas()->count();
+            $tareasCompletadas = $meta->tareas()
+                ->whereHas('estado', function ($q) {
+                    $q->where('nombre', 'Completo');
+                })->count();
+
+            $porcentaje = $tareasTotales > 0 
+                ? round(($tareasCompletadas / $tareasTotales) * 100) 
+                : 0;
+
+            $meta->porcentaje = $porcentaje;
+
+            return $meta;
+        });
+    }
     
     protected function aplicarRango(Builder $consulta, ?array $range): void
     {

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\coordEquipo;
 
 use App\Http\Controllers\Controller;
 use App\Repositories\EquipoRepositorio;
+use App\Repositories\MetaRepositorio;
+use App\Repositories\TareaRepositorio;
 use App\Repositories\TrabajadorRepositorio;
 use Auth;
 use Illuminate\Http\Request;
@@ -11,90 +13,41 @@ use Validator;
 
 class CoordEquipoController extends Controller
 {
-
     protected TrabajadorRepositorio $trabajadorRepositorio;
     protected EquipoRepositorio $equipoRepositorio;
+    protected MetaRepositorio $metaRepositorio;
+    protected TareaRepositorio $tareaRepositorio;
 
-    public function __construct(TrabajadorRepositorio $trabajadorRepositorio, EquipoRepositorio $equipoRepositorio)
+    public function __construct(TrabajadorRepositorio $trabajadorRepositorio, EquipoRepositorio $equipoRepositorio, MetaRepositorio $metaRepositorio, TareaRepositorio $tareaRepositorio)
     {
         $this->trabajadorRepositorio = $trabajadorRepositorio;
         $this->equipoRepositorio = $equipoRepositorio;
+        $this->metaRepositorio = $metaRepositorio;
+        $this->tareaRepositorio = $tareaRepositorio;
     }
 
     public function dashboard()
     {
         $usuario = Auth::user();
+        $trabajador = $this->trabajadorRepositorio->findOneBy('usuario_id', $usuario->id);
+        $equipo = $this->equipoRepositorio->findOneBy('coordinador_id', $trabajador->id);
+
+        $colaboradores = $this->trabajadorRepositorio->getMiembrosEquipo($equipo->id);
+        $metas = $this->metaRepositorio->getMetasConProgresoPorEquipo($equipo->id);
+        $metas_completadas = $this->metaRepositorio->findByFields(['equipo_id' => $equipo->id, 'estado_id' => 3]);
+        $actividades = $this->tareaRepositorio->getTareasPorEquipo($equipo->id);
+        $actividades_completadas = $this->tareaRepositorio->getTareasCompletadasPorEquipo($equipo->id);
                 
-        // Datos simulados - reemplazar con datos reales de la base de datos
         $stats = [
-            'total_colaboradores' => 12,
-            'metas_completadas' => 8,
-            'actividades_pendientes' => 15,
-            'reuniones_programadas' => 3
+            'total_colaboradores' => $colaboradores->count(),
+            'metas_totales' => $metas->count(),
+            'metas_completadas' => $metas_completadas->count(),
+            'actividades_totales' => $actividades->count(),
+            'actividades_completadas' => $actividades_completadas->count(),
+            'cumplimiento' => $actividades_completadas->count() / $actividades->count() * 100
         ];
 
-        $metas = [
-            [
-                'id' => 1,
-                'titulo' => 'Incrementar ventas Q1',
-                'descripcion' => 'Aumentar las ventas en un 25% durante el primer trimestre',
-                'progreso' => 75,
-                'fecha_limite' => '2024-03-31',
-                'estado' => 'en_progreso',
-                'colaboradores_asignados' => 5
-            ],
-            [
-                'id' => 2,
-                'titulo' => 'Mejorar satisfacción cliente',
-                'descripcion' => 'Alcanzar un 95% de satisfacción en encuestas',
-                'progreso' => 60,
-                'fecha_limite' => '2024-04-15',
-                'estado' => 'en_progreso',
-                'colaboradores_asignados' => 3
-            ]
-        ];
-
-        $actividades = [
-            [
-                'id' => 1,
-                'titulo' => 'Revisión de procesos',
-                'descripcion' => 'Revisar y optimizar procesos actuales',
-                'fecha_limite' => '2024-02-15',
-                'prioridad' => 'alta',
-                'estado' => 'pendiente',
-                'asignado_a' => 'Juan Pérez'
-            ],
-            [
-                'id' => 2,
-                'titulo' => 'Capacitación equipo',
-                'descripcion' => 'Sesión de capacitación para nuevas herramientas',
-                'fecha_limite' => '2024-02-20',
-                'prioridad' => 'media',
-                'estado' => 'en_progreso',
-                'asignado_a' => 'María García'
-            ]
-        ];
-
-        $colaboradores = [
-            [
-                'id' => 1,
-                'nombre' => 'Juan Pérez',
-                'email' => 'juan@empresa.com',
-                'area' => 'Ventas',
-                'actividades_asignadas' => 3,
-                'estado' => 'activo'
-            ],
-            [
-                'id' => 2,
-                'nombre' => 'María García',
-                'email' => 'maria@empresa.com',
-                'area' => 'Marketing',
-                'actividades_asignadas' => 2,
-                'estado' => 'activo'
-            ]
-        ];
-
-        return view('private.coord-equipo.dashboard', compact('stats', 'metas', 'actividades', 'colaboradores'));
+        return view('private.coord-equipo.dashboard', compact('stats', 'metas', 'actividades', 'colaboradores', 'equipo'));
     }
 
     public function crearActividad(Request $request)
