@@ -156,10 +156,10 @@
         @php
         $items = [
           ['route' => 'coord-equipo.dashboard', 'icon' => 'home', 'label' => 'Dashboard'],
-            ['route' => 'coord-equipo.equipo', 'icon' => 'clipboard-list', 'label' => 'Mi Equipo'],
-            ['route' => 'coord-equipo.reuniones', 'icon' => 'message-square', 'label' => 'Reuniones'],
-            ['route' => 'coord-equipo.configuracion', 'icon' => 'calendar-clock', 'label' => 'Configuración'], 
-            // ['route' => 'coord-equipo.invitaciones', 'icon' => 'mail-plus', 'label' => 'Invitaciones'], 
+          ['route' => 'coord-equipo.actividades', 'icon' => 'check-circle', 'label' => 'Actividades'],
+          ['route' => 'coord-equipo.equipo', 'icon' => 'clipboard-list', 'label' => 'Mi Equipo'],
+          ['route' => 'coord-equipo.reuniones', 'icon' => 'message-square', 'label' => 'Reuniones'],
+          ['route' => 'coord-equipo.configuracion', 'icon' => 'calendar-clock', 'label' => 'Configuración'],  
             // ['route' => 'coord-equipo.mi-equipo', 'icon' => 'users', 'label' => 'Mi Equipo'],
             // ['route' => 'coord-equipo.configuracion', 'icon' => 'settings', 'label' => 'Configuración'],
         ];
