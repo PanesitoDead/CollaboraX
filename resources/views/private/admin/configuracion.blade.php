@@ -96,15 +96,15 @@
                 <div>
                     <label for="logo" class="block mb-1 text-sm font-medium text-gray-700">Logo</label>
                     <div class="mt-1 flex items-center space-x-4">
-                        <div class="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center">
+                        <div class="w-20 h-20 rounded-full overflow-hidden border-4 border-gray-300 bg-gray-100 flex items-center justify-center relative">
                         @if($empresa->logo)
                             <img
                             src="{{ asset('storage/'.$empresa->logo) }}"
                             alt="Logo"
-                            class="h-12 w-12 rounded-lg object-cover"
+                            class="w-20 h-20 rounded-lg object-cover"
                             />
                         @else
-                            <i data-lucide="image" class="w-6 h-6 text-gray-400"></i>
+                            <i data-lucide="image" class="w-8 h-8 text-gray-400"></i>
                         @endif
                         </div>
                         <input

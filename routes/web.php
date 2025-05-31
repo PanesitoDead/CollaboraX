@@ -9,6 +9,7 @@ use App\Http\Controllers\admin\DashboardController;
 use App\Http\Controllers\admin\EstadisticaController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\colaborador\ActividadController;
+use App\Http\Controllers\coordEquipo\ActividadesCoordinadorController;
 use App\Http\Controllers\coordEquipo\ConfiguracionCoordinadorController;
 use App\Http\Controllers\coordEquipo\CoordEquipoController;
 use App\Http\Controllers\coordEquipo\EquipoCoordinadorController;
@@ -27,6 +28,7 @@ use App\Http\Controllers\CoordinadorGeneral\ReunionesController;
 use App\Http\Controllers\CoordinadorGeneral\MensajesController;
 use App\Http\Controllers\superAdmin\EmpresasController;
 use App\Http\Controllers\superAdmin\EstadisticaController as SuperAdminEstadisticaController;
+use App\Http\Controllers\superAdmin\ConfiguracionController as SuperAdminConfiguracionController;
 
 Route::get('/', function () {
     return view('public.home.home');
@@ -52,9 +54,9 @@ Route::patch('/super-admin/empresas/{id}/cambiar-estado', [EmpresasController::c
 
 Route::get('/super-admin/estadisticas', [SuperAdminEstadisticaController::class, 'index'])->name('super-admin.estadisticas');
 
-Route::get('/super-admin/configuracion', function () {
-    return view('super-admin.configuracion');
-})->name('super-admin.configuracion');
+Route::get('/super-admin/configuracion', [SuperAdminConfiguracionController::class, 'index'])->name('super-admin.configuracion.index');
+Route::put('/super-admin/configuracion/planes/{id}', [SuperAdminConfiguracionController::class, 'update'])->name('super-admin.configuracion.planes.update');
+
 
 //     Admin
 Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
@@ -115,6 +117,7 @@ Route::get('/colaborador/configuracion', [\App\Http\Controllers\colaborador\Conf
     Route::post('/coord-equipo/configuracion/password', [ConfiguracionCoordinadorController::class, 'cambiarPassword'])->name('coord-equipo.configuracion.password');
     Route::post('/coord-equipo/configuracion/apariencia', [ConfiguracionCoordinadorController::class, 'actualizarApariencia'])->name('coord-equipo.configuracion.apariencia');
 
+    Route::get('/coord-equipo/actividades', [ActividadesCoordinadorController::class, 'index'])->name('coord-equipo.actividades');
 
 Route::middleware('auth')->group(function () {
     // Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

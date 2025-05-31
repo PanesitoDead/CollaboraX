@@ -307,10 +307,74 @@
         </div>
     </div>
 
+
     {{-- Modal para Nueva Actividad --}}
-    <div id="actividadModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+    <div id="actividadModal" class="fixed inset-0 hidden z-50" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-black/50"></div>
+        <div class="fixed inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+
+                <form action="{{ route('coord-equipo.actividades.store') }}" method="POST">
+                    @csrf
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-medium">Crear Nueva Actividad</h3>
+                        <p class="text-sm text-gray-500 mt-1">Asigna una nueva actividad a un colaborador.</p>
+                    </div>
+
+                    <div class="px-6 py-4 space-y-4">
+                        <div>
+                            <label for="actividad_titulo" class="block text-sm font-medium text-gray-700">Título</label>
+                            <input type="text" name="nombre" id="actividad_titulo" required
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+
+                        <div>
+                            <label for="actividad_descripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
+                            <textarea name="descripcion" id="actividad_descripcion" rows="3" required
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        </div>
+
+                        <div>
+                            <label for="meta_id" class="block text-sm font-medium text-gray-700">Meta asociada</label>
+                            <select name="meta_id" id="meta_id" required
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Seleccione una meta</option>
+                                @foreach ($metas as $meta)
+                                    <option value="{{ $meta->id }}">{{ $meta->nombre }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="fecha_entrega" class="block text-sm font-medium text-gray-700">Fecha y hora de entrega</label>
+                            <input type="datetime-local" name="fecha_entrega" id="fecha_entrega" required
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+
+                    <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                        <button type="button" id="btn-cerrar-actividad"
+                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700">
+                            Crear Actividad
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+
+    {{-- Modal para Nueva Actividad --}}
+    {{-- <div id="actividadModal" class="fixed inset-0 hidden z-50" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-black/50"></div>
+        <div class="fixed inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[70vh] overflow-y-auto">
+
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-medium">Crear Nueva Actividad</h3>
                     <p class="text-sm text-gray-500 mt-1">
@@ -344,7 +408,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> --}}
 @endsection
 
 @push('scripts')

@@ -28,8 +28,6 @@ class EmpresasController extends Controller
         $empresasParse = $empresasPag->getCollection()->map(function ($empresa) {
             // Agregamos el campo plan_servicio
             $empresa->plan_servicio = $empresa->planServicio ? $empresa->planServicio->nombre : 'No asignado';
-            // Agregamos el campo usuarios
-            $empresa->nro_usuarios =  0;
             $empresa->correo = $empresa->usuario->correo ?? 'No disponible';
             $empresa->activo = $empresa->usuario->activo;
             // Parseamos los campos de fecha a un formato legible
@@ -39,7 +37,7 @@ class EmpresasController extends Controller
             return $empresa;
         });
         $empresasPag->setCollection($empresasParse);
-    
+
         return view('super-admin.empresas', [
             'empresas' => $empresasPag,
             'criterios' => $criterios,
@@ -75,7 +73,7 @@ class EmpresasController extends Controller
         // Agregamos el campo plan_servicio
         $empresa->plan_servicio = $empresa->planServicio ? $empresa->planServicio->nombre : 'No asignado';
         // Agregamos el campo usuarios
-        $empresa->nro_usuarios = 0;
+        $empresa->nro_usuarios = $empresa->nro_usuarios();
         $empresa->correo = $empresa->usuario->correo ?? 'No disponible';
         $empresa->activo = $empresa->usuario->activo;
         // Parseamos los campos de fecha a un formato legible

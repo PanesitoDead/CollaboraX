@@ -158,7 +158,7 @@
           // ['route' => 'super-admin.dashboard', 'icon' => 'home', 'label' => 'Dashboard'],
           ['route' => 'super-admin.empresas.index', 'icon' => 'building', 'label' => 'Empresas'],
           ['route' => 'super-admin.estadisticas', 'icon' => 'bar-chart-2', 'label' => 'Estadísticas'],
-          ['route' => 'super-admin.configuracion', 'icon' => 'settings', 'label' => 'Configuración'],
+          ['route' => 'super-admin.configuracion.index', 'icon' => 'settings', 'label' => 'Configuración'],
         ];
       @endphp
       @foreach ($items as $item)

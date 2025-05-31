@@ -73,7 +73,7 @@
 <script>
   let empresaCambioId = null;
 
-  function abrirModalCambioEstado(id, activo) {
+  function abrirModalConfirmacion(id, activo) {
     empresaCambioId = id;
 
     // 1) Construir mensaje dinámico
