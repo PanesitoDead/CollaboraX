@@ -179,13 +179,12 @@
               Foto de Perfil
             </label>
             <div class="flex items-center space-x-4">
-              <div class="w-20 h-20 rounded-full overflow-hidden border">
-                <img
-                  id="vistaPreviaAvatar"
-                  src="/images/default-avatar.png"
-                  alt="Avatar Actual"
-                  class="w-full h-full object-cover"
-                />
+              <div class="w-18 h-18 rounded-full overflow-hidden border-4 border-gray-300 bg-gray-100 flex items-center justify-center relative">
+                <img id="vistaPreviaAvatar" src="" alt="Vista previa del avatar de la empresa" class="w-full h-full object-cover absolute top-0 left-0 hidden rounded-full"/>
+              </div>
+              <div>
+                <h4 id="nombreEmpresa" class="text-lg font-medium text-gray-900"></h4>
+                <p id="emailEmpresa" class="text-sm text-gray-500"></p>
               </div>
               <div>
                 <input
@@ -229,10 +228,6 @@
 <script>
   let idEmpresaActual = null;
 
-  /**
-   * Abre el modal de edición de empresa, obtiene los datos del backend y los muestra en el formulario.
-   * @param {number|string} id — Identificador de la empresa.
-   */
   async function abrirModalEmpresa(id) {
     idEmpresaActual = id;
 
@@ -255,7 +250,7 @@
       document.getElementById('inputRucEmpresa').value = data.ruc ?? '';
       document.getElementById('inputTelefonoEmpresa').value = data.telefono ?? '';
       document.getElementById('inputCorreoEmpresa').value = data.correo ?? '';
-      document.getElementById('inputActivoEmpresa').value = data.activo?.toString() ?? '1';
+      document.getElementById('inputActivoEmpresa').value = data.activo ? '1' : '0';
       document.getElementById('vistaPreviaAvatar').src = '/images/default-avatar.png';
 
       // 4) Mostrar modal con animación

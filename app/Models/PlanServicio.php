@@ -11,6 +11,8 @@ class PlanServicio extends Model
 
     protected $table = 'plan_servicios';
 
+    public $timestamps = false;
+    
     protected $fillable = ['nombre', 'beneficios', 'costo_soles', 'cant_usuarios'];
 
     public function empresas()

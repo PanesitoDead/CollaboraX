@@ -15,8 +15,9 @@
       <div class="px-6 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
         <!-- Encabezado con avatar -->
         <div class="flex items-center space-x-4 mb-4">
-          <div class="w-20 h-20 rounded-full overflow-hidden border">
-            <img id="avatarEmpresa" src="" alt="Avatar de la empresa" class="w-full h-full object-cover" />
+          <div class="w-18 h-18 rounded-full overflow-hidden border-4 border-gray-300 bg-gray-100 flex items-center justify-center relative">
+            <img id="avatarEmpresa" src="" alt="Avatar de la empresa" class="w-full h-full object-cover absolute top-0 left-0 hidden rounded-full"/>
+            <span id="avatarIniciales" class="text-base font-semibold text-gray-700 z-10"></span>
           </div>
           <div>
             <h4 id="nombreEmpresa" class="text-lg font-medium text-gray-900"></h4>
@@ -75,8 +76,38 @@
       if (!respuesta.ok) throw new Error('No se recibieron datos de la empresa');
       const data = await respuesta.json();
 
-      // Rellenar campos
-      document.getElementById('avatarEmpresa').src = data.avatar_url || '/images/default-avatar.png';
+      const img = document.getElementById('avatarEmpresa');
+      const initialsEl = document.getElementById('avatarIniciales');
+      // Extraemos avatar_url y nombre del objeto data
+      const avatarUrl = data.avatar_url;
+      const nombreEmpresa = data.nombre || ''; // por si acaso viene vacío o indefinido
+
+      if (avatarUrl) {
+        // Si existe avatar_url, lo asignamos al <img> y lo mostramos
+        img.src = avatarUrl;
+        // Cuando la imagen cargue correctamente, la hacemos visible y ocultamos el span de iniciales
+        img.onload = () => {
+          img.classList.remove('hidden');
+          initialsEl.classList.add('hidden');
+        };
+        // Si la imagen falla al cargar (404, etc.), muestra las iniciales:
+        img.onerror = () => {
+          // calcular iniciales y mostrarlas
+          const iniciales = nombreEmpresa.substr(0, 2).toUpperCase();
+          initialsEl.textContent = iniciales;
+
+          img.classList.add('hidden');       // aseguramos que la imagen quede oculta
+          initialsEl.classList.remove('hidden');
+        };
+      } else {
+        // No hay avatar_url: calculamos las iniciales y las mostramos en el <span>
+        const iniciales = nombreEmpresa.substr(0, 2).toUpperCase();
+        initialsEl.textContent = iniciales;
+
+        img.classList.add('hidden');
+        initialsEl.classList.remove('hidden');
+      }
+
       document.getElementById('nombreEmpresa').textContent = data.nombre;
       document.getElementById('emailEmpresa').textContent = data.correo;
       document.getElementById('planEmpresa').textContent = data.plan_servicio?.nombre || '—';
@@ -98,7 +129,7 @@
       document.getElementById('fechaRegistroEmpresa').textContent =
         fecha.toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
 
-      document.getElementById('usuariosEmpresa').textContent = data.nro_usuarios ?? '0';
+      document.getElementById('usuariosEmpresa').textContent = data.nro_usuarios || '0';
 
       // Mostrar modal con animación
       const modal = document.getElementById('detallesEmpresaModal');

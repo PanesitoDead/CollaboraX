@@ -1,198 +1,215 @@
+{{-- resources/views/admin/configuracion.blade.php --}}
 @extends('layouts.super-admin.super-admin')
 
-@section('title', 'Configuración del Sistema')
-@section('page-title', 'Configuración del Sistema')
+@section('title', 'Configuración')
 
 @section('content')
-<div class="space-y-6">
-    <!-- General Settings -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-medium text-gray-900 mb-6">Configuración General</h3>
-        <form class="space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Sistema</label>
-                    <input type="text" value="CollaboraX" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Email de Soporte</label>
-                    <input type="email" value="support@collaborax.com" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Zona Horaria</label>
-                    <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="UTC">UTC</option>
-                        <option value="America/Mexico_City" selected>América/Ciudad de México</option>
-                        <option value="America/New_York">América/Nueva York</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Idioma por Defecto</label>
-                    <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="es" selected>Español</option>
-                        <option value="en">English</option>
-                        <option value="fr">Français</option>
-                    </select>
-                </div>
-            </div>
-        </form>
-    </div>
+@php
+    use Illuminate\Support\Str;
+@endphp
 
-    <!-- Plan Settings -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-medium text-gray-900 mb-6">Configuración de Planes</h3>
-        <div class="space-y-6">
-            <!-- Basic Plan -->
-            <div class="border border-gray-200 rounded-lg p-4">
-                <div class="flex items-center justify-between mb-4">
-                    <h4 class="text-md font-medium text-gray-900">Plan Basic</h4>
-                    <span class="text-sm text-gray-500">Activo</span>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Precio Mensual</label>
-                        <input type="number" value="99" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Máximo Usuarios</label>
-                        <input type="number" value="10" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Almacenamiento (GB)</label>
-                        <input type="number" value="5" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Professional Plan -->
-            <div class="border border-gray-200 rounded-lg p-4">
-                <div class="flex items-center justify-between mb-4">
-                    <h4 class="text-md font-medium text-gray-900">Plan Professional</h4>
-                    <span class="text-sm text-gray-500">Activo</span>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Precio Mensual</label>
-                        <input type="number" value="299" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Máximo Usuarios</label>
-                        <input type="number" value="50" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Almacenamiento (GB)</label>
-                        <input type="number" value="25" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Enterprise Plan -->
-            <div class="border border-gray-200 rounded-lg p-4">
-                <div class="flex items-center justify-between mb-4">
-                    <h4 class="text-md font-medium text-gray-900">Plan Enterprise</h4>
-                    <span class="text-sm text-gray-500">Activo</span>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Precio Mensual</label>
-                        <input type="number" value="599" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Máximo Usuarios</label>
-                        <input type="number" value="200" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Almacenamiento (GB)</label>
-                        <input type="number" value="100" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                </div>
-            </div>
+<div class="space-y-6 p-4">
+    {{-- Header --}}
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Configuración</h1>
+            <p class="text-gray-600">Ajustes generales del sistema</p>
         </div>
     </div>
 
-    <!-- Security Settings -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-medium text-gray-900 mb-6">Configuración de Seguridad</h3>
-        <div class="space-y-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h4 class="text-sm font-medium text-gray-900">Autenticación de Dos Factores</h4>
-                    <p class="text-sm text-gray-500">Requerir 2FA para todos los administradores</p>
-                </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" class="sr-only peer" checked>
-                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-            </div>
-            
-            <div class="flex items-center justify-between">
-                <div>
-                    <h4 class="text-sm font-medium text-gray-900">Logs de Auditoría</h4>
-                    <p class="text-sm text-gray-500">Registrar todas las acciones administrativas</p>
-                </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" class="sr-only peer" checked>
-                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-            </div>
+    {{-- Tabs Container --}}
+    <div class="bg-white rounded-lg border border-gray-300">
+        {{-- Tabs Navigation --}}
+        <nav class="border-b border-gray-200">
+            <div class="flex space-x-8 px-6">
+                @foreach($planes as $plan)
+                    @php
+                        // Generamos una clave única a partir del nombre, en minúsculas y sin espacios
+                        $key = strtolower($plan->nombre);
+                    @endphp
 
-            <div class="flex items-center justify-between">
-                <div>
-                    <h4 class="text-sm font-medium text-gray-900">Backup Automático</h4>
-                    <p class="text-sm text-gray-500">Realizar respaldos diarios de la base de datos</p>
-                </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" class="sr-only peer" checked>
-                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-            </div>
-        </div>
-    </div>
+                    <button
+                        type="button"
+                        data-tab="{{ $key }}"
+                        class="tab-button inline-flex items-center whitespace-nowrap border-b-2 
+                               {{ $loop->first ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} 
+                               py-4 px-1 font-medium text-sm transition"
+                        onclick="showTab('{{ $key }}')"
+                    >
+                        @if($key === 'standard')
+                            <i data-lucide="credit-card" class="w-4 h-4 mr-1"></i>
+                        @elseif($key === 'business')
+                            <i data-lucide="briefcase" class="w-4 h-4 mr-1"></i>
+                        @elseif($key === 'enterprise')
+                            <i data-lucide="building-2" class="w-4 h-4 mr-1"></i>
+                        @endif
 
-    <!-- Notification Settings -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-medium text-gray-900 mb-6">Configuración de Notificaciones</h3>
-        <div class="space-y-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h4 class="text-sm font-medium text-gray-900">Nuevos Registros</h4>
-                    <p class="text-sm text-gray-500">Notificar cuando se registre una nueva empresa</p>
-                </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" class="sr-only peer" checked>
-                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
+                        {{ $plan->nombre }}
+                    </button>
+                @endforeach
             </div>
-            
-            <div class="flex items-center justify-between">
-                <div>
-                    <h4 class="text-sm font-medium text-gray-900">Pagos Recibidos</h4>
-                    <p class="text-sm text-gray-500">Notificar cuando se reciba un pago</p>
-                </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" class="sr-only peer" checked>
-                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-            </div>
+        </nav>
 
-            <div class="flex items-center justify-between">
-                <div>
-                    <h4 class="text-sm font-medium text-gray-900">Problemas del Sistema</h4>
-                    <p class="text-sm text-gray-500">Notificar sobre errores críticos del sistema</p>
-                </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" class="sr-only peer" checked>
-                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-            </div>
-        </div>
-    </div>
+        {{-- Tab Contents --}}
+        @foreach($planes as $plan)
+            @php
+                $key = strtolower($plan->nombre);
+            @endphp
 
-    <!-- Save Button -->
-    <div class="flex justify-end">
-        <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium">
-            Guardar Configuración
-        </button>
+            <div 
+                id="tab-{{ $key }}" 
+                class="tab-content p-6 {{ $loop->first ? '' : 'hidden' }}"
+            >
+                <form 
+                    method="POST" 
+                    action="{{ route('super-admin.configuracion.planes.update', $plan->id) }}"
+                >
+                    @csrf
+                    @method('PUT')
+
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Plan {{ $plan->nombre }}</h3>
+
+                    {{-- Contenedor de campos del plan --}}
+                    <div id="{{ $key }}-fields">
+                        <div class="grid gap-4 md:grid-cols-2">
+                            {{-- Precio --}}
+                            <div>
+                                <label 
+                                    for="costo_soles" 
+                                    class="block mb-1 text-sm font-medium text-gray-700"
+                                >
+                                    Precio (PEN)
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    name="costo_soles"
+                                    id="{{ $key }}_precio"
+                                    value="{{ old("planes.{$key}.precio", $plan->costo_soles) }}"
+                                    required
+                                    disabled
+                                    class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
+                                />
+                            </div>
+
+                            {{-- Cantidad de Usuarios --}}
+                            <div>
+                                <label 
+                                    for="cant_usuarios" 
+                                    class="block mb-1 text-sm font-medium text-gray-700"
+                                >
+                                    Cantidad de Usuarios
+                                </label>
+                                <input
+                                    type="number"
+                                    name="cant_usuarios"
+                                    id="{{ $key }}_usuarios"
+                                    value="{{ old("planes.{$key}.usuarios", $plan->cant_usuarios) }}"
+                                    required
+                                    disabled
+                                    class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
+                                />
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            {{-- Beneficios --}}
+                            <label 
+                                for="beneficios" 
+                                class="block mb-1 text-sm font-medium text-gray-700"
+                            >
+                                Beneficios
+                            </label>
+                            <textarea
+                                name="beneficios"
+                                id="beneficios"
+                                rows="3"
+                                required
+                                disabled
+                                class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg resize-none"
+                            >{{ old("planes.{$key}.beneficios", $plan->beneficios) }}</textarea>
+                        </div>
+                    </div>
+
+                    {{-- Botones de Editar/Guardar --}}
+                    <div class="flex justify-end mt-6 space-x-2">
+                        <button
+                            type="button"
+                            onclick="enableEdit('{{ $key }}')"
+                            id="edit-{{ $key }}"
+                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                        >
+                            Editar Plan
+                        </button>
+                        <button
+                            type="submit"
+                            id="save-{{ $key }}"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 hidden"
+                        >
+                            Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        @endforeach
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    // Mostrar/ocultar contenido de tabs
+    function showTab(tab) {
+        // 1. Ocultar todas las pestañas y resetear clases en los botones
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('border-blue-500', 'text-blue-600');
+            btn.classList.add('border-transparent', 'text-gray-500');
+        });
+
+        // 2. Mostrar la pestaña seleccionada
+        document.getElementById(`tab-${tab}`).classList.remove('hidden');
+
+        // 3. Marcar el botón activo
+        const activeBtn = document.querySelector(`.tab-button[data-tab="${tab}"]`);
+        activeBtn.classList.add('border-blue-500', 'text-blue-600');
+        activeBtn.classList.remove('border-transparent', 'text-gray-500');
+
+        // 4. Actualizar el hash de la URL sin recargar la página
+        if (history.replaceState) {
+            history.replaceState(null, null, `#${tab}`);
+        } else {
+            // fallback simple para navegadores muy viejos
+            window.location.hash = tab;
+        }
+    }
+
+    // Habilitar inputs para edición de cada plan
+    function enableEdit(plan) {
+        document.querySelectorAll(`#${plan}-fields input, #${plan}-fields textarea`).forEach(input => {
+            input.disabled = false;
+            input.classList.add('focus:ring-2', 'focus:ring-blue-500');
+        });
+        // Ocultar botón "Editar" y mostrar "Guardar"
+        document.getElementById(`edit-${plan}`).classList.add('hidden');
+        document.getElementById(`save-${plan}`).classList.remove('hidden');
+    }
+
+    // Mostrar por defecto el primer tab o el que venga en el hash
+    document.addEventListener('DOMContentLoaded', function() {
+        // 1. Leer el hash de la URL (sin el '#')
+        let hash = window.location.hash.substring(1);
+
+        // 2. Comprobar que exista un tab con ese nombre; si no, usar el primero
+        const allTabs = Array.from(document.querySelectorAll('.tab-button')).map(btn => btn.getAttribute('data-tab'));
+        if (!allTabs.includes(hash)) {
+            // Si no coincide con ningún tab, tomar el primero
+            hash = document.querySelector('.tab-button').getAttribute('data-tab');
+        }
+
+        // 3. Mostrar la pestaña correspondiente
+        showTab(hash);
+    });
+
+</script>
+@endpush

@@ -4,8 +4,8 @@
 
     <!-- Avatar -->
     <div class="flex items-center space-x-4">
-        <div class="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center border">
-            <img id="avatar-preview" src="{{ $profileData['avatar'] }}" alt="Avatar" class="h-16 w-16 rounded-full object-cover">
+        <div class="w-20 h-20 rounded-full overflow-hidden border-4 border-gray-300 bg-gray-100 flex items-center justify-center relative">
+            <img id="avatar-preview" src="{{ $profileData['avatar'] }}" alt="Avatar del usuario" class="h-20 w-20 rounded-full object-cover">
         </div>
         <div class="flex-1">
             <label for="avatar" class="block mb-1 text-sm font-medium text-gray-700">Foto de perfil</label>

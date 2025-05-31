@@ -12,6 +12,31 @@ class EmpresaRepositorio extends RepositorioBase
         parent::__construct($model);
     }
 
+    /*
+      Sobreescribe el método update para incluir la actualización del usuario asociado a la empresa.
+    */
+    
+    public function update(int $id, array $data): bool
+    {
+        // se actualiza del usuario asociado a la empresa
+        $empresa = $this->getById($id);
+        if (!$empresa) {
+            return false;
+        }
+        $usuario = $empresa->usuario;
+        if (!$usuario) {
+            return false;
+        }
+        $usuario->fill($data);
+        if (!$usuario->save()) {
+            return false;
+        }
+        // se actualiza la empresa
+        return parent::update($id, $data);
+    }
+
+    
+
     public function cambiarEstado(int $id, bool $estado): bool
     {
         // se cambia el estado del usuario asociado a la empresa
