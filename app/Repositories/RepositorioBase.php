@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Model;
         return $this->model->where('active', 1)->get();
     }
 
-    public function getById(int $id): ?Model
+    public function getById(string $id): ?Model
     {
         return $this->model->find($id);
     }
@@ -35,6 +35,11 @@ use Illuminate\Database\Eloquent\Model;
     public function findBy(string $field, $value, array $relations = []): Collection
     {
         return $this->model->where($field, $value)->with($relations)->get();
+    }
+
+    public function findOneBy($field, $value)
+    {
+        return $this->model->where($field, $value)->first();
     }
 
     public function findByFields(array $conditions, array $relations = []): Collection

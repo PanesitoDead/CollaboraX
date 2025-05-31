@@ -11,15 +11,10 @@ class MetaRepositorio extends RepositorioBase
     {
         parent::__construct($model);
     }
- 
-    public function getMetasActivas()
-    {
-        return Meta::where('estado_id', '!=', 1)->get();
-    }
 
-    public function countMetasActivas()
+    public function getMetasPorEquipo($equipo)
     {
-        return Meta::where('estado_id', '!=', 1)->count();
+        return $this->model->where('equipo_id', $equipo)->with('tareas')->get();
     }
     
     protected function aplicarRango(Builder $consulta, ?array $range): void

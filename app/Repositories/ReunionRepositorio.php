@@ -2,29 +2,28 @@
 
  namespace App\Repositories;
 
- use App\Models\Empresa;
+use App\Models\Reunion;
 use Illuminate\Database\Eloquent\Builder;
 
-class EmpresaRepositorio extends RepositorioBase
+class ReunionRepositorio extends RepositorioBase
 {
-    public function __construct(Empresa $model)
+    public function __construct(Reunion $model)
     {
         parent::__construct($model);
     }
 
-    public function cambiarEstado(int $id, bool $estado): bool
+    public function getReunionesPendientesPorEquipo($equipoId)
     {
-        // se cambia el estado del usuario asociado a la empresa
-        $empresa = $this->getById($id);
-        if (!$empresa) {
-            return false;
-        }
-        $usuario = $empresa->usuario;
-        if (!$usuario) {
-            return false;
-        }
-        $usuario->activo = $estado;
-        return $usuario->save();
+        return $this->model->where('equipo_id', $equipoId)
+            ->whereRaw("STR_TO_DATE(CONCAT(fecha, ' ', hora), '%Y-%m-%d %H:%i:%s') > NOW()")
+            ->get();
+    }
+
+    public function countReunionesPendientesPorEquipo($equipoId)
+    {
+        return $this->model->where('equipo_id', $equipoId)
+            ->whereRaw("STR_TO_DATE(CONCAT(fecha, ' ', hora), '%Y-%m-%d %H:%i:%s') > NOW()")
+            ->count();
     }
 
     protected function aplicarRango(Builder $consulta, ?array $range): void
@@ -106,3 +105,4 @@ class EmpresaRepositorio extends RepositorioBase
     }
 
 }
+ 

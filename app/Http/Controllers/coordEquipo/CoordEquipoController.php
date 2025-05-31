@@ -3,23 +3,28 @@
 namespace App\Http\Controllers\coordEquipo;
 
 use App\Http\Controllers\Controller;
+use App\Repositories\EquipoRepositorio;
+use App\Repositories\TrabajadorRepositorio;
 use Auth;
 use Illuminate\Http\Request;
 use Validator;
 
 class CoordEquipoController extends Controller
 {
-    public function __construct()
+
+    protected TrabajadorRepositorio $trabajadorRepositorio;
+    protected EquipoRepositorio $equipoRepositorio;
+
+    public function __construct(TrabajadorRepositorio $trabajadorRepositorio, EquipoRepositorio $equipoRepositorio)
     {
-        //$this->middleware(['auth', 'role:coordinador-grupo']);
+        $this->trabajadorRepositorio = $trabajadorRepositorio;
+        $this->equipoRepositorio = $equipoRepositorio;
     }
 
     public function dashboard()
     {
-        $user = Auth::user();
-
-        
-        
+        $usuario = Auth::user();
+                
         // Datos simulados - reemplazar con datos reales de la base de datos
         $stats = [
             'total_colaboradores' => 12,

@@ -156,7 +156,7 @@
         @php
         $items = [
           // ['route' => 'super-admin.dashboard', 'icon' => 'home', 'label' => 'Dashboard'],
-          ['route' => 'super-admin.empresas', 'icon' => 'building', 'label' => 'Empresas'],
+          ['route' => 'super-admin.empresas.index', 'icon' => 'building', 'label' => 'Empresas'],
           ['route' => 'super-admin.estadisticas', 'icon' => 'bar-chart-2', 'label' => 'Estadísticas'],
           ['route' => 'super-admin.configuracion', 'icon' => 'settings', 'label' => 'Configuración'],
         ];

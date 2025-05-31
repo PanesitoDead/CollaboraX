@@ -3,131 +3,110 @@
 namespace App\Http\Controllers\coordEquipo;
 
 use App\Http\Controllers\Controller;
+use App\Repositories\EquipoRepositorio;
+use App\Repositories\InvitacionRepositorio;
+use App\Repositories\MetaRepositorio;
+use App\Repositories\ReunionRepositorio;
+use App\Repositories\TrabajadorRepositorio;
+use Auth;
 use Illuminate\Http\Request;
 use Validator;
 
 class EquipoCoordinadorController extends Controller
 {
-    public function __construct()
+
+    protected TrabajadorRepositorio $trabajadorRepositorio;
+    protected EquipoRepositorio $equipoRepositorio;
+    protected MetaRepositorio $metaRepositorio;
+    protected ReunionRepositorio $reunionRepositorio;
+    protected InvitacionRepositorio $invitacionRepositorio;
+
+    public function __construct(TrabajadorRepositorio $trabajadorRepositorio, EquipoRepositorio $equipoRepositorio, MetaRepositorio $metaRepositorio, ReunionRepositorio $reunionRepositorio, InvitacionRepositorio $invitacionRepositorio)
     {
-        //$this->middleware(['auth', 'role:coordinador-grupo']);
+        $this->trabajadorRepositorio = $trabajadorRepositorio;
+        $this->equipoRepositorio = $equipoRepositorio;
+        $this->metaRepositorio = $metaRepositorio;
+        $this->reunionRepositorio = $reunionRepositorio;
+        $this->invitacionRepositorio = $invitacionRepositorio;
     }
 
     public function index()
     {
-        // Estadísticas del equipo
-        $stats = [
-            'miembros' => 8,
-            'miembros_nuevos' => 2,
-            'metas_activas' => 4,
-            'metas_completadas' => 1,
-            'actividades_total' => 18,
-            'actividades_progreso' => 12,
-            'actividades_completadas' => 6,
-            'rendimiento' => 92,
-            'rendimiento_cambio' => 5
-        ];
 
-        // Miembros del equipo
-        $miembros = [
-            [
-                'id' => 1,
-                'nombre' => 'Ana Martínez',
-                'email' => 'ana.martinez@empresa.cx.com',
-                'rol' => 'Coordinador',
-                'actividades_completadas' => 5,
-                'actividades_totales' => 6,
-                'rendimiento' => 95,
-                'avatar' => '/placeholder-32px.png'
-            ],
-            [
-                'id' => 2,
-                'nombre' => 'Carlos López',
-                'email' => 'carlos.lopez@empresa.cx.com',
-                'rol' => 'Desarrollador Senior',
-                'actividades_completadas' => 4,
-                'actividades_totales' => 5,
-                'rendimiento' => 92,
-                'avatar' => '/placeholder-32px.png'
-            ],
-            [
-                'id' => 3,
-                'nombre' => 'María Rodríguez',
-                'email' => 'maria.rodriguez@empresa.cx.com',
-                'rol' => 'Desarrollador',
-                'actividades_completadas' => 3,
-                'actividades_totales' => 4,
-                'rendimiento' => 88,
-                'avatar' => '/placeholder-32px.png'
-            ],
-            [
-                'id' => 4,
-                'nombre' => 'Juan Pérez',
-                'email' => 'juan.perez@empresa.cx.com',
-                'rol' => 'Diseñador UI',
-                'actividades_completadas' => 2,
-                'actividades_totales' => 3,
-                'rendimiento' => 85,
-                'avatar' => '/placeholder-32px.png'
-            ],
-            [
-                'id' => 5,
-                'nombre' => 'Laura Sánchez',
-                'email' => 'laura.sanchez@empresa.cx.com',
-                'rol' => 'QA',
-                'actividades_completadas' => 3,
-                'actividades_totales' => 3,
-                'rendimiento' => 100,
-                'avatar' => '/placeholder-32px.png'
-            ],
-            [
-                'id' => 6,
-                'nombre' => 'Roberto Fernández',
-                'email' => 'roberto.fernandez@empresa.cx.com',
-                'rol' => 'Desarrollador',
-                'actividades_completadas' => 2,
-                'actividades_totales' => 3,
-                'rendimiento' => 90,
-                'avatar' => '/placeholder-32px.png'
-            ]
+        $usuario = Auth::user();
+        $trabajador = $this->trabajadorRepositorio->findOneBy('usuario_id', $usuario->id);
+        $equipo = $this->equipoRepositorio->findOneBy('coordinador_id', $trabajador->id);
+        $miembros = $this->trabajadorRepositorio->getMiembrosEquipo($equipo->id);
+        $cantidadMiembros = $this->trabajadorRepositorio->countMiembrosEquipo($equipo->id);
+        $invitaciones = $this->invitacionRepositorio->getInvitacionesPorEquipo($equipo->id);
+
+        $metas = $this->metaRepositorio->getMetasPorEquipo($equipo->id);
+        $reunionesPendientes = $this->reunionRepositorio->countReunionesPendientesPorEquipo($equipo->id);
+
+        // Cálculos
+        $metasCompletadas = $metas->where('estado_id', 3)->count(); // estado_id 3 = completado
+        $metasActivas = $metas->where('estado_id', '!=', 3)->count();
+
+
+        $totalTareas = 0;
+        $tareasCompletadas = 0;
+        $tareasProgreso = 0;
+
+        foreach ($metas as $meta) {
+            $totalTareas += $meta->tareas->count();
+            $tareasCompletadas += $meta->tareas->where('estado_id', 3)->count(); // estado_id 3 = completado
+            $tareasProgreso += $meta->tareas->where('estado_id', 2)->count();
+        }
+
+        $rendimiento = $totalTareas > 0 ? round(($tareasCompletadas / $totalTareas) * 100) : 0;
+        
+        $stats = [
+            'miembros' => $cantidadMiembros,
+            'actividades_progreso' => $tareasProgreso,
+            'metas_completadas' => $metasCompletadas,
+            'metas_activas' => $metasActivas,
+            'actividades_total' => $totalTareas,
+            'actividades_completadas' => $tareasCompletadas,
+            'rendimiento' => $rendimiento,
+            'reuniones_pendientes' => $reunionesPendientes
         ];
 
         // Invitaciones
-        $invitaciones = [
-            [
-                'id' => 1,
-                'colaborador' => [
-                    'id' => 201,
-                    'nombre' => 'Lucía Ramírez',
-                    'email' => 'lucia.ramirez@empresa.cx.com',
-                    'rol' => 'Diseñador UX'
-                ],
-                'fecha' => '2025-05-18 14:30:00',
-                'estado' => 'pendiente'
-            ],
-            [
-                'id' => 2,
-                'colaborador' => [
-                    'id' => 202,
-                    'nombre' => 'Gabriel Herrera',
-                    'email' => 'gabriel.herrera@empresa.cx.com',
-                    'rol' => 'Desarrollador Backend'
-                ],
-                'fecha' => '2025-05-17 10:15:00',
-                'estado' => 'aceptada'
-            ],
-            [
-                'id' => 3,
-                'colaborador' => [
-                    'id' => 203,
-                    'nombre' => 'Daniela Vargas',
-                    'email' => 'daniela.vargas@empresa.cx.com',
-                    'rol' => 'QA Engineer'
-                ],
-                'fecha' => '2025-05-15 16:45:00',
-                'estado' => 'rechazada'
-            ]
-        ];
+        // $invitaciones = [
+        //     [
+        //         'id' => 1,
+        //         'colaborador' => [
+        //             'id' => 201,
+        //             'nombre' => 'Lucía Ramírez',
+        //             'email' => 'lucia.ramirez@empresa.cx.com',
+        //             'rol' => 'Diseñador UX'
+        //         ],
+        //         'fecha' => '2025-05-18 14:30:00',
+        //         'estado' => 'pendiente'
+        //     ],
+        //     [
+        //         'id' => 2,
+        //         'colaborador' => [
+        //             'id' => 202,
+        //             'nombre' => 'Gabriel Herrera',
+        //             'email' => 'gabriel.herrera@empresa.cx.com',
+        //             'rol' => 'Desarrollador Backend'
+        //         ],
+        //         'fecha' => '2025-05-17 10:15:00',
+        //         'estado' => 'aceptada'
+        //     ],
+        //     [
+        //         'id' => 3,
+        //         'colaborador' => [
+        //             'id' => 203,
+        //             'nombre' => 'Daniela Vargas',
+        //             'email' => 'daniela.vargas@empresa.cx.com',
+        //             'rol' => 'QA Engineer'
+        //         ],
+        //         'fecha' => '2025-05-15 16:45:00',
+        //         'estado' => 'rechazada'
+        //     ]
+        // ];
 
         // Colaboradores disponibles para invitar
         $colaboradores_disponibles = [
@@ -175,6 +154,7 @@ class EquipoCoordinadorController extends Controller
 
         return view('private.coord-equipo.mi-equipo', compact(
             'stats', 
+            'equipo',
             'miembros', 
             'invitaciones', 
             'colaboradores_disponibles'

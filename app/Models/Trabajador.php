@@ -47,23 +47,4 @@ class Trabajador extends Model
     {
         return $this->hasMany(Equipo::class, 'coordinador_id');
     }
-
-    // Accessor para nombre completo
-    public function getNombreCompletoAttribute()
-    {
-        return $this->nombres . ' ' . $this->apellido_paterno . ' ' . $this->apellido_materno;
-    }
-
-    // Accessor para iniciales
-    public function getInicialesAttribute()
-    {
-        $nombres = explode(' ', $this->nombres);
-        $iniciales = substr($nombres[0], 0, 1);
-        if (isset($nombres[1])) {
-            $iniciales .= substr($nombres[1], 0, 1);
-        } else {
-            $iniciales .= substr($this->apellido_paterno, 0, 1);
-        }
-        return strtoupper($iniciales);
-    }
 }

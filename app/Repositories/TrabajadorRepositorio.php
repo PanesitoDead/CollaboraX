@@ -15,8 +15,9 @@ class TrabajadorRepositorio extends RepositorioBase
 
     public function getMiembrosEquipo($idEquipo)
     {
-        return MiembroEquipo::where('equipo_id', $idEquipo)->get();
+        return MiembroEquipo::with(['trabajador.usuario.rol'])->where('equipo_id', $idEquipo)->get();
     }
+
 
     public function countMiembrosEquipo($idEquipo)
     {
