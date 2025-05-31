@@ -28,4 +28,9 @@ class MiembroEquipo extends Model
     {
         return $this->belongsTo(Trabajador::class);
     }
+     // Accessor para verificar si es coordinador
+    public function getEsCoordinadorAttribute()
+    {
+        return $this->equipo && $this->equipo->coordinador_id === $this->trabajador_id;
+    }
 }

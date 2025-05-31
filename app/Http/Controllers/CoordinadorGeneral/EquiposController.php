@@ -5,7 +5,7 @@ namespace App\Http\Controllers\CoordinadorGeneral;
 use App\Http\Controllers\Controller;
 use App\Repositories\EquipoRepositorio;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class EquiposController extends Controller
 {
@@ -21,7 +21,7 @@ class EquiposController extends Controller
         try {
             // Por ahora usaremos empresa ID = 1 para pruebas
             // En producción esto vendría del usuario autenticado
-            $empresaId = 4;
+            $empresaId = 1;
             
             $equipos = $this->equipoRepositorio->getAllByEmpresa($empresaId);
             $areas = $this->equipoRepositorio->getAreasDisponibles($empresaId);
@@ -37,15 +37,15 @@ class EquiposController extends Controller
                     'area_id' => $equipo->area->id,
                     'descripcion' => $equipo->descripcion,
                     'estado' => $equipo->estado,
-                    'coordinador' => $equipo->coordinador->nombres . ' ' . $equipo->coordinador->apellido_paterno,
-                    'coordinador_id' => $equipo->coordinador->id,
+                    'coordinador' => $equipo->coordinador_nombre_completo,
+                    'coordinador_id' => $equipo->coordinador_id,
                     'miembros_count' => $equipo->miembros_activos_count,
                     'metas_activas' => $equipo->metas_activas_count,
                     'progreso' => $equipo->progreso_promedio,
                     'miembros' => $equipo->miembros->where('activo', true)->map(function($miembro) {
-                        return $miembro->trabajador->nombres . ' ' . $miembro->trabajador->apellido_paterno;
+                        return $miembro->trabajador->nombre_completo;
                     })->toArray(),
-                    'fecha_creacion' => $equipo->fecha_creacion
+                    'fecha_creacion' => $equipo->fecha_creacion ? \Carbon\Carbon::parse($equipo->fecha_creacion)->format('Y-m-d') : null
                 ];
             });
 
@@ -53,8 +53,8 @@ class EquiposController extends Controller
             $coordinadoresTransformados = $coordinadores->map(function($coordinador) {
                 return [
                     'id' => $coordinador->id,
-                    'nombre' => $coordinador->nombres . ' ' . $coordinador->apellido_paterno . ' ' . $coordinador->apellido_materno,
-                    'email' => $coordinador->usuario->correo
+                    'nombre' => $coordinador->nombre_completo,
+                    'email' => $coordinador->usuario ? $coordinador->usuario->correo : ''
                 ];
             });
 
@@ -66,6 +66,7 @@ class EquiposController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Error en index', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return back()->with('error', 'Error al cargar los equipos: ' . $e->getMessage());
         }
     }
@@ -94,6 +95,7 @@ class EquiposController extends Controller
                            ->with('success', 'Equipo creado exitosamente');
 
         } catch (\Exception $e) {
+            Log::error('Error en store', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return back()->with('error', 'Error al crear el equipo: ' . $e->getMessage())
                         ->withInput();
         }
@@ -109,9 +111,23 @@ class EquiposController extends Controller
                                ->with('error', 'Equipo no encontrado');
             }
 
+            // Verificar y formatear fechas
+            if ($equipo->fecha_creacion && !$equipo->fecha_creacion instanceof \Carbon\Carbon) {
+                $equipo->fecha_creacion = \Carbon\Carbon::parse($equipo->fecha_creacion);
+            }
+
+            // Preparar los datos de las metas
+            $equipo->metas->map(function($meta) {
+                if ($meta->fecha_entrega && !$meta->fecha_entrega instanceof \Carbon\Carbon) {
+                    $meta->fecha_entrega = \Carbon\Carbon::parse($meta->fecha_entrega);
+                }
+                return $meta;
+            });
+
             return view('coordinador-general.equipos.show', compact('equipo'));
 
         } catch (\Exception $e) {
+            Log::error('Error en show', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString(), 'id' => $id]);
             return back()->with('error', 'Error al cargar el equipo: ' . $e->getMessage());
         }
     }
@@ -136,12 +152,13 @@ class EquiposController extends Controller
                 'coordinadores' => $coordinadores->map(function($coordinador) {
                     return [
                         'id' => $coordinador->id,
-                        'nombre' => $coordinador->nombres . ' ' . $coordinador->apellido_paterno . ' ' . $coordinador->apellido_materno
+                        'nombre' => $coordinador->nombre_completo
                     ];
                 })
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Error en edit', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString(), 'id' => $id]);
             return back()->with('error', 'Error al cargar el equipo: ' . $e->getMessage());
         }
     }
@@ -175,6 +192,13 @@ class EquiposController extends Controller
                            ->with('success', 'Equipo actualizado exitosamente');
 
         } catch (\Exception $e) {
+            Log::error('Error en update', [
+                'error' => $e->getMessage(), 
+                'trace' => $e->getTraceAsString(),
+                'id' => $id,
+                'data' => $request->all()
+            ]);
+            
             // En caso de error, regresar al formulario con el error
             return redirect()->route('coordinador-general.equipos.edit', $id)
                            ->with('error', 'Error al actualizar el equipo: ' . $e->getMessage())
@@ -195,6 +219,7 @@ class EquiposController extends Controller
                            ->with('success', 'Equipo eliminado exitosamente');
 
         } catch (\Exception $e) {
+            Log::error('Error en destroy', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString(), 'id' => $id]);
             return back()->with('error', 'Error al eliminar el equipo: ' . $e->getMessage());
         }
     }
@@ -211,9 +236,11 @@ class EquiposController extends Controller
             $miembros = $equipo->miembros->where('activo', true)->map(function($miembro) use ($equipo) {
                 return [
                     'id' => $miembro->trabajador->id,
-                    'nombre' => $miembro->trabajador->nombres . ' ' . $miembro->trabajador->apellido_paterno . ' ' . $miembro->trabajador->apellido_materno,
-                    'email' => $miembro->trabajador->usuario->correo,
-                    'fecha_union' => $miembro->fecha_union,
+                    'nombre' => $miembro->trabajador->nombre_completo,
+                    'email' => $miembro->trabajador->usuario ? $miembro->trabajador->usuario->correo : '',
+                    'fecha_union' => $miembro->fecha_union instanceof \Carbon\Carbon 
+                        ? $miembro->fecha_union->format('Y-m-d') 
+                        : \Carbon\Carbon::parse($miembro->fecha_union)->format('Y-m-d'),
                     'es_coordinador' => $miembro->trabajador->id === $equipo->coordinador_id
                 ];
             })->values();
@@ -221,7 +248,8 @@ class EquiposController extends Controller
             return response()->json($miembros);
 
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Error al cargar miembros'], 500);
+            Log::error('Error en getMiembros', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString(), 'id' => $id]);
+            return response()->json(['error' => 'Error al cargar miembros: ' . $e->getMessage()], 500);
         }
     }
 
@@ -241,7 +269,13 @@ class EquiposController extends Controller
             return response()->json(['success' => true, 'message' => 'Miembro agregado exitosamente']);
 
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Error al agregar miembro'], 500);
+            Log::error('Error en agregarMiembro', [
+                'error' => $e->getMessage(), 
+                'trace' => $e->getTraceAsString(),
+                'id' => $id,
+                'trabajador_id' => $request->trabajador_id
+            ]);
+            return response()->json(['error' => 'Error al agregar miembro: ' . $e->getMessage()], 500);
         }
     }
 
@@ -261,7 +295,13 @@ class EquiposController extends Controller
             return response()->json(['success' => true, 'message' => 'Miembro eliminado exitosamente']);
 
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Error al eliminar miembro'], 500);
+            Log::error('Error en eliminarMiembro', [
+                'error' => $e->getMessage(), 
+                'trace' => $e->getTraceAsString(),
+                'id' => $id,
+                'trabajador_id' => $request->trabajador_id
+            ]);
+            return response()->json(['error' => 'Error al eliminar miembro: ' . $e->getMessage()], 500);
         }
     }
 
@@ -280,7 +320,7 @@ class EquiposController extends Controller
                     'id' => $equipo->id,
                     'nombre' => $equipo->nombre,
                     'area' => $equipo->area->nombre,
-                    'coordinador' => $equipo->coordinador->nombres . ' ' . $equipo->coordinador->apellido_paterno,
+                    'coordinador' => $equipo->coordinador_nombre_completo,
                     'miembros_count' => $equipo->miembros_activos_count
                 ];
             });
@@ -288,7 +328,8 @@ class EquiposController extends Controller
             return response()->json($equiposTransformados);
 
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Error en la búsqueda'], 500);
+            Log::error('Error en buscar', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString(), 'q' => $request->q]);
+            return response()->json(['error' => 'Error en la búsqueda: ' . $e->getMessage()], 500);
         }
     }
 }

@@ -50,11 +50,17 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <h3 class="text-sm font-medium text-gray-500">Fecha de creación</h3>
-                            <p class="mt-1 text-gray-900">{{ $equipo->fecha_creacion instanceof \Carbon\Carbon ? $equipo->fecha_creacion->format('d/m/Y') : \Carbon\Carbon::parse($equipo->fecha_creacion)->format('d/m/Y') }}</p>
+                            <p class="mt-1 text-gray-900">
+                                @if($equipo->fecha_creacion)
+                                    {{ $equipo->fecha_creacion instanceof \Carbon\Carbon ? $equipo->fecha_creacion->format('d/m/Y') : \Carbon\Carbon::parse($equipo->fecha_creacion)->format('d/m/Y') }}
+                                @else
+                                    Sin fecha
+                                @endif
+                            </p>
                         </div>
                         <div>
-                            <h3 class="text-sm font-medium text-gray-500">Última actualización</h3>
-                            <p class="mt-1 text-gray-900">{{ $equipo->updated_at instanceof \Carbon\Carbon ? $equipo->updated_at->format('d/m/Y') : \Carbon\Carbon::parse($equipo->updated_at)->format('d/m/Y') }}</p>
+                            <h3 class="text-sm font-medium text-gray-500">Área</h3>
+                            <p class="mt-1 text-gray-900">{{ $equipo->area->nombre }}</p>
                         </div>
                     </div>
                     
@@ -62,9 +68,9 @@
                         <h3 class="text-sm font-medium text-gray-500">Coordinador</h3>
                         <div class="mt-1 flex items-center space-x-2">
                             <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span class="text-sm font-medium text-blue-600">{{ $equipo->coordinador->iniciales }}</span>
+                                <span class="text-sm font-medium text-blue-600">{{ $equipo->coordinador_iniciales }}</span>
                             </div>
-                            <span class="text-gray-900">{{ $equipo->coordinador->nombre_completo }}</span>
+                            <span class="text-gray-900">{{ $equipo->coordinador_nombre_completo }}</span>
                         </div>
                     </div>
                 </div>
@@ -90,27 +96,17 @@
                                         <p class="text-sm text-gray-600">{{ $meta->descripcion }}</p>
                                     </div>
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                        @if($meta->estado && $meta->estado->nombre === 'completado')
+                                        @if($meta->estado && $meta->estado->nombre === 'Completo')
                                             bg-green-100 text-green-800
-                                        @elseif($meta->estado && $meta->estado->nombre === 'en_proceso')
+                                        @elseif($meta->estado && $meta->estado->nombre === 'En proceso')
                                             bg-blue-100 text-blue-800
-                                        @elseif($meta->estado && $meta->estado->nombre === 'pausado')
+                                        @elseif($meta->estado && $meta->estado->nombre === 'Pausado')
                                             bg-yellow-100 text-yellow-800
                                         @else
                                             bg-gray-100 text-gray-800
                                         @endif">
-                                        {{ $meta->estado ? ucfirst(str_replace('_', ' ', $meta->estado->nombre)) : 'Sin estado' }}
+                                        {{ $meta->estado ? $meta->estado->nombre : 'Sin estado' }}
                                     </span>
-                                </div>
-                                
-                                <div class="mt-2">
-                                    <div class="flex justify-between text-xs text-gray-600 mb-1">
-                                        <span>Progreso</span>
-                                        <span>{{ $meta->porcentaje_completado }}%</span>
-                                    </div>
-                                    <div class="w-full bg-gray-200 rounded-full h-1.5">
-                                        <div class="bg-blue-600 h-1.5 rounded-full transition-all duration-300" style="width: {{ $meta->porcentaje_completado }}%"></div>
-                                    </div>
                                 </div>
                                 
                                 <div class="mt-3 flex justify-between items-center">
@@ -149,11 +145,11 @@
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div class="text-center">
-                        <div class="text-3xl font-bold text-blue-600">{{ $equipo->miembros->where('activo', true)->count() }}</div>
+                        <div class="text-3xl font-bold text-blue-600">{{ $equipo->miembros_activos_count }}</div>
                         <div class="text-xs text-gray-500">Miembros</div>
                     </div>
                     <div class="text-center">
-                        <div class="text-3xl font-bold text-green-600">{{ $equipo->metas->filter(function($meta) { return $meta->estado && in_array($meta->estado->nombre, ['pendiente', 'en_proceso']); })->count() }}</div>
+                        <div class="text-3xl font-bold text-green-600">{{ $equipo->metas_activas_count }}</div>
                         <div class="text-xs text-gray-500">Metas activas</div>
                     </div>
                     <div class="text-center">
@@ -161,7 +157,7 @@
                         <div class="text-xs text-gray-500">Reuniones</div>
                     </div>
                     <div class="text-center">
-                        <div class="text-3xl font-bold text-yellow-600">{{ $equipo->metas->filter(function($meta) { return $meta->estado && $meta->estado->nombre === 'completado'; })->count() }}</div>
+                        <div class="text-3xl font-bold text-yellow-600">{{ $equipo->metas->filter(function($meta) { return $meta->estado && $meta->estado->nombre === 'Completo'; })->count() }}</div>
                         <div class="text-xs text-gray-500">Metas completadas</div>
                     </div>
                 </div>

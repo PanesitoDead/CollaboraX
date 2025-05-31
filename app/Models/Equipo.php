@@ -99,4 +99,35 @@ class Equipo extends Model
             $query->whereIn('nombre', ['Incompleta', 'En proceso']);
         })->count();
     }
+
+    // Accessor para nombre completo del coordinador
+    public function getCoordinadorNombreCompletoAttribute()
+    {
+        if ($this->coordinador) {
+            return $this->coordinador->nombres . ' ' . $this->coordinador->apellido_paterno . ' ' . $this->coordinador->apellido_materno;
+        }
+        return '';
+    }
+
+    // Accessor para iniciales del coordinador
+    public function getCoordinadorInicialesAttribute()
+    {
+        if ($this->coordinador) {
+            $nombres = explode(' ', $this->coordinador->nombres);
+            $iniciales = substr($nombres[0], 0, 1);
+            if (isset($nombres[1])) {
+                $iniciales .= substr($nombres[1], 0, 1);
+            } else {
+                $iniciales .= substr($this->coordinador->apellido_paterno, 0, 1);
+            }
+            return strtoupper($iniciales);
+        }
+        return '';
+    }
+    
+
+
+    
+
+
 }
