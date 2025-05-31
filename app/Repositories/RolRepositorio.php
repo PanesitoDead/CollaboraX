@@ -1,18 +1,17 @@
 <?php
 
- namespace App\Repositories;
+namespace App\Repositories;
 
 use App\Models\Rol;
 use Illuminate\Database\Eloquent\Builder;
 
 class RolRepositorio extends RepositorioBase
- {
+{
     public function __construct(Rol $model)
     {
         parent::__construct($model);
     }
- 
-   
+
     protected function aplicarRango(Builder $consulta, ?array $range): void
     {
         if ($range['field'] && $range['values']) {

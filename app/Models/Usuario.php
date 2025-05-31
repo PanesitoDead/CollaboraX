@@ -16,6 +16,10 @@ class Usuario extends Authenticatable
 
     protected $fillable = ['correo', 'clave', 'rol_id', 'activo', 'en_linea', 'ultima_conexion', 'foto'];
 
+    protected $casts = [
+        'activo' => 'boolean',
+        'en_linea' => 'boolean'
+    ];
     protected $hidden = [
         'clave',
     ];
