@@ -16,6 +16,10 @@ use Illuminate\Database\Eloquent\Model;
         $this->model = $model;
     }
 
+    public function getModel(): Model
+    {
+        return $this->model;
+    }
 
     public function getAll(): Collection
     {
