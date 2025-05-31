@@ -23,13 +23,35 @@ class EquiposController extends Controller
             // En producción esto vendría del usuario autenticado
             $empresaId = 1;
             
+            // Obtener solo equipos válidos (con coordinadores de equipo reales)
             $equipos = $this->equipoRepositorio->getAllByEmpresa($empresaId);
             $areas = $this->equipoRepositorio->getAreasDisponibles($empresaId);
+            
+            // SOLO coordinadores de equipo para crear equipos
             $coordinadores = $this->equipoRepositorio->getCoordinadoresDisponibles($empresaId);
+            
+            // SOLO colaboradores para agregar como miembros
+            $colaboradores = $this->equipoRepositorio->getColaboradoresDisponibles($empresaId);
+            
             $estadisticas = $this->equipoRepositorio->getEstadisticas($empresaId);
 
-            // Transformar datos para la vista
+            // Debug: Ver qué se está obteniendo
+            Log::info('Datos obtenidos', [
+                'equipos_count' => $equipos->count(),
+                'coordinadores_count' => $coordinadores->count(),
+                'colaboradores_count' => $colaboradores->count(),
+                'areas_count' => $areas->count()
+            ]);
+
+            // Transformar datos para la vista - SOLO equipos válidos
             $equiposTransformados = $equipos->map(function($equipo) {
+                // Contar solo colaboradores (no coordinadores) como miembros
+                $colaboradoresMiembros = $equipo->miembros->where('activo', true)->filter(function($miembro) {
+                    return $miembro->trabajador->usuario && 
+                           $miembro->trabajador->usuario->rol && 
+                           $miembro->trabajador->usuario->rol->nombre === 'Colaborador';
+                });
+
                 return [
                     'id' => $equipo->id,
                     'nombre' => $equipo->nombre,
@@ -39,29 +61,41 @@ class EquiposController extends Controller
                     'estado' => $equipo->estado,
                     'coordinador' => $equipo->coordinador_nombre_completo,
                     'coordinador_id' => $equipo->coordinador_id,
-                    'miembros_count' => $equipo->miembros_activos_count,
+                    'miembros_count' => $colaboradoresMiembros->count(), // Solo colaboradores
                     'metas_activas' => $equipo->metas_activas_count,
                     'progreso' => $equipo->progreso_promedio,
-                    'miembros' => $equipo->miembros->where('activo', true)->map(function($miembro) {
+                    'miembros' => $colaboradoresMiembros->map(function($miembro) {
                         return $miembro->trabajador->nombre_completo;
                     })->toArray(),
                     'fecha_creacion' => $equipo->fecha_creacion ? \Carbon\Carbon::parse($equipo->fecha_creacion)->format('Y-m-d') : null
                 ];
             });
 
-            // Transformar coordinadores para la vista
+            // Transformar coordinadores para la vista (SOLO coordinadores de equipo)
             $coordinadoresTransformados = $coordinadores->map(function($coordinador) {
                 return [
                     'id' => $coordinador->id,
                     'nombre' => $coordinador->nombre_completo,
-                    'email' => $coordinador->usuario ? $coordinador->usuario->correo : ''
+                    'email' => $coordinador->usuario ? $coordinador->usuario->correo : '',
+                    'rol' => $coordinador->usuario && $coordinador->usuario->rol ? $coordinador->usuario->rol->nombre : ''
+                ];
+            });
+
+            // Transformar colaboradores para la vista (SOLO colaboradores)
+            $colaboradoresTransformados = $colaboradores->map(function($colaborador) {
+                return [
+                    'id' => $colaborador->id,
+                    'nombre' => $colaborador->nombre_completo,
+                    'email' => $colaborador->usuario ? $colaborador->usuario->correo : '',
+                    'rol' => $colaborador->usuario && $colaborador->usuario->rol ? $colaborador->usuario->rol->nombre : ''
                 ];
             });
 
             return view('coordinador-general.equipos.index', [
                 'equipos' => $equiposTransformados,
                 'areas' => $areas,
-                'coordinadores' => $coordinadoresTransformados,
+                'coordinadores' => $coordinadoresTransformados, // Solo coordinadores de equipo
+                'colaboradores' => $colaboradoresTransformados, // Solo colaboradores
                 'estadisticas' => $estadisticas
             ]);
 
@@ -81,6 +115,20 @@ class EquiposController extends Controller
         ]);
 
         try {
+            // Verificar que el coordinador pertenece a la empresa
+            $empresaId = 1; // En producción esto vendría del usuario autenticado
+            
+            if (!$this->equipoRepositorio->trabajadorPerteneceAEmpresa($request->coordinador_id, $empresaId)) {
+                return back()->with('error', 'El coordinador seleccionado no pertenece a esta empresa')
+                            ->withInput();
+            }
+
+            // Verificar que el trabajador es realmente un coordinador de equipo
+            if (!$this->equipoRepositorio->esCoordinadorDeEquipo($request->coordinador_id, $empresaId)) {
+                return back()->with('error', 'El trabajador seleccionado no es un coordinador de equipo')
+                            ->withInput();
+            }
+
             $equipo = $this->equipoRepositorio->create([
                 'nombre' => $request->nombre,
                 'area_id' => $request->area_id,
@@ -108,7 +156,7 @@ class EquiposController extends Controller
             
             if (!$equipo) {
                 return redirect()->route('coordinador-general.equipos')
-                               ->with('error', 'Equipo no encontrado');
+                               ->with('error', 'Equipo no encontrado o no válido');
             }
 
             // Verificar y formatear fechas
@@ -139,11 +187,13 @@ class EquiposController extends Controller
             
             if (!$equipo) {
                 return redirect()->route('coordinador-general.equipos')
-                               ->with('error', 'Equipo no encontrado');
+                               ->with('error', 'Equipo no encontrado o no válido');
             }
 
             $empresaId = $equipo->area->empresa_id;
             $areas = $this->equipoRepositorio->getAreasDisponibles($empresaId);
+            
+            // SOLO coordinadores de equipo
             $coordinadores = $this->equipoRepositorio->getCoordinadoresDisponibles($empresaId);
 
             return view('coordinador-general.equipos.edit', [
@@ -152,7 +202,8 @@ class EquiposController extends Controller
                 'coordinadores' => $coordinadores->map(function($coordinador) {
                     return [
                         'id' => $coordinador->id,
-                        'nombre' => $coordinador->nombre_completo
+                        'nombre' => $coordinador->nombre_completo,
+                        'rol' => $coordinador->usuario && $coordinador->usuario->rol ? $coordinador->usuario->rol->nombre : ''
                     ];
                 })
             ]);
@@ -174,6 +225,22 @@ class EquiposController extends Controller
         ]);
 
         try {
+            // Verificar que el coordinador pertenece a la empresa
+            $empresaId = 1; // En producción esto vendría del usuario autenticado
+            
+            if (!$this->equipoRepositorio->trabajadorPerteneceAEmpresa($request->coordinador_id, $empresaId)) {
+                return redirect()->route('coordinador-general.equipos.edit', $id)
+                               ->with('error', 'El coordinador seleccionado no pertenece a esta empresa')
+                               ->withInput();
+            }
+
+            // Verificar que el trabajador es realmente un coordinador de equipo
+            if (!$this->equipoRepositorio->esCoordinadorDeEquipo($request->coordinador_id, $empresaId)) {
+                return redirect()->route('coordinador-general.equipos.edit', $id)
+                               ->with('error', 'El trabajador seleccionado no es un coordinador de equipo')
+                               ->withInput();
+            }
+
             // Actualizar el equipo
             $actualizado = $this->equipoRepositorio->update($id, [
                 'nombre' => $request->nombre,
@@ -238,6 +305,7 @@ class EquiposController extends Controller
                     'id' => $miembro->trabajador->id,
                     'nombre' => $miembro->trabajador->nombre_completo,
                     'email' => $miembro->trabajador->usuario ? $miembro->trabajador->usuario->correo : '',
+                    'rol' => $miembro->trabajador->usuario && $miembro->trabajador->usuario->rol ? $miembro->trabajador->usuario->rol->nombre : '',
                     'fecha_union' => $miembro->fecha_union instanceof \Carbon\Carbon 
                         ? $miembro->fecha_union->format('Y-m-d') 
                         : \Carbon\Carbon::parse($miembro->fecha_union)->format('Y-m-d'),
@@ -260,13 +328,25 @@ class EquiposController extends Controller
         ]);
 
         try {
+            // Verificar que el trabajador pertenece a la empresa
+            $empresaId = 1; // En producción esto vendría del usuario autenticado
+            
+            if (!$this->equipoRepositorio->trabajadorPerteneceAEmpresa($request->trabajador_id, $empresaId)) {
+                return response()->json(['error' => 'El trabajador seleccionado no pertenece a esta empresa'], 400);
+            }
+
+            // Verificar que el trabajador es un colaborador (no coordinador)
+            if (!$this->equipoRepositorio->esColaborador($request->trabajador_id, $empresaId)) {
+                return response()->json(['error' => 'Solo se pueden agregar colaboradores como miembros del equipo'], 400);
+            }
+
             $agregado = $this->equipoRepositorio->agregarMiembro($id, $request->trabajador_id);
 
             if (!$agregado) {
                 return response()->json(['error' => 'No se pudo agregar el miembro o ya pertenece al equipo'], 400);
             }
 
-            return response()->json(['success' => true, 'message' => 'Miembro agregado exitosamente']);
+            return response()->json(['success' => true, 'message' => 'Colaborador agregado exitosamente']);
 
         } catch (\Exception $e) {
             Log::error('Error en agregarMiembro', [
