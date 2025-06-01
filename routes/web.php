@@ -13,6 +13,7 @@ use App\Http\Controllers\coordEquipo\ActividadesCoordinadorController;
 use App\Http\Controllers\coordEquipo\ConfiguracionCoordinadorController;
 use App\Http\Controllers\coordEquipo\CoordEquipoController;
 use App\Http\Controllers\coordEquipo\EquipoCoordinadorController;
+use App\Http\Controllers\coordEquipo\MetasCoordinadorController;
 use App\Http\Controllers\coordEquipo\ReunionesCoordinadorController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -68,8 +69,10 @@ Route::post('/admin/areas', [AreaController::class, 'store'])->name('admin.areas
 Route::delete('/admin/areas/{id}', [AreaController::class, 'destroy'])->name('admin.areas.destroy');
 
 Route::get('/admin/colaboradores/pag/', [ColaboradorController::class, 'getPaginado'])->name('admin.colaboradores.pag');
+Route::get('/admin/colaboradores', [ColaboradorController::class, 'index'])->name('admin.colaboradores.index');
+Route::get('/admin/colaboradores/{id}', [ColaboradorController::class, 'show'])->name('admin.colaboradores.show');
 
-Route::get('/admin/colaboradores', [ColaboradorController::class, 'index'])->name('admin.colaboradores');
+
 Route::get('/admin/coordinadores-equipos', [CoordinadorEquipoController::class, 'index' ])->name('admin.coordinadores-equipos');
 Route::get('/admin/coordinadores-generales', [CoordinadorGeneralController::class, 'index'])->name('admin.coordinadores-generales');
 Route::get('/admin/estadisticas', [EstadisticaController::class, 'index'])->name('admin.estadisticas');
@@ -82,12 +85,11 @@ Route::get('/colaborador/reuniones', [\App\Http\Controllers\colaborador\ReunionC
 Route::get('/colaborador/invitaciones', [\App\Http\Controllers\colaborador\InvitacionController::class, 'index'])->name('colaborador.invitaciones');
 Route::get('/colaborador/configuracion', [\App\Http\Controllers\colaborador\ConfiguracionController::class, 'index'])->name('colaborador.configuracion');
 
-
 //  Coordinador de Equipo
     Route::get('/coord-equipo/dashboard', [CoordEquipoController::class, 'dashboard'])->name('coord-equipo.dashboard');
 
-    Route::post('/coord-equipo/actividades', [CoordEquipoController::class, 'crearActividad'])->name('coord-equipo.actividades.store');
-    Route::post('/coord-equipo/metas', [CoordEquipoController::class, 'crearMeta'])->name('coord-equipo.metas.store');
+    //Route::post('/coord-equipo/actividades', [CoordEquipoController::class, 'storeActividad'])->name('coord-equipo.actividades.store');
+    //Route::post('/coord-equipo/metas', [CoordEquipoController::class, 'crearMeta'])->name('coord-equipo.metas.store');
     Route::get('/coord-equipo/configuracion', [CoordEquipoController::class, 'dashboard'])->name('coord-equipo.configuracion');
 
     Route::get('/coord-equipo/equipo', [EquipoCoordinadorController::class, 'index'])->name('coord-equipo.equipo');
@@ -109,12 +111,19 @@ Route::get('/colaborador/configuracion', [\App\Http\Controllers\colaborador\Conf
     Route::post('/coord-equipo/configuracion/apariencia', [ConfiguracionCoordinadorController::class, 'actualizarApariencia'])->name('coord-equipo.configuracion.apariencia');
 
     Route::get('/coord-equipo/actividades', [ActividadesCoordinadorController::class, 'index'])->name('coord-equipo.actividades');
+    Route::post('/coord-equipo/actividades', [ActividadesCoordinadorController::class, 'storeActividad'])->name('coord-equipo.actividades.store');
+
+    Route::get('/coord-equipo/metas', [MetasCoordinadorController::class, 'index'])->name('coord-equipo.metas');
+    Route::post('/coord-equipo/metas', [MetasCoordinadorController::class, 'store'])->name('coord-equipo.metas.store');
+    Route::put('/coord-equipo/metas/{id}', [MetasCoordinadorController::class, 'update'])->name('coord-equipo.metas.update');
+    Route::delete('/coord-equipo/metas/{id}', [MetasCoordinadorController::class, 'destroy'])->name('coord-equipo.metas.destroy');
 
     //API
     Route::get('/coord-equipo/api/actividades/equipo', [ActividadesCoordinadorController::class, 'actividadesPorEquipo'])->name('api.coord-equipo.actividades.equipo');
     Route::get('/coord-equipo/api/estados', [ActividadesCoordinadorController::class, 'estados'])->name('api.coord-equipo.estados');
     Route::get('/coord-equipo/api/metas/equipo', [ActividadesCoordinadorController::class, 'metasPorEquipo'])->name('api.coord-equipo.metas.equipo');
     Route::post('/coord-equipo/api/actividades/{id}/cambiar-estado', [ActividadesCoordinadorController::class, 'actualizarEstadoActividad'])->name('api.coord-equipo.actividades.estado');
+    Route::post('/coord-equipo/api/actividades/crear', [ActividadesCoordinadorController::class, 'crearActividad'])->name('api.coord-equipo.actividades.crear');
 
 Route::middleware('auth')->group(function () {
     // Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

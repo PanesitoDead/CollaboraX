@@ -43,21 +43,23 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {{ $e->activo ? 'bg-green-100 text-green-800':'bg-red-100 text-red-800' }}">
+                            <div class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors
+                                {{ $e->activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                <span class="w-1.5 h-1.5 rounded-full mr-1.5 {{ $e->activo ? 'bg-green-400' : 'bg-red-400' }}"></span>
                                 {{ ucfirst($e->activo ? 'Activo' : 'Inactivo') }}
-                            </span>
+                            </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $e->fecha_registro}}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button onclick="abrirModalDetallesEmpresa({{ $e->id }})" class="inline-flex items-center px-3 py-2 text-blue-600 hover:text-blue-900 transition-colors">
+                            <button onclick="abrirModalDetallesEmpresa({{ $e->id }})" class="inline-flex items-center px-3 py-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-colors">
                                 <i data-lucide="eye" class="w-4 h-4 mr-1"></i>
                                 Ver
                             </button>
-                            <button onclick="abrirModalEmpresa({{$e->id}})" class="inline-flex items-center px-3 py-2 text-blue-600 hover:text-blue-900 transition-colors">
+                            <button onclick="abrirModalEmpresa({{$e->id}})" class="inline-flex items-center px-3 py-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-colors">
                                 <i data-lucide="edit" class="w-4 h-4 mr-1"></i>
                                 Editar
                             </button>
-                            <label class="relative inline-flex items-center cursor-pointer">
+                            <label class="top-[3px] relative inline-flex items-center cursor-pointer ">
                                 <input
                                     type="checkbox"
                                     class="sr-only peer"
@@ -65,11 +67,11 @@
                                     onclick="confirmarCambioEstado(event, {{ $e->id }}, {{ $e->activo ? 'true' : 'false' }})"
                                 />
                                 <div
-                                    class="w-10 h-5 bg-gray-200 peer-focus:ring-2 peer-focus:ring-offset-1 peer-focus:ring-blue-400
+                                    class=" w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-offset-1 peer-focus:ring-blue-400
                                             rounded-full peer peer-checked:bg-blue-500 
                                             after:content-[''] after:absolute after:top-[2px] after:left-[3px]
                                             after:bg-white after:border after:border-gray-300 after:rounded-full 
-                                            after:h-4 after:w-4 after:shadow-md after:transition-transform
+                                            after:h-5 after:w-5 after:shadow-md after:transition-transform
                                             peer-checked:after:translate-x-[18px]"
                                 ></div>
                             </label>

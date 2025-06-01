@@ -4,6 +4,7 @@ namespace App\Http\Controllers\coordEquipo;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CoordEquipo\ActualizarEstadoActividadRequest;
+use App\Http\Requests\CoordEquipo\CrearTareaEquipoRequest;
 use App\Repositories\EquipoRepositorio;
 use App\Repositories\EstadoRepositorio;
 use App\Repositories\MetaRepositorio;
@@ -11,6 +12,7 @@ use App\Repositories\TareaRepositorio;
 use App\Repositories\TrabajadorRepositorio;
 use Auth;
 use Illuminate\Http\Request;
+use Str;
 
 class ActividadesCoordinadorController extends Controller
 {
@@ -31,8 +33,13 @@ class ActividadesCoordinadorController extends Controller
 
     public function index()
     {
+        $usuario = Auth::user();
+        $trabajador = $this->trabajadorRepositorio->findOneBy('usuario_id', $usuario->id);
+        $equipo = $this->equipoRepositorio->findOneBy('coordinador_id', $trabajador->id);
+
         $estados = $this->estadoRepositorio->getAll();
-        return view('private.coord-equipo.actividades', compact('estados'));
+        $metas = $this->metaRepositorio->getMetasPorEquipo($equipo->id);
+        return view('private.coord-equipo.actividades', compact('estados', 'metas'));
     }
 
     public function actividadesPorEquipo()
@@ -46,9 +53,9 @@ class ActividadesCoordinadorController extends Controller
                 return response()->json(['error' => 'Equipo no encontrado.'], 404);
             }
 
-            $tareas = $this->tareaRepositorio->getTareasPorEquipo($equipo->id);
+            $tareas = $this->tareaRepositorio->getTareasPorEquipoCustom($equipo->id);
 
-            return response()->json(['tareas' => $tareas], 200);
+            return response()->json($tareas, 200);
         } catch (\Throwable $e) {
             return response()->json(['error' => 'Error al obtener actividades.', 'detalle' => $e->getMessage()], 500);
         }
@@ -66,7 +73,7 @@ class ActividadesCoordinadorController extends Controller
                 return response()->json(['error' => 'Equipo no encontrado.'], 404);
             }
 
-            $metas = $this->metaRepositorio->getMetasPorEquipo($equipo->id);
+            $metas = $this->metaRepositorio->getMetasPorEquipoCustom($equipo->id);
 
             return response()->json($metas, 200);
         } catch (\Throwable $e) {
@@ -79,9 +86,21 @@ class ActividadesCoordinadorController extends Controller
     {
         try {
             $estados = $this->estadoRepositorio->getAll();
-            return response()->json($estados, 200);
+
+            $estadosFormateados = $estados->map(function ($estado) {
+                return [
+                    'id' => $estado->id,
+                    'nombre' => $estado->nombre,
+                    'slug' => Str::slug($estado->nombre),
+                ];
+            });
+
+            return response()->json($estadosFormateados, 200);
         } catch (\Throwable $e) {
-            return response()->json(['error' => 'Error al obtener estados.', 'detalle' => $e->getMessage()], 500);
+            return response()->json([
+                'error' => 'Error al obtener estados.',
+                'detalle' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -98,6 +117,66 @@ class ActividadesCoordinadorController extends Controller
             return response()->json(['success' => true], 200);
         } catch (\Throwable $e) {
             return response()->json(['error' => 'Error al actualizar estado.', 'detalle' => $e->getMessage()], 500);
+        }
+    }
+
+    public function storeActividad (CrearTareaEquipoRequest $request)
+    {
+        try {
+            $data = $request->only(['nombre', 'descripcion', 'meta_id', 'fecha_entrega']);
+            $data['estado_id'] = $this->estadoRepositorio->findOneBy('nombre', 'Incompleta')->id;
+
+            $tarea = $this->tareaRepositorio->create($data);
+
+            if (!$tarea) {
+                return redirect()->back()->withErrors('No se pudo crear la actividad.');
+            }
+
+            return redirect()->back()->with('success', 'Actividad creada correctamente.');
+
+        } catch (\Throwable $e) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['error' => 'Error al crear la actividad: ' . $e->getMessage()]);
+        }
+    }
+
+    public function crearActividad(CrearTareaEquipoRequest $request)
+    {
+        try {
+            $data = $request->only(['nombre', 'descripcion', 'meta_id', 'fecha_entrega']);
+            $data['estado_id'] = $this->estadoRepositorio->findOneBy('nombre', 'Incompleta')->id; 
+
+            $tarea = $this->tareaRepositorio->create($data);
+
+            if (!$tarea) {
+                return response()->json(['error' => 'No se pudo crear la actividad.'], 400);
+            }
+
+            $tarea->load('meta', 'estado');
+
+            $tareaFormateada = [
+                'id' => $tarea->id,
+                'titulo' => $tarea->nombre,
+                'descripcion' => $tarea->descripcion,
+                'fecha_limite' => $tarea->fecha_entrega,
+                'estado_slug' => Str::slug($tarea->estado->nombre),
+                'meta' => [
+                    'id' => $tarea->meta->id,
+                    'titulo' => $tarea->meta->nombre,
+                ],
+            ];
+
+            return response()->json([
+                'success' => true,
+                'tarea' => $tareaFormateada,
+            ], 201);
+
+        } catch (\Throwable $e) {
+            return response()->json([
+                'error' => 'Error al crear la actividad.',
+                'detalle' => $e->getMessage()
+            ], 500);
         }
     }
 }

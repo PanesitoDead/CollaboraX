@@ -148,6 +148,13 @@ class AreaController extends Controller
         if (!$area) {
             return redirect()->route('admin.areas.index')->with('error', 'Área no encontrada.');
         }
+
+        // Si existe un coordinador activo, extraemos nombre y correo
+        $area->coordinador_nombres = $area->coordinador->trabajador->nombres;
+        $area->coordinador_apellido_paterno = $area->coordinador->trabajador->apellido_paterno;
+        $area->coordinador_apellido_materno = $area->coordinador->trabajador->apellido_materno;
+        $area->coordinador_correo = $area->coordinador->trabajador->usuario->correo; 
+        $area->coordinador_id = $area->coordinador->trabajador->id ?? null;
         // Agregamos el campo nro_equipos
         $area->nro_equipos = $area->equipos->count();
         // Agregamos el campo nro_colaboradores

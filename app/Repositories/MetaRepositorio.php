@@ -22,8 +22,21 @@ class MetaRepositorio extends RepositorioBase
 
     public function getMetasPorEquipo($equipo)
     {
-        return $this->model->where('equipo_id', $equipo)->with(['tareas', 'estado'])->get();
+        return $this->model->where('equipo_id', $equipo)->with(['tareas.estado', 'estado'])->get();
     }
+
+    public function getMetasPorEquipoCustom($equipoId)
+    {
+        return $this->model->where('equipo_id', $equipoId)
+            ->get()
+            ->map(function ($meta) {
+                return [
+                    'id' => $meta->id,
+                    'titulo' => $meta->nombre,
+                ];
+            });
+    }
+
 
     public function getMetasConProgresoPorEquipo(int $equipoId)
     {
@@ -41,6 +54,8 @@ class MetaRepositorio extends RepositorioBase
                 : 0;
 
             $meta->porcentaje = $porcentaje;
+            $meta->tareas_totales = $tareasTotales;
+            $meta->tareas_completadas = $tareasCompletadas;
 
             return $meta;
         });

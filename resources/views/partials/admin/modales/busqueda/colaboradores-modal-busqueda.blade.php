@@ -67,7 +67,7 @@
                     Teléfono
                   </th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Disposición
+                    Estado
                   </th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Acciones
@@ -177,7 +177,8 @@
     pagDiv.classList.add('hidden');
 
     try {
-      let url = '/admin/colaboradores/pag?search=' + encodeURIComponent(query) + '&page=' + paginaActualCol;
+      const idRolFiltro = 5; // Filtro por rol de Colaborador
+      let url = '/admin/colaboradores/pag?search=' + encodeURIComponent(query) + '&page=' + paginaActualCol + '&filters%5Brol_id%5D=' + idRolFiltro;
       const res = await fetch(url);
       if (!res.ok) throw new Error('Error al obtener colaboradores');
       const json = await res.json();

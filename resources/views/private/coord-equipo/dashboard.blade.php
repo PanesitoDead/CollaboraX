@@ -71,7 +71,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                     </svg>
                 </div>
-                <div class="text-2xl font-bold">{{ $stats['cumplimiento'] }}%</div>
+                <div class="text-2xl font-bold">{{ number_format($stats['cumplimiento'], 2) }}%</div>
                 <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
                     <div class="bg-blue-600 h-2 rounded-full" style="width: 85%"></div>
                 </div>
@@ -318,7 +318,7 @@
                     @csrf
                     <div class="px-6 py-4 border-b border-gray-200">
                         <h3 class="text-lg font-medium">Crear Nueva Actividad</h3>
-                        <p class="text-sm text-gray-500 mt-1">Asigna una nueva actividad a un colaborador.</p>
+                        <p class="text-sm text-gray-500 mt-1">Ingrese los datos de la nueva actividad.</p>
                     </div>
 
                     <div class="px-6 py-4 space-y-4">

@@ -4,12 +4,16 @@
 
  use App\Models\Area;
 use App\Models\AreaCoordinador;
+use App\Models\Trabajador;
+use App\Models\Usuario;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class AreaRepositorio extends RepositorioBase
 {
     protected AreaCoordinador $areaCoordinador;
+    protected Trabajador $trabajador;
+    protected Usuario $usuario;
     public function __construct(Area $model)
     {
         parent::__construct($model);
@@ -34,6 +38,7 @@ class AreaRepositorio extends RepositorioBase
             'fecha_inicio' => now(),
             'fecha_fin' => null, // No tiene fecha de fin al asignar
         ]);
+        $this->asignarRolCoordinador($coordinadorId);
         return true;
     }
 
@@ -47,10 +52,30 @@ class AreaRepositorio extends RepositorioBase
         $coordinador = AreaCoordinador::where('area_id', $areaId)->first();
         if ($coordinador) {
             $coordinador->trabajador_id = $coordinadorId;
-            return $coordinador->save();
+            $coordinador->save();
+            return $this->asignarRolCoordinador($coordinadorId);
         } else {
             return $this->asignarCoordinador($areaId, $coordinadorId);
         }
+    }
+
+    private function asignarRolCoordinador(int $trabajadorId): bool
+    {
+        // 1) Buscar al trabajador
+        $trabajador = Trabajador::find($trabajadorId);
+        if (!$trabajador) {
+            return false;
+        }
+
+        // 2) Buscar al usuario asociado al trabajador
+        $usuario = Usuario::find($trabajador->usuario_id);
+        if (!$usuario) {
+            return false;
+        }
+
+        // 3) Asignar rol “Coordinador” (rol_id = 3) y guardar
+        $usuario->rol_id = 3;
+        return $usuario->save();
     }
 
     public function cambiarEstado(int $id, bool $estado): bool

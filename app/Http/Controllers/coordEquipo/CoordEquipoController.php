@@ -52,17 +52,17 @@ class CoordEquipoController extends Controller
 
     public function crearActividad(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'titulo' => 'required|string|max:255',
-            'descripcion' => 'required|string',
-            'fecha_limite' => 'required|date|after:today',
-            'prioridad' => 'required|in:baja,media,alta',
-            'asignado_a' => 'required|exists:users,id'
-        ]);
+        // $validator = Validator::make($request->all(), [
+        //     'titulo' => 'required|string|max:255',
+        //     'descripcion' => 'required|string',
+        //     'fecha_limite' => 'required|date|after:today',
+        //     'prioridad' => 'required|in:baja,media,alta',
+        //     'asignado_a' => 'required|exists:users,id'
+        // ]);
 
-        if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput();
-        }
+        // if ($validator->fails()) {
+        //     return back()->withErrors($validator)->withInput();
+        // }
 
         // Lógica para crear actividad
         // Activity::create($request->validated());
@@ -72,17 +72,17 @@ class CoordEquipoController extends Controller
 
     public function crearReunion(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'titulo' => 'required|string|max:255',
-            'descripcion' => 'nullable|string',
-            'fecha' => 'required|date|after:now',
-            'duracion' => 'required|integer|min:15|max:480',
-            'participantes' => 'required|array|min:1'
-        ]);
+        // $validator = Validator::make($request->all(), [
+        //     'titulo' => 'required|string|max:255',
+        //     'descripcion' => 'nullable|string',
+        //     'fecha' => 'required|date|after:now',
+        //     'duracion' => 'required|integer|min:15|max:480',
+        //     'participantes' => 'required|array|min:1'
+        // ]);
 
-        if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput();
-        }
+        // if ($validator->fails()) {
+        //     return back()->withErrors($validator)->withInput();
+        // }
 
         // Lógica para crear reunión
         // Meeting::create($request->validated());

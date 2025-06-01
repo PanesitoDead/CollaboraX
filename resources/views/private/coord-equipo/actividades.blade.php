@@ -27,9 +27,9 @@
                        onkeyup="filterActivities()">
             </div>
             <div>
-                <select id="teamFilter" onchange="filterActivities()" 
+                <select id="metaFilter" onchange="filterActivities()" 
                         class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
-                    <option value="">Todos los equipos</option>
+                    <option value="">Todas las metas</option>
                 </select>
             </div>
         </div>
@@ -38,13 +38,12 @@
     <!-- Kanban Board -->
     <div class="flex-1 p-6 min-h-screen flex flex-col">
         <div class="text-sm text-gray-600 mb-4">
-            Mostrando <span id="activityCount">0</span> actividades de todos los equipos
+            Mostrando <span id="activityCount">0</span> actividades
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 flex-1">
             @foreach ($estados as $estado)
                 @php
-                    // Mapeo de colores según el estado (puedes mover esto a un helper o método del modelo Estado)
                     $colors = [
                         'incompleta' => ['bg' => 'bg-yellow-100', 'text' => 'text-yellow-800'],
                         'en-proceso' => ['bg' => 'bg-blue-100', 'text' => 'text-blue-800'],
@@ -52,7 +51,7 @@
                         'suspendida' => ['bg' => 'bg-red-100', 'text' => 'text-red-800'],
                     ];
 
-                    $slug = \Illuminate\Support\Str::slug($estado->nombre); // genera ids como 'en-proceso'
+                    $slug = \Illuminate\Support\Str::slug($estado->nombre);
                     $color = $colors[$slug] ?? ['bg' => 'bg-gray-100', 'text' => 'text-gray-800'];
                 @endphp
 
@@ -71,112 +70,55 @@
         </div>
     </div>
 
-
-    <!-- Kanban Board -->
-    {{-- <div class="flex-1 p-6 min-h-screen flex flex-col">
-        <div class="text-sm text-gray-600 mb-4">
-            Mostrando <span id="activityCount">0</span> actividades de todos los equipos
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 flex-1">
-            <div class="bg-white rounded-lg shadow-lg hover:shadow-xl form-transition flex flex-col">
-                <div class="p-4 border-b border-gray-200">
-                    <div class="flex items-center justify-between">
-                        <h3 class="font-semibold text-gray-900">Pendientes</h3>
-                        <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full" id="pendientes-count">0</span>
-                    </div>
-                </div>
-                <div class="p-4 space-y-3 overflow-y-auto flex-1 kanban-column" id="pendientes-column" data-estado="pendiente">
-                </div>
-            </div>
-
-            <div class="bg-white rounded-lg shadow-lg hover:shadow-xl form-transition flex flex-col">
-                <div class="p-4 border-b border-gray-200">
-                    <div class="flex items-center justify-between">
-                        <h3 class="font-semibold text-gray-900">En Proceso</h3>
-                        <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full" id="en-proceso-count">0</span>
-                    </div>
-                </div>
-                <div class="p-4 space-y-3 overflow-y-auto flex-1 kanban-column" id="en-proceso-column" data-estado="en-proceso">
-                </div>
-            </div>
-
-            <div class="bg-white rounded-lg shadow-lg hover:shadow-xl form-transition flex flex-col">
-                <div class="p-4 border-b border-gray-200">
-                    <div class="flex items-center justify-between">
-                        <h3 class="font-semibold text-gray-900">Completadas</h3>
-                        <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full" id="completadas-count">0</span>
-                    </div>
-                </div>
-                <div class="p-4 space-y-3 overflow-y-auto flex-1 kanban-column" id="completadas-column" data-estado="completada">
-                </div>
-            </div>
-
-            <div class="bg-white rounded-lg shadow-lg hover:shadow-xl form-transition flex flex-col">
-                <div class="p-4 border-b border-gray-200">
-                    <div class="flex items-center justify-between">
-                        <h3 class="font-semibold text-gray-900">Retrasadas</h3>
-                        <span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full" id="retrasadas-count">0</span>
-                    </div>
-                </div>
-                <div class="p-4 space-y-3 overflow-y-auto flex-1 kanban-column" id="retrasadas-column" data-estado="retrasada">
-                </div>
-            </div>
-        </div>
-    </div> --}}
-
-
 </div>
 
 <!-- Create Activity Modal -->
-<div id="createModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 opacity-0 transition-all duration-300">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full transform scale-95 transition-all duration-300" id="createModalContent">
+<div id="createModal" class="fixed inset-0 hidden z-50" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-black/50"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[70vh] overflow-y-auto" id="createModalContent">
             <div class="p-6">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-gray-900">Nueva Actividad</h3>
+                    <h3 class="text-lg font-semibold text-gray-900">Crear Nueva Actividad</h3>
                     <button onclick="closeCreateModal()" class="text-gray-400 hover:text-gray-600 tab-transition">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>
-                
+
                 <form id="createActivityForm" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Título</label>
-                        <input type="text" name="titulo" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
+                    <div class="border-b border-gray-200">
+                        <p class="text-sm text-gray-500 mt-1">Ingrese los datos de la nueva actividad.</p>
                     </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
-                        <textarea name="descripcion" rows="3" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition"></textarea>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4">
+
+                    <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Equipo</label>
-                            <select name="equipo" id="equipoSelect" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
-                                <option value="">Seleccionar equipo...</option>
+                            <label for="actividad_titulo" class="block text-sm font-medium text-gray-700">Título</label>
+                            <input type="text" name="nombre" id="actividad_titulo" required
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+
+                        <div>
+                            <label for="actividad_descripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
+                            <textarea name="descripcion" id="actividad_descripcion" rows="3" required
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        </div>
+
+                        <div>
+                            <label for="meta_id" class="block text-sm font-medium text-gray-700">Meta asociada</label>
+                            <select name="meta_id" id="meta_id" required
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Seleccione una meta</option>
+                                @foreach ($metas as $meta)
+                                    <option value="{{ $meta->id }}">{{ $meta->nombre }}</option>
+                                @endforeach
                             </select>
                         </div>
-                        
+
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Prioridad</label>
-                            <select name="prioridad" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
-                                <option value="Alta">Alta</option>
-                                <option value="Media">Media</option>
-                                <option value="Baja">Baja</option>
-                            </select>
+                            <label for="fecha_entrega" class="block text-sm font-medium text-gray-700">Fecha y hora de entrega</label>
+                            <input type="datetime-local" name="fecha_entrega" id="fecha_entrega" required
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                         </div>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha límite</label>
-                        <input type="date" name="fechaLimite" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Asignado a</label>
-                        <input type="text" name="asignadoA" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
                     </div>
                 </form>
                 
@@ -194,9 +136,10 @@
 </div>
 
 <!-- Activity Details Modal -->
-<div id="detailsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 opacity-0 transition-all duration-300">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full transform scale-95 transition-all duration-300" id="detailsModalContent">
+<div id="detailsModal" class="fixed inset-0 hidden z-50" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-black/50"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[70vh] overflow-y-auto" id="detailsModalContent">
             <div class="p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-gray-900" id="activityTitle">Detalles de Actividad</h3>
@@ -251,18 +194,23 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Primero, jalar estados y metas (para llenar selects y/o preparar columnas)
         Promise.all([
-            fetch('/api/estados'),
-            fetch('/api/metas'),
-            fetch('/api/actividades')
+            fetch('/coord-equipo/api/estados'),
+            fetch('/coord-equipo/api/metas/equipo'),
+            fetch('/coord-equipo/api/actividades/equipo')
         ])
         .then(async ([estadosRes, metasRes, actividadesRes]) => {
             if (!estadosRes.ok || !metasRes.ok || !actividadesRes.ok) {
                 throw new Error('Error al obtener datos del servidor');
             }
 
-            estadosDisponibles = await estadosRes.json();   // ej: [{ id:1, nombre:'Pendiente', slug:'pendiente' }, …]
-            metasDisponibles   = await metasRes.json();      // ej: [{ id:1, titulo:'Lanzamiento MVP' }, …]
-            actividades       = await actividadesRes.json(); // ej: [{ id:5, titulo:'…', descripcion:'…', prioridad:'Alta', fecha_limite:'2025-06-01', asignado_a:'Juan', estado_slug:'pendiente', meta: {id:2, titulo:'…'} }, …]
+            estadosDisponibles = await estadosRes.json();   
+            metasDisponibles   = await metasRes.json();     
+            actividades       = await actividadesRes.json();
+
+            console.log('Estados:', estadosDisponibles);
+            console.log('Metas:', metasDisponibles);
+            console.log('Actividades:', actividades);
+
 
             // Inicializamos el filtrado completo
             filteredActividades = [...actividades];
@@ -289,9 +237,10 @@
     // ====================================================
     function renderMetasInSelects() {
         const metaFilter = document.getElementById('metaFilter'); // asume que en tu HTML tienes <select id="metaFilter">
-        
+        console.log("ANTES DE ENTRAR A SELECT");
         if (!metaFilter) return;
 
+        console.log("DENTRO DE SELECT");
         // Opcional: puedes agregar 'Todas las metas' o vacío
         let html = '<option value="">Todas las metas</option>';
 
@@ -368,23 +317,35 @@
         // - actividad.descripcion
         // - actividad.prioridad
         // - actividad.fecha_limite (o fechaLimite si lo transformas en el controlador)
-        // - actividad.asignado_a
         // - (opcional) actividad.meta.titulo
         card.innerHTML = `
-            <div class="flex items-start justify-between mb-2">
-                <h4 class="font-medium text-gray-900 text-sm">${actividad.titulo}</h4>
-                <span class="text-xs px-2 py-1 rounded-full ${priorityColors[actividad.prioridad] || 'bg-gray-100 text-gray-800'}">${actividad.prioridad}</span>
-            </div>
-            <p class="text-gray-600 text-xs mb-2">${actividad.descripcion}</p>
-            <div class="flex items-center justify-between text-xs text-gray-500 mb-2">
-                <span>${actividad.fecha_limite}</span>
-                ${actividad.meta ? `<span class="italic text-xs text-gray-400">Meta: ${actividad.meta.titulo}</span>` : ''}
-            </div>
-            <div class="mt-2 text-xs text-gray-600 flex items-center">
-                <i data-lucide="user" class="w-3 h-3 inline mr-1"></i>
-                ${actividad.asignado_a}
+            <div class="bg-white shadow rounded-lg p-3 border border-gray-200 hover:shadow-md transition-shadow duration-200">
+                <div class="flex items-start justify-between mb-2">
+                    <h4 class="font-semibold text-gray-800 text-sm leading-snug">${actividad.titulo}</h4>
+                    <span class="text-[10px] px-2 py-[2px] rounded-full font-medium bg-blue-100 text-blue-700 capitalize">
+                        Tarea
+                    </span>
+                </div>
+
+                <p class="text-gray-600 text-xs mb-3 leading-tight">${actividad.descripcion}</p>
+
+                <div class="flex items-center justify-between text-xs text-gray-500">
+                    <div class="flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>${actividad.fecha_limite}</span>
+                    </div>
+
+                    ${
+                        actividad.meta
+                        ? `<span class="italic text-[11px] text-gray-400">🎯 ${actividad.meta.titulo}</span>`
+                        : ''
+                    }
+                </div>
             </div>
         `;
+
 
         // Cuando clickean la tarjeta, abrimos el modal de detalles
         card.addEventListener('click', function(e) {
@@ -431,37 +392,86 @@
     // ====================================================
     // ACTUALIZAR ESTADO DE LA ACTIVIDAD (CLIENTE → SERVIDOR)
     // ====================================================
-    function updateActivityStatus(actividadId, nuevoEstado) {
+    // function updateActivityStatus(actividadId, nuevoEstado) {
+    //     const actividad = actividades.find(a => a.id === actividadId);
+    //     if (!actividad) return;
+
+    //     actividad.estado_slug = nuevoEstado;
+
+    //     // Actualizar en el array de filtradas
+    //     const idx = filteredActividades.findIndex(a => a.id === actividadId);
+    //     if (idx > -1) filteredActividades[idx].estado_slug = nuevoEstado;
+
+    //     // Actualizar contadores en pantalla (sin recargar todo)
+    //     updateStatusCounts();
+
+    //     // Mostrar notificación
+    //     const estadosLabels = {};
+    //     estadosDisponibles.forEach(e => {
+    //         estadosLabels[e.slug] = e.nombre;
+    //     });
+    //     showToast(`Actividad "${actividad.titulo}" movida a ${estadosLabels[nuevoEstado]}`);
+
+
+    //     console.log("ANTES DEL LLAMAR AL FETCH");
+
+    //     // Llamada al endpoint para persistir (opcional, depende de tu API)
+    //     fetch(`/coord-equipo/api/actividades/${actividadId}/cambiar-estado`, {
+    //         method: 'POST',
+    //         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+    //         body: JSON.stringify({ estado_slug: nuevoEstado })
+    //     })
+    //     .then(res => {
+    //         if (!res.ok) console.error('No se pudo actualizar el estado en el servidor');
+    //     })
+    //     .catch(err => console.error('Error en fetch al actualizar estado:', err));
+
+    //     console.log("DESPUES DE LLAMAR AL FETCH");
+    // }
+
+    function updateActivityStatus(actividadId, nuevoEstadoSlug) {
         const actividad = actividades.find(a => a.id === actividadId);
+
         if (!actividad) return;
 
-        actividad.estado_slug = nuevoEstado;
+        // Buscar el estado correspondiente por slug
+        const estado = estadosDisponibles.find(e => e.slug === nuevoEstadoSlug);
+        if (!estado) return;
 
-        // Actualizar en el array de filtradas
+        const estadoId = estado.id;
+
+        // Actualizar en memoria
+        actividad.estado_slug = nuevoEstadoSlug;
+
         const idx = filteredActividades.findIndex(a => a.id === actividadId);
-        if (idx > -1) filteredActividades[idx].estado_slug = nuevoEstado;
+        if (idx > -1) filteredActividades[idx].estado_slug = nuevoEstadoSlug;
 
-        // Actualizar contadores en pantalla (sin recargar todo)
+        // Actualizar contadores
         updateStatusCounts();
 
         // Mostrar notificación
-        const estadosLabels = {};
-        estadosDisponibles.forEach(e => {
-            estadosLabels[e.slug] = e.nombre;
-        });
-        showToast(`Actividad "${actividad.titulo}" movida a ${estadosLabels[nuevoEstado]}`);
+        showToast(`Actividad "${actividad.titulo}" movida a "${estado.nombre}"`);
 
-        // Llamada al endpoint para persistir (opcional, depende de tu API)
-        fetch(`/api/actividades/${actividadId}/cambiar-estado`, {
+        console.log("ACTIVIDAD ID " + actividadId);
+        console.log("ESTADO ID " + estadoId);
+
+        // Llamada al backend para persistir el cambio
+        fetch(`/coord-equipo/api/actividades/${actividadId}/cambiar-estado`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-            body: JSON.stringify({ estado_slug: nuevoEstado })
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ estado_id: estadoId })
         })
         .then(res => {
-            if (!res.ok) console.error('No se pudo actualizar el estado en el servidor');
+            if (!res.ok) {
+                console.error('No se pudo actualizar el estado en el servidor');
+            }
         })
         .catch(err => console.error('Error en fetch al actualizar estado:', err));
     }
+
 
     function updateStatusCounts() {
         const counts = {};
@@ -556,8 +566,10 @@
                         <p class="text-gray-900">${actividad.meta ? actividad.meta.titulo : '—'}</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Prioridad</label>
-                        <span class="inline-block px-2 py-1 text-xs rounded-full ${priorityColors[actividad.prioridad] || 'bg-gray-100 text-gray-800'}">${actividad.prioridad}</span>
+                        <label class="block text-sm font-medium text-gray-700">Tipo</label>
+                        <span class="inline-block px-2 py-1 text-xs rounded-full font-medium bg-blue-100 text-blue-700 capitalize">
+                            Tarea
+                        </span>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
@@ -569,10 +581,6 @@
                         <label class="block text-sm font-medium text-gray-700">Fecha límite</label>
                         <p class="text-gray-900">${actividad.fecha_limite}</p>
                     </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Asignado a</label>
-                    <p class="text-gray-900">${actividad.asignado_a}</p>
                 </div>
             </div>
         `;
@@ -621,37 +629,52 @@
         }, 300);
     }
 
-    function createActivity() {
+    async function createActivity() {
         const form = document.getElementById('createActivityForm');
+
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
         const formData = new FormData(form);
 
-        // Asumimos que tu formulario en el HTML ahora incluye:
-        // nombre="titulo", "descripcion", "prioridad", "fecha_limite", "asignado_a", "meta_id"
         const nuevaActividad = {
-            id: nextId++,
-            titulo: formData.get('titulo'),
+            nombre: formData.get('nombre'),
             descripcion: formData.get('descripcion'),
-            prioridad: formData.get('prioridad'),
-            fecha_limite: formData.get('fecha_limite'),
-            asignado_a: formData.get('asignado_a'),
-            estado_slug: 'pendiente',
-            meta: metasDisponibles.find(m => m.id.toString() === formData.get('meta_id')) || null
+            meta_id: formData.get('meta_id'),
+            fecha_entrega: formData.get('fecha_entrega'),
         };
 
-        // La agregamos localmente y recargamos
-        actividades.push(nuevaActividad);
-        filteredActividades = [...actividades];
-        loadActivities();
-        initSortable();
-        closeCreateModal();
-        showToast('Actividad creada correctamente');
+        try {
+            const response = await fetch('/coord-equipo/api/actividades/crear', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify(nuevaActividad)
+            });
 
-        // Opcional: también puedes mandar un POST a tu API para guardarla permanentemente
-        // fetch('/api/actividades', { method:'POST', headers:{ 'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}' },
-        // body: JSON.stringify(nuevaActividad) })
-        //   .then(res => res.json()).then(data => { /* actualizar id real si viene del servidor */ });
-        
-        form.reset();
+            if (!response.ok) throw new Error('Error al crear la actividad');
+
+            const data = await response.json();
+
+            if (!data.success) throw new Error('Error en la respuesta');
+
+            actividades.push(data.tarea);
+            filteredActividades = [...actividades];
+            loadActivities();
+            initSortable();
+            closeCreateModal();
+            showToast('Actividad creada correctamente');
+
+            form.reset();
+
+        } catch (error) {
+            console.error(error);
+            showToast('Error al crear la actividad', 'error');
+        }
     }
 
     // ====================================================
