@@ -124,7 +124,7 @@ class ActividadesCoordinadorController extends Controller
     {
         try {
             $data = $request->only(['nombre', 'descripcion', 'meta_id', 'fecha_entrega']);
-            $data['estado_id'] = $this->estadoRepositorio->findOneBy('nombre', 'Incompleta')->id;
+            $data['estado_id'] = $this->estadoRepositorio->findOneBy('nombre', 'En proceso')->id;
 
             $tarea = $this->tareaRepositorio->create($data);
 
@@ -145,7 +145,7 @@ class ActividadesCoordinadorController extends Controller
     {
         try {
             $data = $request->only(['nombre', 'descripcion', 'meta_id', 'fecha_entrega']);
-            $data['estado_id'] = $this->estadoRepositorio->findOneBy('nombre', 'Incompleta')->id; 
+            $data['estado_id'] = $this->estadoRepositorio->findOneBy('nombre', 'En proceso')->id; 
 
             $tarea = $this->tareaRepositorio->create($data);
 

@@ -64,6 +64,7 @@
             <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 @foreach($metas as $meta)
                     <div class="meta-card bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                         onclick='abrirMetaModal(@json($meta))'
                          data-estado="{{ $meta->estado->nombre }}"
                          data-prioridad="{{ $meta->prioridad }}"
                          data-categoria="{{ $meta->categoria ?? '' }}">
@@ -72,30 +73,6 @@
                             <div class="flex-1">
                                 <h3 class="font-semibold text-lg text-gray-900 mb-2">{{ $meta->nombre }}</h3>
                                 <p class="text-gray-600 text-sm mb-3">{{ $meta->descripcion }}</p>
-                            </div>
-                            <div class="flex gap-2 ml-4">
-                                <button onclick="editarMeta({{ $meta->id }})"
-                                        class="text-gray-400 hover:text-blue-600 transition-colors">
-                                    {{-- Icono lápiz --}}
-                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002
-                                                 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2
-                                                 0 112.828 2.828L11.828
-                                                 15H9v-2.828l8.586-8.586z"/>
-                                    </svg>
-                                </button>
-                                <button onclick="eliminarMeta({{ $meta->id }})"
-                                        class="text-gray-400 hover:text-red-600 transition-colors">
-                                    {{-- Icono papelera --}}
-                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M19 7l-.867 12.142A2 2 0
-                                                 0116.138 21H7.862a2 2 0 01-1.995-1.858L5
-                                                 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1
-                                                 1 0 00-1 1v3M4 7h16"/>
-                                    </svg>
-                                </button>
                             </div>
                         </div>
 
@@ -185,7 +162,7 @@
                         {{-- 4.2) Tarjetas (metas) de este estado --}}
                         <div class="space-y-3">
                             @foreach($metasPorEstado as $meta)
-                                <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm
+                                <div onclick='abrirMetaModal(@json($meta))' class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm
                                             @if($estado->nombre !== 'Incompleta' 
                                                   && $estado->nombre !== 'En proceso') opacity-75 @endif">
                                     {{-- 4.2.1) Título y descripción corta --}}
@@ -245,6 +222,58 @@
         </div>
     </div>
 </div>
+
+
+<div id="metaDetalleModal" class="fixed inset-0 hidden z-50" role="dialog" aria-modal="true">
+    <!-- Fondo oscuro -->
+    <div class="fixed inset-0 bg-black/50" onclick="cerrarMetaModal()"></div>
+
+    <!-- Contenedor del modal -->
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto border border-gray-300">
+            <!-- Header -->
+            <div class="px-6 py-5 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-t-2xl">
+                <h2 id="metaTitulo" class="text-2xl font-bold">Nombre de la Meta</h2>
+                <p id="metaDescripcion" class="text-sm text-blue-100 mt-1">Descripción breve de la meta</p>
+            </div>
+
+            <!-- Detalles -->
+            <div class="px-6 py-6 space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="flex flex-col">
+                        <span class="text-sm text-gray-500">Estado</span>
+                        <span id="metaEstado" class="font-medium text-gray-900"></span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-sm text-gray-500">Fecha de creación</span>
+                        <span id="metaFechaCreacion" class="font-medium text-gray-900"></span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-sm text-gray-500">Fecha de entrega</span>
+                        <span id="metaFechaEntrega" class="font-medium text-gray-900"></span>
+                    </div>
+                </div>
+
+                <!-- Actividades -->
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-700 mb-2">Actividades asociadas</h4>
+                    <ul id="metaActividades" class="space-y-2">
+                        <!-- Rellenado por JS -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end bg-gray-50 rounded-b-2xl">
+                <button type="button" onclick="cerrarMetaModal()"
+                        class="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -335,6 +364,48 @@ document.addEventListener('DOMContentLoaded', function() {
             form.submit();
         }
     };
+
+    window.abrirMetaModal = function(meta) {
+        function formatearFecha(fechaStr) {
+            if (!fechaStr) return '-';
+            const fecha = new Date(fechaStr);
+            if (isNaN(fecha)) return '-';
+            const dia = fecha.getDate();
+            const mes = fecha.getMonth() + 1;
+            const año = fecha.getFullYear();
+            return `${dia}/${mes.toString().padStart(2, '0')}/${año}`;
+        }
+
+        document.getElementById('metaTitulo').textContent = meta.nombre || '-';
+        document.getElementById('metaDescripcion').textContent = meta.descripcion || '-';
+        document.getElementById('metaFechaCreacion').textContent = formatearFecha(meta.fecha_creacion);
+        document.getElementById('metaFechaEntrega').textContent = formatearFecha(meta.fecha_entrega);
+        document.getElementById('metaEstado').textContent = meta.estado?.nombre || '-';
+
+        const actividadesList = document.getElementById('metaActividades');
+        actividadesList.innerHTML = '';
+
+        if (meta.tareas && meta.tareas.length > 0) {
+            meta.tareas.forEach(act => {
+                const li = document.createElement('li');
+                li.className = 'pl-4 border-l-4 border-blue-500 text-sm text-gray-800';
+                li.textContent = `${act.nombre} (${act.estado?.nombre || 'Sin estado'})`;
+                actividadesList.appendChild(li);
+            });
+        } else {
+            const li = document.createElement('li');
+            li.className = 'text-sm text-gray-500 italic';
+            li.textContent = 'No hay actividades registradas.';
+            actividadesList.appendChild(li);
+        }
+
+        document.getElementById('metaDetalleModal').classList.remove('hidden');
+    };
+
+    window.cerrarMetaModal = function() {
+        document.getElementById('metaDetalleModal').classList.add('hidden');
+    };
+
 });
 </script>
 @endpush
