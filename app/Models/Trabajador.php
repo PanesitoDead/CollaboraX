@@ -76,5 +76,14 @@ class Trabajador extends Model
         return strtoupper($iniciales);
     }
 
+    // Accessor para obtener la foto de perfil a través del usuario
+    public function getFotoUrlAttribute()
+    {
+        if ($this->usuario && $this->usuario->fotoArchivo) {
+            return asset('storage/' . $this->usuario->fotoArchivo->ruta);
+        }
+        return null;
+    }
+
     
 }

@@ -10,8 +10,8 @@ class Archivo extends Model
     use SoftDeletes;
 
     protected $table = 'archivos';
-
-    public $timestamps = false;
+    
+        public $timestamps = false;
 
     protected $fillable = ['nombre', 'ruta'];
 
