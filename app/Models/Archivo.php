@@ -13,5 +13,10 @@ class Archivo extends Model
 
     public $timestamps = false;
 
-    protected $fillable = ['nombre', 'ruta'];
+    protected $fillable = ['nombre', 'ruta', 'tipo', 'tamaño', 'fecha_subida'];
+
+    public function mensajes()
+    {
+        return $this->hasMany(Mensaje::class, 'archivo_id');
+    }
 }

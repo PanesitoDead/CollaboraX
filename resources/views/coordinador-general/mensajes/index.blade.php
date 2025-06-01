@@ -133,13 +133,14 @@
                     <form id="message-form" class="flex items-center space-x-2 p-4">
                         @csrf
                         <input type="hidden" id="contact-id" name="contact_id">
-                        <input type="file" id="file-input" multiple class="hidden" accept="*/*">
+                        <input type="file" id="file-input" multiple class="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar">
+                        <input type="file" id="image-input" multiple class="hidden" accept="image/*">
                         
                         <button type="button" onclick="document.getElementById('file-input').click()" class="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100">
                             <i data-lucide="paperclip" class="w-5 h-5"></i>
                         </button>
                         
-                        <button type="button" onclick="document.getElementById('file-input').click()" class="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100">
+                        <button type="button" onclick="document.getElementById('image-input').click()" class="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100">
                             <i data-lucide="image" class="w-5 h-5"></i>
                         </button>
                         
@@ -150,14 +151,6 @@
                             placeholder="Escribe un mensaje..." 
                             class="flex-1 px-4 py-2 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                         >
-                        
-                        <button type="button" class="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100">
-                            <i data-lucide="smile" class="w-5 h-5"></i>
-                        </button>
-                        
-                        <button type="button" class="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100">
-                            <i data-lucide="mic" class="w-5 h-5"></i>
-                        </button>
                         
                         <button type="submit" class="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors">
                             <i data-lucide="send" class="w-5 h-5"></i>
@@ -181,13 +174,34 @@
         <form id="new-chat-form">
             @csrf
             <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar contacto</label>
-                <select name="contact_id" class="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                    <option value="">Selecciona un contacto...</option>
-                    @foreach($allContacts as $contact)
-                    <option value="{{ $contact['id'] }}">{{ $contact['name'] }} - {{ $contact['role'] }}</option>
-                    @endforeach
-                </select>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Buscar trabajador</label>
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        id="worker-search" 
+                        placeholder="Escribe para buscar..." 
+                        class="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        autocomplete="off"
+                    >
+                    <div id="worker-results" class="absolute z-10 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden">
+                        <!-- Search results will appear here -->
+                    </div>
+                </div>
+                <input type="hidden" id="selected-worker-id" name="contact_id">
+                <div id="selected-worker" class="hidden mt-2 p-2 bg-blue-50 rounded-md">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <img id="selected-worker-avatar" src="/placeholder.svg" alt="" class="w-8 h-8 rounded-full">
+                            <div>
+                                <p id="selected-worker-name" class="text-sm font-medium text-gray-900"></p>
+                                <p id="selected-worker-role" class="text-xs text-gray-500"></p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="clearSelectedWorker()" class="text-red-500 hover:text-red-700">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Mensaje</label>
@@ -222,6 +236,8 @@
 let currentContactId = null;
 let activeTab = 'all';
 let selectedFiles = [];
+let selectedImages = [];
+let searchTimeout = null;
 
 // Elementos DOM
 const searchInput = document.getElementById('search-input');
@@ -239,25 +255,109 @@ const chatStatus = document.getElementById('chat-status');
 const newChatModal = document.getElementById('new-chat-modal');
 const newChatForm = document.getElementById('new-chat-form');
 const fileInput = document.getElementById('file-input');
+const imageInput = document.getElementById('image-input');
 const filePreviewArea = document.getElementById('file-preview-area');
 const filePreviewList = document.getElementById('file-preview-list');
+const workerSearch = document.getElementById('worker-search');
+const workerResults = document.getElementById('worker-results');
+const selectedWorkerId = document.getElementById('selected-worker-id');
+const selectedWorker = document.getElementById('selected-worker');
 
-// Datos de mensajes
-const messages = @json($messages);
+// Funciones de búsqueda de trabajadores
+function searchWorkers(query) {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        fetch('{{ route("coordinador-general.mensajes.search-workers") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ query: query || '' })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayWorkerResults(data.workers);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }, query && query.length > 0 ? 300 : 0);
+}
+
+function displayWorkerResults(workers) {
+    workerResults.innerHTML = '';
+    
+    if (workers.length === 0) {
+        workerResults.innerHTML = '<div class="p-3 text-sm text-gray-500">No se encontraron trabajadores</div>';
+    } else {
+        workers.forEach(worker => {
+            const workerItem = document.createElement('div');
+            workerItem.className = 'p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0';
+            workerItem.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <img src="${worker.avatar}" alt="${worker.name}" class="w-8 h-8 rounded-full">
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-900">${worker.name}</p>
+                        <p class="text-xs text-gray-500">${worker.role}</p>
+                    </div>
+                    ${worker.online ? '<div class="w-2 h-2 bg-green-500 rounded-full"></div>' : ''}
+                </div>
+            `;
+            workerItem.addEventListener('click', () => selectWorker(worker));
+            workerResults.appendChild(workerItem);
+        });
+    }
+    
+    workerResults.classList.remove('hidden');
+}
+
+function selectWorker(worker) {
+    selectedWorkerId.value = worker.id;
+    workerSearch.value = worker.name;
+    workerResults.classList.add('hidden');
+    
+    // Mostrar trabajador seleccionado
+    document.getElementById('selected-worker-avatar').src = worker.avatar;
+    document.getElementById('selected-worker-name').textContent = worker.name;
+    document.getElementById('selected-worker-role').textContent = worker.role;
+    selectedWorker.classList.remove('hidden');
+    
+    lucide.createIcons();
+}
+
+function clearSelectedWorker() {
+    selectedWorkerId.value = '';
+    workerSearch.value = '';
+    selectedWorker.classList.add('hidden');
+    workerResults.classList.add('hidden');
+}
 
 // Funciones de archivos
-function handleFileSelect(event) {
+function handleFileSelect(event, type) {
     const files = Array.from(event.target.files);
-    files.forEach(file => {
-        if (!selectedFiles.find(f => f.name === file.name && f.size === file.size)) {
-            selectedFiles.push(file);
-        }
-    });
+    
+    if (type === 'files') {
+        files.forEach(file => {
+            if (!selectedFiles.find(f => f.name === file.name && f.size === file.size)) {
+                selectedFiles.push(file);
+            }
+        });
+    } else if (type === 'images') {
+        files.forEach(file => {
+            if (!selectedImages.find(f => f.name === file.name && f.size === file.size)) {
+                selectedImages.push(file);
+            }
+        });
+    }
+    
     updateFilePreview();
 }
 
 function updateFilePreview() {
-    if (selectedFiles.length === 0) {
+    const allFiles = [...selectedFiles, ...selectedImages];
+    
+    if (allFiles.length === 0) {
         filePreviewArea.classList.add('hidden');
         return;
     }
@@ -265,20 +365,22 @@ function updateFilePreview() {
     filePreviewArea.classList.remove('hidden');
     filePreviewList.innerHTML = '';
     
-    selectedFiles.forEach((file, index) => {
+    allFiles.forEach((file, index) => {
         const fileItem = document.createElement('div');
         fileItem.className = 'flex items-center justify-between bg-white p-2 rounded border text-xs';
         
         const fileSize = formatFileSize(file.size);
         const fileIcon = getFileIcon(file.type);
+        const isImage = file.type.startsWith('image/');
         
         fileItem.innerHTML = `
             <div class="flex items-center space-x-2 flex-1 min-w-0">
                 <i data-lucide="${fileIcon}" class="w-3 h-3 text-gray-500 flex-shrink-0"></i>
                 <span class="truncate">${file.name}</span>
                 <span class="text-gray-400">(${fileSize})</span>
+                <span class="text-blue-500">${isImage ? 'Imagen' : 'Archivo'}</span>
             </div>
-            <button type="button" onclick="removeFile(${index})" class="text-red-500 hover:text-red-700 ml-2">
+            <button type="button" onclick="removeFile(${index}, '${isImage ? 'images' : 'files'}')" class="text-red-500 hover:text-red-700 ml-2">
                 <i data-lucide="x" class="w-3 h-3"></i>
             </button>
         `;
@@ -289,14 +391,20 @@ function updateFilePreview() {
     lucide.createIcons();
 }
 
-function removeFile(index) {
-    selectedFiles.splice(index, 1);
+function removeFile(index, type) {
+    if (type === 'images') {
+        selectedImages.splice(index - selectedFiles.length, 1);
+    } else {
+        selectedFiles.splice(index, 1);
+    }
     updateFilePreview();
 }
 
 function clearFiles() {
     selectedFiles = [];
+    selectedImages = [];
     fileInput.value = '';
+    imageInput.value = '';
     updateFilePreview();
 }
 
@@ -375,19 +483,119 @@ function selectContact(contactId) {
     chatStatus.className = selectedContact.online ? 'text-sm text-green-500' : 'text-sm text-gray-500';
     chatAvatar.src = selectedContact.avatar;
     
-    // Cargar mensajes
+    // Cargar mensajes desde el servidor
     loadMessages(contactId);
     
     // Asegurarse de que el área de previsualización esté oculta al cambiar de contacto
     clearFiles();
 }
 
-// Cargar mensajes
+// Cargar mensajes desde el servidor
 function loadMessages(contactId) {
-    const contactMessages = messages[contactId] || [];
+    // Mostrar loading
+    messagesContainer.innerHTML = '<div class="flex justify-center py-4"><div class="text-gray-500">Cargando mensajes...</div></div>';
+    
+    fetch(`{{ route('coordinador-general.mensajes.get-messages', '') }}/${contactId}`, {
+        method: 'GET',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayMessages(data.messages);
+        } else {
+            messagesContainer.innerHTML = '<div class="flex justify-center py-4"><div class="text-red-500">Error al cargar mensajes</div></div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        messagesContainer.innerHTML = '<div class="flex justify-center py-4"><div class="text-red-500">Error al cargar mensajes</div></div>';
+    });
+}
+
+// Enviar mensaje
+function sendMessage(e) {
+    e.preventDefault();
+    
+    const message = messageInput.value.trim();
+    if (!message && selectedFiles.length === 0 && selectedImages.length === 0) return;
+    if (!currentContactId) return;
+    
+    // Crear FormData para enviar archivos
+    const formData = new FormData();
+    formData.append('contact_id', currentContactId);
+    if (message) formData.append('message', message);
+    
+    selectedFiles.forEach((file, index) => {
+        formData.append(`files[${index}]`, file);
+    });
+    
+    selectedImages.forEach((image, index) => {
+        formData.append(`images[${index}]`, image);
+    });
+    
+    // Limpiar input y archivos inmediatamente
+    messageInput.value = '';
+    clearFiles();
+    
+    // Enviar a servidor
+    fetch('{{ route("coordinador-general.mensajes.send") }}', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Actualizar el último mensaje en la lista de contactos
+            updateContactLastMessage(data.contact_id, data.last_message, data.time);
+            
+            // Recargar mensajes para mostrar los nuevos mensajes enviados
+            loadMessages(currentContactId);
+        } else {
+            console.error('Error al enviar el mensaje');
+            alert('Error al enviar el mensaje');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al enviar el mensaje');
+    });
+}
+
+// Nueva función para actualizar el último mensaje en la lista de contactos
+function updateContactLastMessage(contactId, lastMessage, time) {
+    const contactItem = document.querySelector(`[data-contact-id="${contactId}"]`);
+    if (contactItem) {
+        // Actualizar el último mensaje
+        const lastMessageElement = contactItem.querySelector('.text-gray-500');
+        if (lastMessageElement) {
+            lastMessageElement.textContent = lastMessage;
+        }
+        
+        // Actualizar la hora
+        const timeElement = contactItem.querySelector('.text-xs.text-gray-500');
+        if (timeElement) {
+            timeElement.textContent = time;
+        }
+        
+        // Mover el contacto al principio de la lista si no está ya ahí
+        const contactsContainer = document.getElementById('contacts-container');
+        if (contactsContainer && contactItem !== contactsContainer.firstElementChild) {
+            contactsContainer.insertBefore(contactItem, contactsContainer.firstElementChild);
+        }
+    }
+}
+
+// Función mejorada para mostrar mensajes en la interfaz
+function displayMessages(messages) {
     messagesContainer.innerHTML = '';
     
-    contactMessages.forEach(message => {
+    messages.forEach(message => {
         const messageEl = document.createElement('div');
         messageEl.className = `flex ${message.sent ? 'justify-end' : 'justify-start'} fade-in`;
         
@@ -397,7 +605,7 @@ function loadMessages(contactId) {
             html = `
                 <div class="max-w-xs lg:max-w-md">
                     <div class="bg-blue-500 text-white rounded-lg px-4 py-2">
-                        <p class="text-sm">${message.text}</p>
+                        ${message.text ? `<p class="text-sm">${message.text}</p>` : ''}
                         ${message.attachment ? `
                             <div class="mt-2 p-2 bg-blue-600 rounded border border-blue-400">
                                 <div class="flex items-center justify-between">
@@ -408,9 +616,9 @@ function loadMessages(contactId) {
                                             <p class="text-xs opacity-75">${message.attachment.size}</p>
                                         </div>
                                     </div>
-                                    <button class="text-xs bg-blue-700 hover:bg-blue-800 px-2 py-1 rounded transition-colors">
+                                    <a href="${message.attachment.url}" target="_blank" class="text-xs bg-blue-700 hover:bg-blue-800 px-2 py-1 rounded transition-colors">
                                         Descargar
-                                    </button>
+                                    </a>
                                 </div>
                             </div>
                         ` : ''}
@@ -425,7 +633,7 @@ function loadMessages(contactId) {
             html = `
                 <div class="max-w-xs lg:max-w-md">
                     <div class="bg-white text-gray-900 rounded-lg px-4 py-2 border border-gray-200">
-                        <p class="text-sm">${message.text}</p>
+                        ${message.text ? `<p class="text-sm">${message.text}</p>` : ''}
                         ${message.attachment ? `
                             <div class="mt-2 p-2 bg-gray-50 rounded border border-gray-200">
                                 <div class="flex items-center justify-between">
@@ -436,9 +644,9 @@ function loadMessages(contactId) {
                                             <p class="text-xs text-gray-500">${message.attachment.size}</p>
                                         </div>
                                     </div>
-                                    <button class="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded text-gray-700 transition-colors">
+                                    <a href="${message.attachment.url}" target="_blank" class="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded text-gray-700 transition-colors">
                                         Descargar
-                                    </button>
+                                    </a>
                                 </div>
                             </div>
                         ` : ''}
@@ -506,105 +714,6 @@ function searchContacts(query) {
     });
 }
 
-// Enviar mensaje
-function sendMessage(e) {
-    e.preventDefault();
-    
-    const message = messageInput.value.trim();
-    if (!message && selectedFiles.length === 0) return;
-    if (!currentContactId) return;
-    
-    // Crear FormData para enviar archivos
-    const formData = new FormData();
-    formData.append('contact_id', currentContactId);
-    if (message) formData.append('message', message);
-    
-    selectedFiles.forEach((file, index) => {
-        formData.append(`files[${index}]`, file);
-    });
-    
-    // Crear elemento de mensaje
-    const messageEl = document.createElement('div');
-    messageEl.className = 'flex justify-end fade-in';
-    
-    const currentTime = new Date().toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
-    
-    let attachmentHtml = '';
-    if (selectedFiles.length > 0) {
-        attachmentHtml = selectedFiles.map(file => `
-            <div class="mt-2 p-2 bg-blue-600 rounded border border-blue-400">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-2">
-                        <i data-lucide="${getFileIcon(file.type)}" class="w-4 h-4"></i>
-                        <div>
-                            <p class="text-xs font-medium">${file.name}</p>
-                            <p class="text-xs opacity-75">${formatFileSize(file.size)}</p>
-                        </div>
-                    </div>
-                    <button class="text-xs bg-blue-700 hover:bg-blue-800 px-2 py-1 rounded transition-colors">
-                        Descargar
-                    </button>
-                </div>
-            </div>
-        `).join('');
-    }
-    
-    messageEl.innerHTML = `
-        <div class="max-w-xs lg:max-w-md">
-            <div class="bg-blue-500 text-white rounded-lg px-4 py-2">
-                ${message ? `<p class="text-sm">${message}</p>` : ''}
-                ${attachmentHtml}
-            </div>
-            <div class="flex items-center justify-end mt-1 space-x-1">
-                <span class="text-xs text-gray-500">${currentTime}</span>
-                <span class="text-xs text-gray-500">✓</span>
-            </div>
-        </div>
-    `;
-    
-    messagesContainer.appendChild(messageEl);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    
-    // Limpiar input y archivos
-    messageInput.value = '';
-    clearFiles();
-    
-    // Reinicializar iconos
-    lucide.createIcons();
-    
-    // Enviar a servidor
-    fetch('{{ route("coordinador-general.mensajes.send") }}', {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Simular respuesta después de un tiempo aleatorio
-            setTimeout(() => {
-                const replyEl = document.createElement('div');
-                replyEl.className = 'flex justify-start fade-in';
-                
-                replyEl.innerHTML = `
-                    <div class="max-w-xs lg:max-w-md">
-                        <div class="bg-white text-gray-900 rounded-lg px-4 py-2 border border-gray-200">
-                            <p class="text-sm">${data.autoReply.text}</p>
-                        </div>
-                        <p class="text-xs text-gray-500 mt-1">${data.autoReply.time}</p>
-                    </div>
-                `;
-                
-                messagesContainer.appendChild(replyEl);
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }, 1000 + Math.random() * 2000);
-        }
-    })
-    .catch(error => console.error('Error:', error));
-}
-
 // Abrir modal de nuevo chat
 function openNewChatModal() {
     newChatModal.classList.remove('hidden');
@@ -615,6 +724,7 @@ function openNewChatModal() {
 function closeNewChatModal() {
     newChatModal.classList.add('hidden');
     newChatModal.classList.remove('flex');
+    clearSelectedWorker();
 }
 
 // Event Listeners
@@ -649,8 +759,34 @@ document.addEventListener('DOMContentLoaded', function() {
         searchContacts(this.value);
     });
     
+    // Búsqueda de trabajadores en modal
+    workerSearch.addEventListener('input', function() {
+        searchWorkers(this.value);
+    });
+
+    // Mostrar todos los trabajadores al hacer clic en el input
+    workerSearch.addEventListener('focus', function() {
+        if (this.value.trim() === '') {
+            searchWorkers('');
+        }
+    });
+    
+    // Ocultar resultados al hacer clic fuera
+    document.addEventListener('click', function(e) {
+        if (!workerSearch.contains(e.target) && !workerResults.contains(e.target)) {
+            workerResults.classList.add('hidden');
+        }
+    });
+    
     // Selección de archivos
-    fileInput.addEventListener('change', handleFileSelect);
+    fileInput.addEventListener('change', function(e) {
+        handleFileSelect(e, 'files');
+    });
+    
+    // Selección de imágenes
+    imageInput.addEventListener('change', function(e) {
+        handleFileSelect(e, 'images');
+    });
     
     // Envío de mensaje
     messageForm.addEventListener('submit', sendMessage);
@@ -667,6 +803,11 @@ document.addEventListener('DOMContentLoaded', function() {
     newChatForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
+        if (!selectedWorkerId.value) {
+            alert('Por favor selecciona un trabajador');
+            return;
+        }
+        
         const formData = new FormData(this);
         
         fetch('{{ route("coordinador-general.mensajes.new-chat") }}', {
@@ -680,8 +821,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.success) {
                 closeNewChatModal();
-                // En un entorno real, aquí actualizaríamos la lista de contactos
-                // Por ahora, simplemente recargamos la página
+                // Recargar la página para mostrar el nuevo chat
                 window.location.reload();
             }
         })

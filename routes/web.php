@@ -199,4 +199,6 @@ Route::get('/coordinador-general/mensajes/{contactId}/messages', [MensajesContro
 Route::post('/coordinador-general/mensajes/send', [MensajesController::class, 'send'])->name('coordinador-general.mensajes.send');
 Route::post('/coordinador-general/mensajes/new-chat', [MensajesController::class, 'newChat'])->name('coordinador-general.mensajes.new-chat');
 Route::get('/coordinador-general/mensajes/search', [MensajesController::class, 'search'])->name('coordinador-general.mensajes.search');
-Route::post('/coordinador-general/mensajes/mark-read', [MensajesController::class, 'markAsRead'])->name('coordinador-general.mensajes.mark-read');
+Route::post('/coordinador-general/mensajes/search-workers', [MensajesController::class, 'searchWorkers'])->name('coordinador-general.mensajes.search-workers');
+Route::get('/coordinador-general/mensajes/get-messages/{contactId}', [MensajesController::class, 'getMessages'])->name('coordinador-general.mensajes.get-messages');
+Route::post('/coordinador-general/mensajes/mark-as-read', [MensajesController::class, 'markAsRead'])->name('coordinador-general.mensajes.mark-as-read');

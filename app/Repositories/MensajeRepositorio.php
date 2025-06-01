@@ -5,10 +5,13 @@ namespace App\Repositories;
 use App\Models\Mensaje;
 use App\Models\Trabajador;
 use App\Models\Usuario;
+use App\Models\Archivo;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Collection as SupportCollection;
+use Carbon\Carbon;
 
 class MensajeRepositorio
 {
@@ -21,26 +24,71 @@ class MensajeRepositorio
 
     /**
      * Obtener todos los trabajadores de una empresa (coordinadores y colaboradores)
-     * Excluye administradores y superadministradores
+     * Incluye Coord. General, Coord. Equipo y Colaboradores
      */
     public function getTrabajadoresByEmpresa(int $empresaId): Collection
     {
         return Trabajador::select('trabajadores.*')
-            ->join('miembros_equipo', 'trabajadores.id', '=', 'miembros_equipo.trabajador_id')
-            ->join('equipos', 'miembros_equipo.equipo_id', '=', 'equipos.id')
-            ->join('areas', 'equipos.area_id', '=', 'areas.id')
-            ->join('empresas', 'areas.empresa_id', '=', 'empresas.id')
             ->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
             ->join('roles', 'usuarios.rol_id', '=', 'roles.id')
-            ->where('empresas.id', $empresaId)
+            ->where('trabajadores.empresa_id', $empresaId)
             ->where('usuarios.activo', true)
-            ->where('miembros_equipo.activo', true)
-            // SOLO coordinadores de equipo y colaboradores
-            ->whereIn('roles.nombre', ['Coord. Equipo', 'Coordinador de Equipo', 'Colaborador'])
+            // Incluir Coord. General, Coord. Equipo y Colaboradores
+            ->whereIn('roles.nombre', ['Coord. General', 'Coord. Equipo', 'Colaborador'])
             ->whereNull('trabajadores.deleted_at')
             ->whereNull('usuarios.deleted_at')
-            ->whereNull('equipos.deleted_at')
-            ->whereNull('areas.deleted_at')
+            ->with(['usuario.rol'])
+            ->distinct()
+            ->orderBy('trabajadores.nombres')
+            ->get();
+    }
+
+    /**
+     * Buscar trabajadores con roles específicos
+     */
+    public function buscarTrabajadoresConRoles(string $query, int $empresaId): Collection
+    {
+        $queryBuilder = Trabajador::select('trabajadores.*')
+            ->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
+            ->join('roles', 'usuarios.rol_id', '=', 'roles.id')
+            ->where('trabajadores.empresa_id', $empresaId)
+            ->where('usuarios.activo', true)
+            // Filtrar por roles específicos: Coord. General, Coord. Equipo, Colaborador
+            ->whereIn('roles.nombre', ['Coord. General', 'Coord. Equipo', 'Colaborador'])
+            ->whereNull('trabajadores.deleted_at')
+            ->whereNull('usuarios.deleted_at')
+            ->with(['usuario.rol'])
+            ->distinct()
+            ->orderBy('trabajadores.nombres');
+
+        // Si hay query de búsqueda, filtrar por nombre
+        if (!empty(trim($query))) {
+            $queryBuilder->where(function($subQuery) use ($query) {
+                $subQuery->where(DB::raw("CONCAT(trabajadores.nombres, ' ', trabajadores.apellido_paterno, ' ', trabajadores.apellido_materno)"), 'LIKE', "%{$query}%")
+                        ->orWhere('trabajadores.nombres', 'LIKE', "%{$query}%")
+                        ->orWhere('trabajadores.apellido_paterno', 'LIKE', "%{$query}%")
+                        ->orWhere('trabajadores.apellido_materno', 'LIKE', "%{$query}%");
+            });
+        }
+
+        return $queryBuilder->limit(10)->get();
+    }
+
+    /**
+     * Obtener todos los trabajadores disponibles para conversación (sin filtro de búsqueda)
+     */
+    public function getTrabajadoresDisponiblesParaChat(int $empresaId, int $coordinadorId): Collection
+    {
+        return Trabajador::select('trabajadores.*')
+            ->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
+            ->join('roles', 'usuarios.rol_id', '=', 'roles.id')
+            ->where('trabajadores.empresa_id', $empresaId)
+            ->where('trabajadores.id', '!=', $coordinadorId) // Excluir al mismo coordinador
+            ->where('usuarios.activo', true)
+            // Incluir Coord. General, Coord. Equipo y Colaboradores
+            ->whereIn('roles.nombre', ['Coord. General', 'Coord. Equipo', 'Colaborador'])
+            ->whereNull('trabajadores.deleted_at')
+            ->whereNull('usuarios.deleted_at')
             ->with(['usuario.rol'])
             ->distinct()
             ->orderBy('trabajadores.nombres')
@@ -136,14 +184,43 @@ class MensajeRepositorio
      */
     public function create(array $data): Mensaje
     {
+        // Configurar zona horaria de Lima, Perú
+        $ahora = Carbon::now('America/Lima');
+        
         return $this->model->create([
             'remitente_id' => $data['remitente_id'],
             'destinatario_id' => $data['destinatario_id'],
             'contenido' => $data['contenido'],
-            'fecha' => $data['fecha'] ?? now()->toDateString(),
-            'hora' => $data['hora'] ?? now()->toTimeString(),
+            'fecha' => $data['fecha'] ?? $ahora->toDateString(),
+            'hora' => $data['hora'] ?? $ahora->toTimeString(),
             'leido' => false,
             'archivo_id' => $data['archivo_id'] ?? null
+        ]);
+    }
+
+    /**
+     * Crear un archivo y guardarlo
+     */
+    public function crearArchivo($file): Archivo
+    {
+        // Configurar zona horaria de Lima, Perú
+        $ahora = Carbon::now('America/Lima');
+        
+        // Generar nombre único para el archivo
+        $extension = $file->getClientOriginalExtension();
+        $nombreOriginal = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $nombreArchivo = $nombreOriginal . '_' . time() . '.' . $extension;
+        
+        // Guardar archivo en storage
+        $ruta = $file->storeAs('mensajes/archivos', $nombreArchivo, 'public');
+        
+        // Crear registro en base de datos
+        return Archivo::create([
+            'nombre' => $file->getClientOriginalName(),
+            'ruta' => $ruta,
+            'tipo' => $file->getMimeType(),
+            'tamaño' => $file->getSize(),
+            'fecha_subida' => $ahora->toDateTimeString()
         ]);
     }
 
@@ -218,17 +295,21 @@ class MensajeRepositorio
      */
     public function trabajadorPerteneceAEmpresa(int $trabajadorId, int $empresaId): bool
     {
-        return Trabajador::select('trabajadores.id')
-            ->join('miembros_equipo', 'trabajadores.id', '=', 'miembros_equipo.trabajador_id')
-            ->join('equipos', 'miembros_equipo.equipo_id', '=', 'equipos.id')
-            ->join('areas', 'equipos.area_id', '=', 'areas.id')
-            ->join('empresas', 'areas.empresa_id', '=', 'empresas.id')
-            ->where('trabajadores.id', $trabajadorId)
-            ->where('empresas.id', $empresaId)
-            ->where('miembros_equipo.activo', true)
-            ->whereNull('trabajadores.deleted_at')
-            ->whereNull('equipos.deleted_at')
-            ->whereNull('areas.deleted_at')
+        return Trabajador::where('id', $trabajadorId)
+            ->where('empresa_id', $empresaId)
+            ->whereNull('deleted_at')
             ->exists();
+    }
+
+    /**
+     * Obtener la empresa de un trabajador
+     */
+    public function getEmpresaByTrabajador(int $trabajadorId): ?int
+    {
+        $trabajador = Trabajador::where('id', $trabajadorId)
+            ->whereNull('deleted_at')
+            ->first();
+        
+        return $trabajador ? $trabajador->empresa_id : null;
     }
 }

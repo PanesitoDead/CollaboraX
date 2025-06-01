@@ -58,6 +58,11 @@ class Trabajador extends Model
         return $this->nombres . ' ' . $this->apellido_paterno . ' ' . $this->apellido_materno;
     }
 
+    public function equipos()
+    {
+        return $this->belongsToMany(Equipo::class, 'miembros_equipo');
+    }
+
     // Accessor para iniciales
     public function getInicialesAttribute()
     {
@@ -70,4 +75,6 @@ class Trabajador extends Model
         }
         return strtoupper($iniciales);
     }
+
+    
 }
