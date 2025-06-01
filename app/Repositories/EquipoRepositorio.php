@@ -97,12 +97,67 @@ class EquipoRepositorio extends RepositorioBase
 
 
 
-
-     /**
-     * Obtener todos los equipos de una empresa específica con sus relaciones
-     * SOLO equipos que tengan al menos un coordinador de equipo válido
+    
+    /**
+     * Obtener áreas asignadas a un coordinador general
      */
-    public function getAllByEmpresa(int $empresaId): Collection
+    public function getAreasCoordinadorGeneral(int $trabajadorId): Collection
+    {
+        try {
+            // Primero verificamos si el trabajador existe
+            $trabajador = Trabajador::find($trabajadorId);
+            if (!$trabajador) {
+                Log::error('Trabajador no encontrado', ['trabajador_id' => $trabajadorId]);
+                return collect([]);
+            }
+
+            // Verificamos si hay registros en areas_coordinador
+            $areasCoordinador = DB::table('areas_coordinador')
+                ->where('trabajador_id', $trabajadorId)
+                ->whereNull('deleted_at')
+                ->count();
+
+            // Si no hay registros, devolvemos todas las áreas de la empresa
+            if ($areasCoordinador === 0) {
+                Log::info('No se encontraron áreas asignadas, devolviendo todas las áreas de la empresa', [
+                    'trabajador_id' => $trabajadorId,
+                    'empresa_id' => $trabajador->empresa_id
+                ]);
+            
+                return Area::where('empresa_id', $trabajador->empresa_id)
+                    ->where('activo', true)
+                    ->whereNull('deleted_at')
+                    ->orderBy('nombre')
+                    ->get();
+            }
+
+            // Si hay registros, devolvemos las áreas asignadas
+            return Area::select('areas.*')
+                ->join('areas_coordinador', 'areas.id', '=', 'areas_coordinador.area_id')
+                ->where('areas_coordinador.trabajador_id', $trabajadorId)
+                ->where('areas.activo', true)
+                ->whereNull('areas.deleted_at')
+                ->whereNull('areas_coordinador.deleted_at')
+                ->where(function($query) {
+                    $query->whereNull('areas_coordinador.fecha_fin')
+                      ->orWhere('areas_coordinador.fecha_fin', '>', now());
+            })
+                ->orderBy('areas.nombre')
+                ->get();
+        } catch (\Exception $e) {
+            Log::error('Error al obtener áreas del coordinador general', [
+                'trabajador_id' => $trabajadorId,
+                'error' => $e->getMessage()
+            ]);
+            return collect([]);
+        }
+    }
+
+    /**
+     * Obtener equipos por áreas específicas
+     * SOLO equipos que tengan al menos un coordinador de equipo
+     */
+    public function getEquiposByAreas(array $areaIds): Collection
     {
         return $this->model->with([
             'coordinador.usuario.rol',
@@ -113,62 +168,307 @@ class EquipoRepositorio extends RepositorioBase
             'miembros.trabajador.usuario.rol',
             'metas.estado'
         ])
-        ->whereHas('area', function($query) use ($empresaId) {
-            $query->where('empresa_id', $empresaId);
+        ->whereIn('area_id', $areaIds)
+        ->whereNull('deleted_at') // Excluir soft deleted
+        // FILTRO CLAVE: Solo equipos que tengan al menos un coordinador de equipo
+        ->whereHas('miembros', function($query) {
+            $query->where('activo', true)
+                  ->whereHas('trabajador.usuario.rol', function($rolQuery) {
+                      $rolQuery->where('nombre', 'Coord. Equipo');
+                  });
         })
-        // FILTRO CLAVE: Solo equipos donde el coordinador sea realmente un coordinador de equipo de esta empresa
-        ->whereHas('coordinador', function($query) use ($empresaId) {
-            $query->whereHas('miembrosEquipo', function($miembrosQuery) use ($empresaId) {
-                $miembrosQuery->where('activo', true)
-                    ->whereHas('equipo.area', function($areaQuery) use ($empresaId) {
-                        $areaQuery->where('empresa_id', $empresaId);
-                    });
-            })
-            ->whereHas('usuario.rol', function($rolQuery) {
-                $rolQuery->whereIn('nombre', ['Coord. Equipo', 'Coordinador de Equipo']);
-            });
-        })
-        ->whereNull('deleted_at')
         ->orderBy('fecha_creacion', 'desc')
         ->get();
     }
 
     /**
-     * Obtener equipos por área
-     * SOLO equipos que tengan coordinadores válidos
+     * Obtener colaboradores disponibles para convertir en coordinadores de equipo
      */
-    public function getByArea(int $areaId): Collection
+    public function getColaboradoresParaCoordinacion(int $empresaId): Collection
     {
-        // Primero obtenemos la empresa del área
-        $area = Area::find($areaId);
-        if (!$area) {
-            return collect([]);
-        }
+        return Trabajador::select('trabajadores.*')
+            ->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
+            ->join('roles', 'usuarios.rol_id', '=', 'roles.id')
+            ->where('trabajadores.empresa_id', $empresaId)
+            ->where('usuarios.activo', true)
+            ->where('roles.nombre', 'Colaborador')
+            ->whereNull('trabajadores.deleted_at')
+            ->whereNull('usuarios.deleted_at')
+            ->with(['usuario.rol'])
+            ->orderBy('trabajadores.nombres')
+            ->get();
+    }
 
-        return $this->model->with([
-            'coordinador.usuario.rol',
-            'area',
-            'miembros' => function($query) {
-                $query->where('activo', true);
-            },
-            'miembros.trabajador.usuario.rol',
-            'metas.estado'
-        ])
-        ->where('area_id', $areaId)
-        // FILTRO: Solo equipos con coordinadores válidos de esta empresa
-        ->whereHas('coordinador', function($query) use ($area) {
-            $query->whereHas('miembrosEquipo', function($miembrosQuery) use ($area) {
-                $miembrosQuery->where('activo', true)
-                    ->whereHas('equipo.area', function($areaQuery) use ($area) {
-                        $areaQuery->where('empresa_id', $area->empresa_id);
-                    });
+    /**
+     * Buscar colaboradores por nombre o email
+     */
+    public function buscarColaboradores(string $termino, int $empresaId): Collection
+    {
+        return Trabajador::select('trabajadores.*')
+            ->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
+            ->join('roles', 'usuarios.rol_id', '=', 'roles.id')
+            ->where('trabajadores.empresa_id', $empresaId)
+            ->where('usuarios.activo', true)
+            ->where('roles.nombre', 'Colaborador')
+            ->where(function($query) use ($termino) {
+                $query->where('trabajadores.nombres', 'LIKE', "%{$termino}%")
+                      ->orWhere('trabajadores.apellido_paterno', 'LIKE', "%{$termino}%")
+                      ->orWhere('trabajadores.apellido_materno', 'LIKE', "%{$termino}%")
+                      ->orWhere('usuarios.correo', 'LIKE', "%{$termino}%");
             })
-            ->whereHas('usuario.rol', function($rolQuery) {
-                $rolQuery->whereIn('nombre', ['Coord. Equipo', 'Coordinador de Equipo']);
-            });
-        })
-        ->whereNull('deleted_at')
-        ->get();
+            ->whereNull('trabajadores.deleted_at')
+            ->whereNull('usuarios.deleted_at')
+            ->with(['usuario.rol'])
+            ->limit(10)
+            ->get();
+    }
+
+    /**
+     * Verificar si un área pertenece a un coordinador general
+     */
+    public function areaPerteneceeACoordinadorGeneral(int $areaId, int $trabajadorId): bool
+    {
+        try {
+            // Primero verificamos si el trabajador existe
+            $trabajador = Trabajador::find($trabajadorId);
+            if (!$trabajador) {
+                return false;
+            }
+
+            // Verificamos si hay registros en areas_coordinador
+            $areasCoordinador = DB::table('areas_coordinador')
+                ->where('trabajador_id', $trabajadorId)
+                ->whereNull('deleted_at')
+                ->count();
+
+            // Si no hay registros, verificamos si el área pertenece a la empresa
+            if ($areasCoordinador === 0) {
+                return DB::table('areas')
+                    ->where('id', $areaId)
+                    ->where('empresa_id', $trabajador->empresa_id)
+                    ->whereNull('deleted_at')
+                    ->exists();
+            }
+
+            // Si hay registros, verificamos si el área está asignada al coordinador
+            return DB::table('areas_coordinador')
+                ->where('area_id', $areaId)
+                ->where('trabajador_id', $trabajadorId)
+                ->whereNull('deleted_at')
+                ->where(function($query) {
+                    $query->whereNull('fecha_fin')
+                      ->orWhere('fecha_fin', '>', now());
+            })
+                ->exists();
+        } catch (\Exception $e) {
+            Log::error('Error al verificar si el área pertenece al coordinador', [
+                'area_id' => $areaId,
+                'trabajador_id' => $trabajadorId,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Verificar si un equipo pertenece a las áreas de un coordinador general
+     * Y que tenga al menos un coordinador de equipo
+     */
+    public function equipoPerteneceeACoordinadorGeneral(int $equipoId, int $trabajadorId): bool
+    {
+        try {
+            // Primero verificamos si el trabajador existe
+            $trabajador = Trabajador::find($trabajadorId);
+            if (!$trabajador) {
+                return false;
+            }
+
+            // Obtenemos el equipo
+            $equipo = $this->model->find($equipoId);
+            if (!$equipo) {
+                return false;
+            }
+
+            // Verificar que el equipo tenga al menos un coordinador de equipo
+            $tieneCoordinadorEquipo = $this->equipoTieneCoordinadorEquipo($equipoId);
+            if (!$tieneCoordinadorEquipo) {
+                return false;
+            }
+
+            // Verificamos si hay registros en areas_coordinador
+            $areasCoordinador = DB::table('areas_coordinador')
+                ->where('trabajador_id', $trabajadorId)
+                ->whereNull('deleted_at')
+                ->count();
+
+            // Si no hay registros, verificamos si el equipo pertenece a la empresa
+            if ($areasCoordinador === 0) {
+                return DB::table('areas')
+                    ->join('equipos', 'areas.id', '=', 'equipos.area_id')
+                    ->where('equipos.id', $equipoId)
+                    ->where('areas.empresa_id', $trabajador->empresa_id)
+                    ->whereNull('areas.deleted_at')
+                    ->whereNull('equipos.deleted_at')
+                    ->exists();
+            }
+
+            // Si hay registros, verificamos si el equipo está en un área asignada al coordinador
+            return $this->model->select('equipos.id')
+                ->join('areas', 'equipos.area_id', '=', 'areas.id')
+                ->join('areas_coordinador', 'areas.id', '=', 'areas_coordinador.area_id')
+                ->where('equipos.id', $equipoId)
+                ->where('areas_coordinador.trabajador_id', $trabajadorId)
+                ->whereNull('equipos.deleted_at')
+                ->whereNull('areas_coordinador.deleted_at')
+                ->where(function($query) {
+                    $query->whereNull('areas_coordinador.fecha_fin')
+                      ->orWhere('areas_coordinador.fecha_fin', '>', now());
+            })
+                ->exists();
+        } catch (\Exception $e) {
+            Log::error('Error al verificar si el equipo pertenece al coordinador', [
+                'equipo_id' => $equipoId,
+                'trabajador_id' => $trabajadorId,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Verificar si un equipo tiene al menos un coordinador de equipo
+     */
+    public function equipoTieneCoordinadorEquipo(int $equipoId): bool
+    {
+        return DB::table('miembros_equipo')
+            ->join('trabajadores', 'miembros_equipo.trabajador_id', '=', 'trabajadores.id')
+            ->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
+            ->join('roles', 'usuarios.rol_id', '=', 'roles.id')
+            ->where('miembros_equipo.equipo_id', $equipoId)
+            ->where('miembros_equipo.activo', true)
+            ->where('roles.nombre', 'Coord. Equipo')
+            ->whereNull('miembros_equipo.deleted_at')
+            ->whereNull('trabajadores.deleted_at')
+            ->whereNull('usuarios.deleted_at')
+            ->exists();
+    }
+
+    /**
+     * Verificar si un trabajador es colaborador activo
+     */
+    public function esColaboradorActivo(int $trabajadorId, int $empresaId): bool
+    {
+        return Trabajador::select('trabajadores.id')
+            ->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
+            ->join('roles', 'usuarios.rol_id', '=', 'roles.id')
+            ->where('trabajadores.id', $trabajadorId)
+            ->where('trabajadores.empresa_id', $empresaId)
+            ->where('usuarios.activo', true)
+            ->where('roles.nombre', 'Colaborador')
+            ->whereNull('trabajadores.deleted_at')
+            ->whereNull('usuarios.deleted_at')
+            ->exists();
+    }
+
+    /**
+     * Cambiar rol de colaborador a coordinador de equipo
+     */
+    public function cambiarRolACoordinadorEquipo(int $trabajadorId): bool
+    {
+        try {
+            $trabajador = Trabajador::with('usuario')->find($trabajadorId);
+            if (!$trabajador || !$trabajador->usuario) {
+                return false;
+            }
+
+            // Buscar el rol "Coord. Equipo"
+            $rolCoordinador = DB::table('roles')
+                ->where('nombre', 'Coord. Equipo')
+                ->first();
+
+            if (!$rolCoordinador) {
+                Log::error('Rol Coord. Equipo no encontrado');
+                return false;
+            }
+
+            // Actualizar el rol del usuario
+            $trabajador->usuario->update([
+                'rol_id' => $rolCoordinador->id
+            ]);
+
+            Log::info('Rol cambiado exitosamente', [
+                'trabajador_id' => $trabajadorId,
+                'nuevo_rol' => 'Coord. Equipo'
+            ]);
+
+            return true;
+
+        } catch (\Exception $e) {
+            Log::error('Error al cambiar rol', [
+                'trabajador_id' => $trabajadorId,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Cambiar rol de coordinador de equipo a colaborador
+     */
+    public function cambiarRolAColaborador(int $trabajadorId): bool
+    {
+        try {
+            $trabajador = Trabajador::with('usuario')->find($trabajadorId);
+            if (!$trabajador || !$trabajador->usuario) {
+                return false;
+            }
+
+            // Buscar el rol "Colaborador"
+            $rolColaborador = DB::table('roles')
+                ->where('nombre', 'Colaborador')
+                ->first();
+
+            if (!$rolColaborador) {
+                Log::error('Rol Colaborador no encontrado');
+                return false;
+            }
+
+            // Actualizar el rol del usuario
+            $trabajador->usuario->update([
+                'rol_id' => $rolColaborador->id
+            ]);
+
+            Log::info('Rol cambiado exitosamente a Colaborador', [
+                'trabajador_id' => $trabajadorId
+            ]);
+
+            return true;
+
+        } catch (\Exception $e) {
+            Log::error('Error al cambiar rol a Colaborador', [
+                'trabajador_id' => $trabajadorId,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Obtener todos los coordinadores de equipo de un equipo específico
+     */
+    public function getCoordinadoresEquipoDelEquipo(int $equipoId): Collection
+    {
+        return Trabajador::select('trabajadores.*')
+            ->join('miembros_equipo', 'trabajadores.id', '=', 'miembros_equipo.trabajador_id')
+            ->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
+            ->join('roles', 'usuarios.rol_id', '=', 'roles.id')
+            ->where('miembros_equipo.equipo_id', $equipoId)
+            ->where('miembros_equipo.activo', true)
+            ->where('roles.nombre', 'Coord. Equipo')
+            ->whereNull('miembros_equipo.deleted_at')
+            ->whereNull('trabajadores.deleted_at')
+            ->whereNull('usuarios.deleted_at')
+            ->get();
     }
 
     /**
@@ -187,7 +487,7 @@ class EquipoRepositorio extends RepositorioBase
 
     /**
      * Obtener equipo por ID con relaciones
-     * SOLO si tiene coordinador válido
+     * SOLO si tiene al menos un coordinador de equipo
      */
     public function getById(String $id): ?Equipo
     {
@@ -200,120 +500,60 @@ class EquipoRepositorio extends RepositorioBase
             'miembros.trabajador.usuario.rol',
             'metas.estado',
             'reuniones'
-        ])->find($id);
+        ])
+        ->whereNull('deleted_at') // Excluir soft deleted
+        ->find($id);
 
-        // Verificar que el coordinador sea válido para la empresa
-        if ($equipo && $equipo->area && $equipo->coordinador) {
-            $esCoordinadorValido = $this->esCoordinadorDeEquipo($equipo->coordinador_id, $equipo->area->empresa_id);
-            if (!$esCoordinadorValido) {
-                return null; // No mostrar el equipo si el coordinador no es válido
-            }
+        // Verificar que el equipo tenga al menos un coordinador de equipo
+        if ($equipo && !$this->equipoTieneCoordinadorEquipo($equipo->id)) {
+            Log::warning('Equipo sin coordinador de equipo válido', ['equipo_id' => $id]);
+            return null;
         }
 
         return $equipo;
     }
 
     /**
-     * Actualizar equipo
+     * Eliminar equipo (soft delete con cambio automático de roles)
+     * FUNCIONALIDAD: Cambiar TODOS los coordinadores de equipo a Colaborador automáticamente
      */
-    public function update(int $id, array $data): bool
-    {
-        try {
-            Log::info('Intentando actualizar equipo', ['id' => $id, 'data' => $data]);
-            
-            $equipo = $this->model->find($id);
-            if (!$equipo) {
-                Log::error('Equipo no encontrado', ['id' => $id]);
-                return false;
-            }
-
-            Log::info('Equipo encontrado', ['equipo' => $equipo->toArray()]);
-
-            $updateData = [
-                'coordinador_id' => $data['coordinador_id'] ?? $equipo->coordinador_id,
-                'area_id' => $data['area_id'] ?? $equipo->area_id,
-                'nombre' => $data['nombre'] ?? $equipo->nombre,
-                'descripcion' => $data['descripcion'] ?? $equipo->descripcion
-            ];
-
-            Log::info('Datos para actualizar', ['updateData' => $updateData]);
-
-            $result = $equipo->update($updateData);
-            
-            Log::info('Resultado de actualización', ['result' => $result]);
-
-            return $result;
-
-        } catch (\Exception $e) {
-            Log::error('Error al actualizar equipo', [
-                'id' => $id,
-                'data' => $data,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            throw $e;
-        }
-    }
-
-    /**
-     * Eliminar equipo (eliminación permanente con manejo de dependencias)
-     */
-
-
     public function delete(int $id): bool
     {
         try {
-            $equipo = $this->model->with(['metas', 'miembros', 'reuniones', 'invitaciones'])->find($id);
+            $equipo = $this->model->find($id);
             if (!$equipo) {
                 Log::warning('Equipo no encontrado para eliminar', ['id' => $id]);
                 return false;
             }
 
-            Log::info('Iniciando eliminación de equipo', [
+            // Obtener todos los coordinadores de equipo antes de eliminar
+            $coordinadoresEquipo = $this->getCoordinadoresEquipoDelEquipo($id);
+
+            Log::info('Iniciando eliminación (soft delete) de equipo', [
                 'id' => $id,
                 'nombre' => $equipo->nombre,
-                'metas_count' => $equipo->metas->count(),
-                'miembros_count' => $equipo->miembros->count()
+                'coordinadores_equipo' => $coordinadoresEquipo->pluck('id')->toArray()
             ]);
 
-            // Usar transacción para asegurar consistencia
-            return DB::transaction(function () use ($equipo) {
-                
-                // 1. Eliminar todas las tareas asociadas a las metas del equipo
-                if ($equipo->metas->count() > 0) {
-                    foreach ($equipo->metas as $meta) {
-                        // Si hay tareas asociadas a las metas, eliminarlas primero
-                        if (method_exists($meta, 'tareas')) {
-                            $meta->tareas()->forceDelete();
-                        }
-                    }
-                    
-                    // 2. Eliminar todas las metas del equipo
-                    $equipo->metas()->forceDelete();
-                    Log::info('Metas eliminadas', ['equipo_id' => $equipo->id]);
-                }
+            return DB::transaction(function () use ($equipo, $coordinadoresEquipo) {
+            
+                // 1. Soft delete del equipo
+                $resultado = $equipo->delete(); // Esto hace soft delete
+                Log::info('Equipo marcado como eliminado (soft delete)', ['equipo_id' => $equipo->id, 'resultado' => $resultado]);
 
-                // 3. Eliminar todas las invitaciones del equipo
-                if (method_exists($equipo, 'invitaciones') && $equipo->invitaciones->count() > 0) {
-                    $equipo->invitaciones()->forceDelete();
-                    Log::info('Invitaciones eliminadas', ['equipo_id' => $equipo->id]);
-                }
+                // 2. Desactivar miembros del equipo
+                $equipo->miembros()->update(['activo' => false]);
+                Log::info('Miembros desactivados', ['equipo_id' => $equipo->id]);
 
-                // 4. Eliminar todas las reuniones del equipo
-                if (method_exists($equipo, 'reuniones') && $equipo->reuniones->count() > 0) {
-                    $equipo->reuniones()->forceDelete();
-                    Log::info('Reuniones eliminadas', ['equipo_id' => $equipo->id]);
+                // 3. FUNCIONALIDAD PRINCIPAL: Cambiar TODOS los coordinadores de equipo a Colaborador automáticamente
+                foreach ($coordinadoresEquipo as $coordinador) {
+                    $rolCambiado = $this->cambiarRolAColaborador($coordinador->id);
+                    Log::info('Cambio automático de rol a Colaborador', [
+                        'trabajador_id' => $coordinador->id,
+                        'nombre' => $coordinador->nombres . ' ' . $coordinador->apellido_paterno,
+                        'rol_cambiado' => $rolCambiado
+                    ]);
                 }
-
-                // 5. Eliminar todos los miembros del equipo
-                if ($equipo->miembros->count() > 0) {
-                    $equipo->miembros()->forceDelete();
-                    Log::info('Miembros eliminados', ['equipo_id' => $equipo->id]);
-                }
-
-                // 6. Finalmente eliminar el equipo
-                $resultado = $equipo->forceDelete();
-                Log::info('Equipo eliminado', ['equipo_id' => $equipo->id, 'resultado' => $resultado]);
 
                 return $resultado;
             });
@@ -327,19 +567,6 @@ class EquipoRepositorio extends RepositorioBase
             throw $e;
         }
     }
-
-    /**
-     * Obtener áreas disponibles para una empresa
-     */
-    public function getAreasDisponibles(int $empresaId): Collection
-    {
-        return Area::where('empresa_id', $empresaId)
-                  ->where('activo', true)
-                  ->whereNull('deleted_at')
-                  ->orderBy('nombre')
-                  ->get();
-    }
-
 
     /**
      * Agregar miembro a equipo
@@ -372,8 +599,9 @@ class EquipoRepositorio extends RepositorioBase
 
     /**
      * Remover miembro de equipo
+     * VALIDACIÓN: No permitir remover el último coordinador de equipo
+     * FUNCIONALIDAD: Cambiar rol a Colaborador si se remueve coordinador
      */
-    
     public function removerMiembro(int $equipoId, int $trabajadorId): bool
     {
         $equipo = $this->model->find($equipoId);
@@ -381,122 +609,67 @@ class EquipoRepositorio extends RepositorioBase
             return false;
         }
 
-        // Verificar si es miembro activo
         $miembro = $equipo->miembros()
             ->where('trabajador_id', $trabajadorId)
             ->where('activo', true)
             ->first();
 
         if (!$miembro) {
-            return false; // No es miembro activo
+            return false;
         }
 
-        // Desactivar al miembro (soft delete)
+        // Verificar si el trabajador es coordinador de equipo
+        $esCoordinadorEquipo = DB::table('trabajadores')
+            ->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
+            ->join('roles', 'usuarios.rol_id', '=', 'roles.id')
+            ->where('trabajadores.id', $trabajadorId)
+            ->where('roles.nombre', 'Coord. Equipo')
+            ->exists();
+
+        if ($esCoordinadorEquipo) {
+            // Contar cuántos coordinadores de equipo quedarían después de remover este
+            $coordinadoresRestantes = DB::table('miembros_equipo')
+                ->join('trabajadores', 'miembros_equipo.trabajador_id', '=', 'trabajadores.id')
+                ->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
+                ->join('roles', 'usuarios.rol_id', '=', 'roles.id')
+                ->where('miembros_equipo.equipo_id', $equipoId)
+                ->where('miembros_equipo.activo', true)
+                ->where('roles.nombre', 'Coord. Equipo')
+                ->where('trabajadores.id', '!=', $trabajadorId) // Excluir el que se va a remover
+                ->count();
+
+            // Si no quedarían coordinadores de equipo, no permitir la remoción
+            if ($coordinadoresRestantes === 0) {
+                Log::warning('No se puede remover el último coordinador de equipo', [
+                    'equipo_id' => $equipoId,
+                    'trabajador_id' => $trabajadorId
+                ]);
+                return false;
+            }
+        }
+
         $miembro->activo = false;
         $miembro->save();
+
+        // Si se removió un coordinador de equipo, cambiar su rol a Colaborador automáticamente
+        if ($esCoordinadorEquipo) {
+            $this->cambiarRolAColaborador($trabajadorId);
+        }
 
         return true;
     }
 
     /**
-     * Obtener SOLO coordinadores de equipo disponibles para una empresa
-     * Solo trabajadores con rol "Coordinador de Equipo" o "Coord. Equipo"
+     * Obtener estadísticas por áreas
+     * SOLO equipos con coordinadores de equipo válidos
      */
-    public function getCoordinadoresDisponibles(int $empresaId): Collection
+    public function getEstadisticasPorAreas(array $areaIds): array
     {
-        return Trabajador::select('trabajadores.*')
-            ->join('miembros_equipo', 'trabajadores.id', '=', 'miembros_equipo.trabajador_id')
-            ->join('equipos', 'miembros_equipo.equipo_id', '=', 'equipos.id')
-            ->join('areas', 'equipos.area_id', '=', 'areas.id')
-            ->join('empresas', 'areas.empresa_id', '=', 'empresas.id')
-            ->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
-            ->join('roles', 'usuarios.rol_id', '=', 'roles.id')
-            ->where('empresas.id', $empresaId)
-            ->where('usuarios.activo', true)
-            ->where('miembros_equipo.activo', true)
-            // SOLO coordinadores de equipo
-            ->whereIn('roles.nombre', ['Coord. Equipo', 'Coordinador de Equipo'])
-            ->whereNull('trabajadores.deleted_at')
-            ->whereNull('usuarios.deleted_at')
-            ->whereNull('equipos.deleted_at')
-            ->whereNull('areas.deleted_at')
-            ->with(['usuario.rol'])
-            ->distinct()
-            ->get();
-    }
-
-    /**
-     * Obtener SOLO colaboradores disponibles para una empresa
-     * Solo trabajadores con rol "Colaborador"
-     */
-    public function getColaboradoresDisponibles(int $empresaId): Collection
-    {
-        return Trabajador::select('trabajadores.*')
-            ->join('miembros_equipo', 'trabajadores.id', '=', 'miembros_equipo.trabajador_id')
-            ->join('equipos', 'miembros_equipo.equipo_id', '=', 'equipos.id')
-            ->join('areas', 'equipos.area_id', '=', 'areas.id')
-            ->join('empresas', 'areas.empresa_id', '=', 'empresas.id')
-            ->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
-            ->join('roles', 'usuarios.rol_id', '=', 'roles.id')
-            ->where('empresas.id', $empresaId)
-            ->where('usuarios.activo', true)
-            ->where('miembros_equipo.activo', true)
-            // SOLO colaboradores
-            ->where('roles.nombre', 'Colaborador')
-            ->whereNull('trabajadores.deleted_at')
-            ->whereNull('usuarios.deleted_at')
-            ->whereNull('equipos.deleted_at')
-            ->whereNull('areas.deleted_at')
-            ->with(['usuario.rol'])
-            ->distinct()
-            ->get();
-    }
-
-    /**
-     * Buscar equipos por nombre
-     * SOLO equipos con coordinadores válidos
-     */
-    public function buscarPorNombre(string $nombre, int $empresaId): Collection
-    {
-        return $this->model->with([
-            'coordinador.usuario.rol',
-            'area',
-            'miembros' => function($query) {
-                $query->where('activo', true);
-            }
-        ])
-        ->where('nombre', 'LIKE', "%{$nombre}%")
-        ->whereHas('area', function($query) use ($empresaId) {
-            $query->where('empresa_id', $empresaId);
-        })
-        // FILTRO: Solo equipos con coordinadores válidos
-        ->whereHas('coordinador', function($query) use ($empresaId) {
-            $query->whereHas('miembrosEquipo', function($miembrosQuery) use ($empresaId) {
-                $miembrosQuery->where('activo', true)
-                    ->whereHas('equipo.area', function($areaQuery) use ($empresaId) {
-                        $areaQuery->where('empresa_id', $empresaId);
-                    });
-            })
-            ->whereHas('usuario.rol', function($rolQuery) {
-                $rolQuery->whereIn('nombre', ['Coord. Equipo', 'Coordinador de Equipo']);
-            });
-        })
-        ->whereNull('deleted_at')
-        ->get();
-    }
-
-    /**
-     * Obtener estadísticas de equipos por empresa
-     * SOLO equipos válidos
-     */
-    public function getEstadisticas(int $empresaId): array
-    {
-        $equipos = $this->getAllByEmpresa($empresaId);
+        $equipos = $this->getEquiposByAreas($areaIds);
         
         $total = $equipos->count();
         $activos = $equipos->where('deleted_at', null)->count();
         
-        // Calcular equipos con metas en progreso
         $conMetasActivas = $equipos->filter(function($equipo) {
             return $equipo->metas->where('estado.nombre', '!=', 'Completo')->count() > 0;
         })->count();
@@ -511,150 +684,57 @@ class EquipoRepositorio extends RepositorioBase
         ];
     }
 
-   
-
-    
     /**
-     * Verificar si un trabajador pertenece a una empresa específica
+     * Buscar equipos por nombre en las áreas del coordinador
+     * SOLO equipos con coordinadores de equipo válidos
      */
-    public function trabajadorPerteneceAEmpresa(int $trabajadorId, int $empresaId): bool
-    {
-        return Trabajador::select('trabajadores.id')
-            ->join('miembros_equipo', 'trabajadores.id', '=', 'miembros_equipo.trabajador_id')
-            ->join('equipos', 'miembros_equipo.equipo_id', '=', 'equipos.id')
-            ->join('areas', 'equipos.area_id', '=', 'areas.id')
-            ->join('empresas', 'areas.empresa_id', '=', 'empresas.id')
-            ->where('trabajadores.id', $trabajadorId)
-            ->where('empresas.id', $empresaId)
-            ->where('miembros_equipo.activo', true)
-            ->whereNull('trabajadores.deleted_at')
-            ->whereNull('equipos.deleted_at')
-            ->whereNull('areas.deleted_at')
-            ->exists();
-    }
-
-    /**
-     * Verificar si un trabajador es coordinador de equipo
-     */
-    public function esCoordinadorDeEquipo(int $trabajadorId, int $empresaId): bool
-    {
-        return Trabajador::select('trabajadores.id')
-            ->join('miembros_equipo', 'trabajadores.id', '=', 'miembros_equipo.trabajador_id')
-            ->join('equipos', 'miembros_equipo.equipo_id', '=', 'equipos.id')
-            ->join('areas', 'equipos.area_id', '=', 'areas.id')
-            ->join('empresas', 'areas.empresa_id', '=', 'empresas.id')
-            ->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
-            ->join('roles', 'usuarios.rol_id', '=', 'roles.id')
-            ->where('trabajadores.id', $trabajadorId)
-            ->where('empresas.id', $empresaId)
-            ->where('miembros_equipo.activo', true)
-            ->whereIn('roles.nombre', ['Coord. Equipo', 'Coordinador de Equipo'])
-            ->whereNull('trabajadores.deleted_at')
-            ->whereNull('equipos.deleted_at')
-            ->whereNull('areas.deleted_at')
-            ->exists();
-    }
-
-    /**
-     * Verificar si un trabajador es colaborador
-     */
-    public function esColaborador(int $trabajadorId, int $empresaId): bool
-    {
-        return Trabajador::select('trabajadores.id')
-            ->join('miembros_equipo', 'trabajadores.id', '=', 'miembros_equipo.trabajador_id')
-            ->join('equipos', 'miembros_equipo.equipo_id', '=', 'equipos.id')
-            ->join('areas', 'equipos.area_id', '=', 'areas.id')
-            ->join('empresas', 'areas.empresa_id', '=', 'empresas.id')
-            ->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
-            ->join('roles', 'usuarios.rol_id', '=', 'roles.id')
-            ->where('trabajadores.id', $trabajadorId)
-            ->where('empresas.id', $empresaId)
-            ->where('miembros_equipo.activo', true)
-            ->where('roles.nombre', 'Colaborador')
-            ->whereNull('trabajadores.deleted_at')
-            ->whereNull('equipos.deleted_at')
-            ->whereNull('areas.deleted_at')
-            ->exists();
-    }
-
-    /**
-     * Obtener trabajadores de una empresa con sus roles (para debug)
-     */
-    public function getTrabajadoresPorEmpresa(int $empresaId): Collection
-    {
-        return DB::table('trabajadores')
-            ->select([
-                'trabajadores.id',
-                'trabajadores.nombres',
-                'trabajadores.apellido_paterno',
-                'trabajadores.apellido_materno',
-                'usuarios.correo',
-                'roles.nombre as rol_nombre',
-                'empresas.nombre as empresa_nombre'
-            ])
-            ->join('miembros_equipo', 'trabajadores.id', '=', 'miembros_equipo.trabajador_id')
-            ->join('equipos', 'miembros_equipo.equipo_id', '=', 'equipos.id')
-            ->join('areas', 'equipos.area_id', '=', 'areas.id')
-            ->join('empresas', 'areas.empresa_id', '=', 'empresas.id')
-            ->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
-            ->join('roles', 'usuarios.rol_id', '=', 'roles.id')
-            ->where('empresas.id', $empresaId)
-            ->where('usuarios.activo', true)
-            ->where('miembros_equipo.activo', true)
-            ->whereNull('trabajadores.deleted_at')
-            ->whereNull('usuarios.deleted_at')
-            ->whereNull('equipos.deleted_at')
-            ->whereNull('areas.deleted_at')
-            ->distinct()
-            ->get()
-            ->map(function($trabajador) {
-                return (object)[
-                    'id' => $trabajador->id,
-                    'nombres' => $trabajador->nombres,
-                    'apellido_paterno' => $trabajador->apellido_paterno,
-                    'apellido_materno' => $trabajador->apellido_materno,
-                    'nombre_completo' => $trabajador->nombres . ' ' . $trabajador->apellido_paterno . ' ' . $trabajador->apellido_materno,
-                    'correo' => $trabajador->correo,
-                    'rol_nombre' => $trabajador->rol_nombre,
-                    'empresa_nombre' => $trabajador->empresa_nombre
-                ];
-            });
-    }
-
-    /**
-     * Obtener equipos que NO tienen metas asignadas
-     */
-    public function getEquiposSinMetas(int $empresaId): Collection
+    public function buscarPorNombre(string $nombre, array $areaIds): Collection
     {
         return $this->model->with([
             'coordinador.usuario.rol',
-            'area'
+            'area',
+            'miembros' => function($query) {
+                $query->where('activo', true);
+            }
         ])
-        ->whereHas('area', function($query) use ($empresaId) {
-            $query->where('empresa_id', $empresaId);
-        })
-        // FILTRO: Solo equipos con coordinadores válidos
-        ->whereHas('coordinador', function($query) use ($empresaId) {
-            $query->whereHas('miembrosEquipo', function($miembrosQuery) use ($empresaId) {
-                $miembrosQuery->where('activo', true)
-                    ->whereHas('equipo.area', function($areaQuery) use ($empresaId) {
-                        $areaQuery->where('empresa_id', $empresaId);
-                    });
-            })
-            ->whereHas('usuario.rol', function($rolQuery) {
-                $rolQuery->whereIn('nombre', ['Coord. Equipo', 'Coordinador de Equipo']);
-            });
-        })
-        // FILTRO CLAVE: Solo equipos SIN metas asignadas
-        ->whereDoesntHave('metas', function($query) {
-            $query->whereNull('deleted_at');
-        })
+        ->where('nombre', 'LIKE', "%{$nombre}%")
+        ->whereIn('area_id', $areaIds)
         ->whereNull('deleted_at')
-        ->orderBy('nombre')
+        // FILTRO: Solo equipos que tengan al menos un coordinador de equipo
+        ->whereHas('miembros', function($query) {
+            $query->where('activo', true)
+                  ->whereHas('trabajador.usuario.rol', function($rolQuery) {
+                      $rolQuery->where('nombre', 'Coord. Equipo');
+                  });
+        })
         ->get();
     }
 
-    
+    /**
+     * Validar que un equipo puede ser creado/actualizado
+     * Debe tener al menos un coordinador de equipo
+     */
+    public function validarEquipoParaOperacion(int $equipoId): bool
+    {
+        return $this->equipoTieneCoordinadorEquipo($equipoId);
+    }
 
+    /**
+     * Obtener equipos sin coordinadores de equipo válidos (para limpieza)
+     */
+    public function getEquiposSinCoordinadorEquipo(int $empresaId): Collection
+    {
+        return $this->model->select('equipos.*')
+            ->join('areas', 'equipos.area_id', '=', 'areas.id')
+            ->where('areas.empresa_id', $empresaId)
+            ->whereNull('equipos.deleted_at')
+            ->whereDoesntHave('miembros', function($query) {
+                $query->where('activo', true)
+                      ->whereHas('trabajador.usuario.rol', function($rolQuery) {
+                          $rolQuery->where('nombre', 'Coord. Equipo');
+                      });
+            })
+            ->get();
+    }
 
 }

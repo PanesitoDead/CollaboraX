@@ -18,6 +18,10 @@ class Trabajador extends Model
         return $this->belongsTo(Usuario::class);
     }
 
+    public function empresa(){
+        return $this->belongsTo(Empresa::class, 'empresa_id');
+    }
+
     public function miembrosEquipo()
     {
         return $this->hasMany(MiembroEquipo::class);

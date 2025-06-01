@@ -32,13 +32,13 @@ class DashboarController extends Controller
             $empresaId = 1;
             
             // Obtener datos reales de la base de datos
-            $equipos = $this->equipoRepositorio->getAllByEmpresa($empresaId);
+            //$equipos = $this->equipoRepositorio->getAllByEmpresa($empresaId);
             $metas = $this->metaRepositorio->getAllByEmpresa($empresaId);
             $tareas = $this->tareaRepositorio->getAllByEmpresa($empresaId);
             
             // Calcular métricas reales
             $metricas = [
-                'equipos_activos' => $equipos->count(),
+                //'equipos_activos' => $equipos->count(),
                 'metas_activas' => $metas->count(),
                 'total_actividades' => $tareas->count(),
                 'actividades_completadas' => $tareas->where('estado.nombre', 'Completo')->count(),

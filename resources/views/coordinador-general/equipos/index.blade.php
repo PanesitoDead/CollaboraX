@@ -4,9 +4,10 @@
 <!-- Header -->
 <div class="bg-white border-b border-gray-200 px-6 py-4 slide-in">
     <div class="flex items-center justify-between">
+        <!-- Modificar la línea que muestra el nombre de la empresa -->
         <div>
             <h1 class="text-2xl font-bold text-gray-900">Gestión de Equipos</h1>
-            <p class="text-gray-600 mt-1">Administra y supervisa todos los equipos de trabajo</p>
+            <p class="text-gray-600 mt-1">Administra y supervisa todos los equipos de trabajo{{ isset($empresa) ? ' de ' . $empresa->nombre : '' }}</p>
         </div>
         <button onclick="openCreateTeamModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover-scale">
             <i data-lucide="plus" class="w-4 h-4"></i>
@@ -68,7 +69,6 @@
                     </button>
                     <div id="dropdown-{{ $equipo['id'] }}" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
                         <a href="{{ route('coordinador-general.equipos.show', $equipo['id']) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Ver detalles</a>
-                        <a href="{{ route('coordinador-general.equipos.edit', $equipo['id']) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Editar equipo</a>
                         <hr class="my-1">
                         <a href="#" onclick="confirmarEliminar({{ $equipo['id'] }}, '{{ $equipo['nombre'] }}')" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Eliminar equipo</a>
                     </div>
@@ -151,9 +151,6 @@
                 <a href="{{ route('coordinador-general.equipos.show', $equipo['id']) }}" class="flex-1 bg-blue-50 text-blue-600 py-2 px-3 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors text-center">
                     Ver equipo
                 </a>
-                <a href="{{ route('coordinador-general.equipos.edit', $equipo['id']) }}" class="flex-1 bg-gray-50 text-gray-600 py-2 px-3 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors text-center">
-                    Gestionar
-                </a>
             </div>
         </div>
         @endforeach
@@ -202,12 +199,26 @@
                 
                 <div>
                     <label for="teamCoordinator" class="block text-sm font-medium text-gray-700 mb-1">Coordinador</label>
-                    <select id="teamCoordinator" name="coordinador_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option value="">Seleccionar coordinador</option>
-                        @foreach($coordinadores as $coordinador)
-                        <option value="{{ $coordinador['id'] }}">{{ $coordinador['nombre'] }}</option>
-                        @endforeach
-                    </select>
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="coordinatorSearch" 
+                            placeholder="Buscar colaborador..." 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            autocomplete="off"
+                            onkeyup="buscarColaboradores(this.value)"
+                            onfocus="mostrarColaboradores()"
+                        >
+                        <input type="hidden" id="teamCoordinator" name="coordinador_id" required>
+                        
+                        <!-- Dropdown de resultados -->
+                        <div id="coordinatorDropdown" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                            <div id="coordinatorResults" class="py-1">
+                                <!-- Los resultados se cargarán aquí -->
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Busca y selecciona un colaborador para convertirlo en coordinador del equipo</p>
                 </div>
                 
                 <div>
@@ -263,17 +274,98 @@
 </div>
 
 <script>
+// Variables globales
+let colaboradoresData = @json($colaboradores);
+let searchTimeout;
+
 // Modal functions
 function openCreateTeamModal() {
     document.getElementById('createTeamModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+    // Cargar colaboradores iniciales
+    mostrarColaboradores();
 }
 
 function closeCreateTeamModal() {
     document.getElementById('createTeamModal').classList.add('hidden');
     document.body.style.overflow = 'auto';
     document.getElementById('createTeamForm').reset();
+    document.getElementById('coordinatorSearch').value = '';
+    document.getElementById('teamCoordinator').value = '';
+    document.getElementById('coordinatorDropdown').classList.add('hidden');
 }
+
+// Función para buscar colaboradores
+function buscarColaboradores(termino) {
+    clearTimeout(searchTimeout);
+    
+    if (termino.length < 1) {
+        mostrarColaboradores();
+        return;
+    }
+    
+    searchTimeout = setTimeout(() => {
+        fetch(`/coordinador-general/equipos/buscar-colaboradores?q=${encodeURIComponent(termino)}`)
+            .then(response => response.json())
+            .then(data => {
+                mostrarResultadosColaboradores(data);
+            })
+            .catch(error => {
+                console.error('Error al buscar colaboradores:', error);
+                showToast('Error al buscar colaboradores', 'error');
+            });
+    }, 300);
+}
+
+// Función para mostrar todos los colaboradores
+function mostrarColaboradores() {
+    mostrarResultadosColaboradores(colaboradoresData);
+}
+
+// Función para mostrar resultados de colaboradores
+function mostrarResultadosColaboradores(colaboradores) {
+    const resultsContainer = document.getElementById('coordinatorResults');
+    const dropdown = document.getElementById('coordinatorDropdown');
+    
+    if (colaboradores.length === 0) {
+        resultsContainer.innerHTML = '<div class="px-4 py-2 text-gray-500 text-sm">No se encontraron colaboradores</div>';
+    } else {
+        resultsContainer.innerHTML = colaboradores.map(colaborador => `
+            <div class="px-4 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0" 
+                 onclick="seleccionarColaborador(${colaborador.id}, '${colaborador.nombre}', '${colaborador.email}')">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span class="text-xs font-medium text-blue-600">${colaborador.nombre.charAt(0)}</span>
+                    </div>
+                    <div>
+                        <div class="text-sm font-medium text-gray-900">${colaborador.nombre}</div>
+                        <div class="text-xs text-gray-500">${colaborador.email}</div>
+                        <div class="text-xs text-blue-600">${colaborador.rol}</div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    dropdown.classList.remove('hidden');
+}
+
+// Función para seleccionar un colaborador
+function seleccionarColaborador(id, nombre, email) {
+    document.getElementById('coordinatorSearch').value = nombre;
+    document.getElementById('teamCoordinator').value = id;
+    document.getElementById('coordinatorDropdown').classList.add('hidden');
+}
+
+// Cerrar dropdown al hacer clic fuera
+document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('coordinatorDropdown');
+    const searchInput = document.getElementById('coordinatorSearch');
+    
+    if (!dropdown.contains(event.target) && event.target !== searchInput) {
+        dropdown.classList.add('hidden');
+    }
+});
 
 // Dropdown functions
 function toggleDropdown(dropdownId) {
@@ -434,6 +526,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .team-card:hover {
     transform: translateY(-2px);
+}
+
+/* Estilos para el dropdown de búsqueda */
+#coordinatorDropdown {
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+#coordinatorDropdown .cursor-pointer:hover {
+    background-color: #f8fafc;
 }
 </style>
 @endsection

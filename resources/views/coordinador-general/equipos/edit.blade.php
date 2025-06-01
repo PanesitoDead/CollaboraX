@@ -75,7 +75,7 @@
                             <option value="">Seleccionar coordinador</option>
                             @foreach($coordinadores as $coordinador)
                             <option value="{{ $coordinador['id'] }}" {{ (old('coordinador_id', $equipo->coordinador_id) == $coordinador['id']) ? 'selected' : '' }}>
-                                {{ $coordinador['nombre'] }}
+                                {{ $coordinador['nombre'] }} ({{ $coordinador['rol'] }})
                             </option>
                             @endforeach
                         </select>

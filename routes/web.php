@@ -159,8 +159,7 @@ Route::middleware('auth')->group(function () {
 Route::get('/coordinador-general/metas', [MetasController::class, 'index'])->name('coordinador-general.metas');
 Route::get('/coordinador-general/configuracion', [ConfigurationController::class, 'index'])->name('coordinador-general.configuracion');
 Route::get('/coordinador-general/dashboard', [DashboarController::class, 'index'])->name('coordinador-general.dashboard');
-Route::get('/coordinador-general/equipos', [EquiposController::class, 'index'])->name('coordinador-general.equipos');
-Route::get('/coordinador-general/equipos/{id}', [EquiposController::class, 'show'])->name('coordinador-general.equipos.show');
+
 Route::get(url('/coordinador-general/equipos/{id}/edit'), [EquiposController::class, 'edit'])->name('coordinador-general.equipos.edit');
 
 // CRUD DE ACTIVIDADES
@@ -177,9 +176,16 @@ Route::get('/coordinador-general/actividades/metas-por-equipo/{equipoId}', [Acti
         ->where('equipoId', '[0-9]+');
 
 //CRUD DE EQUIPOS
+Route::get('/coordinador-general/equipos', [EquiposController::class, 'index'])->name('coordinador-general.equipos');
 Route::post('/coordinador-general/equipos', [EquiposController::class, 'store'])->name('coordinador-general.equipos.store');
-route::put('/coordinador-general/equipos/{id}', [EquiposController::class, 'update'])->name('coordinador-general.equipos.update');
+ // Rutas AJAX (ANTES de las rutas con parámetros)
+Route::get('/coordinador-general/equipos/buscar-colaboradores', [EquiposController::class, 'buscarColaboradores'])->name('buscar-colaboradores');
+Route::get('/coordinador-general/equipos/{id}', [EquiposController::class, 'show'])->name('coordinador-general.equipos.show');
 Route::delete('/coordinador-general/equipos/{id}', [EquiposController::class, 'destroy'])->name('coordinador-general.equipos.destroy');
+route::post('coordinador-general/equipos/{id}/agregar-miembro', [EquiposController::class, 'agregarMiembro'])->name('coordinador-general.equipos.agregar-miembro');
+route::post('coordinador-general/equipos/{id}/eliminar-miembro', [EquiposController::class, 'eliminarMiembro'])->name('coordinador-general.equipos.eliminar-miembro');
+route::post('coordinador-general/equipos/{id}/editar-miembro', [EquiposController::class, 'editarMiembro'])->name('coordinador-general.equipos.editar-miembro');
+route::post('coordinador-general/equipos/{id}/miembros', [EquiposController::class, 'getMiembros'])->name('coordinador-general.equipos.miembros');
 
 
 //CRUD DE REUNIONES
