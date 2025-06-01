@@ -6,7 +6,7 @@
     <div class="bg-white border-b border-gray-200 px-6 py-6 slide-in">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">Bienvenido, Coordinador General</h1>
-            <p class="text-gray-600 mt-1">Supervise el progreso de los grupos y gestione las metas globales</p>
+            <p class="text-gray-600 mt-1">Supervise el progreso de los grupos y gestione las metas globales{{ isset($empresa) ? ' de ' . $empresa->nombre : '' }}</p>
         </div>
     </div>
 
@@ -313,6 +313,11 @@
     // Initialize icons when page loads
     document.addEventListener('DOMContentLoaded', function() {
         lucide.createIcons();
+        
+        // Show success message if exists in session
+        @if(session('success'))
+            showToast("{{ session('success') }}");
+        @endif
     });
 </script>
 
