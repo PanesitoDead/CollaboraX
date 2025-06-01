@@ -15,9 +15,43 @@ class AreaRepositorio extends RepositorioBase
         parent::__construct($model);
     }
 
-    /*
-      Sobreescribe el método update para incluir la actualización del usuario asociado a la area.
-    */
+    public function asignarCoordinador(int $areaId, int $coordinadorId): bool
+    {
+        // Asignar un coordinador a un área
+        $area = $this->getById($areaId);
+        if (!$area) {
+            return false;
+        }
+        $coordinador = AreaCoordinador::where('area_id', $areaId)
+            ->where('trabajador_id', $coordinadorId)
+            ->first();
+        if ($coordinador) {
+            return true; // Ya está asignado
+        }
+        AreaCoordinador::create([
+            'area_id' => $areaId,
+            'trabajador_id' => $coordinadorId,
+            'fecha_inicio' => now(),
+            'fecha_fin' => null, // No tiene fecha de fin al asignar
+        ]);
+        return true;
+    }
+
+    public function actualizarCoordinador(int $areaId, int $coordinadorId): bool
+    {
+        // Actualizar el coordinador de un área
+        $area = $this->getById($areaId);
+        if (!$area) {
+            return false;
+        }
+        $coordinador = AreaCoordinador::where('area_id', $areaId)->first();
+        if ($coordinador) {
+            $coordinador->trabajador_id = $coordinadorId;
+            return $coordinador->save();
+        } else {
+            return $this->asignarCoordinador($areaId, $coordinadorId);
+        }
+    }
 
     public function cambiarEstado(int $id, bool $estado): bool
     {
@@ -59,12 +93,8 @@ class AreaRepositorio extends RepositorioBase
                 case 'id':
                     $consulta->where('areas.id', $value);
                     break;
-                case 'plan_servicio_id':
-                    $consulta->where('areas.plan_servicio_id', $value);
-                    break;
                 case 'estado':
-                    $this->aplicarJoinCondicional($consulta, 'usuarios', 'usuario_id', '=', 'usuarios.id');
-                    $consulta->where('usuarios.activo', $value);
+                    $consulta->where('areas.activo', $value);
                     break;
                 default:
                     $consulta->where($key, $value);
@@ -100,10 +130,10 @@ class AreaRepositorio extends RepositorioBase
         if ($sortField && $sortOrder) {
             switch ($sortField) {
                 case 'id':
-                    $consulta->orderBy('area.id', $sortOrder);
+                    $consulta->orderBy('areas.id', $sortOrder);
                     break;
                 case 'nombre':
-                    $consulta->orderBy('area.nombre', $sortOrder);
+                    $consulta->orderBy('areas.nombre', $sortOrder);
                     break;
                 default:
                     $consulta->orderBy($sortField, $sortOrder);

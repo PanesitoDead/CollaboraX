@@ -59,19 +59,9 @@
             </button>
         </form>
     </div>
-
     {{-- Table --}}
-    @include('partials.super-admin.tablas.tabla-empresas')
+    @include('partials.super-admin.tablas.pag.empresas-tabla-pag')
 </div>
-
-
-<!-- Modal para ver detalles de la empresa -->
-@include('partials.super-admin.modales.modal-detalles')
-<!-- Modal para crear/editar empresa -->
-@include('partials.super-admin.modales.modal-editar')
-<!-- Modal para cambiar estado de la empresa -->
-@include('partials.super-admin.modales.modal-confirmacion')
-
 @endsection
 
 @push('scripts')

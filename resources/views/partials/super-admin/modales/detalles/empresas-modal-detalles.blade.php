@@ -1,5 +1,5 @@
 <!-- Modal Detalles de Empresa -->
-<div id="detallesEmpresaModal" class="fixed inset-0 bg-black/50 hidden z-50 opacity-0 transition-opacity duration-300" role="dialog" aria-modal="true" aria-labelledby="tituloModalDetallesEmpresa">
+<div id="detallesEmpresaModal" class="fixed inset-0 w-screen h-screen bg-black/50 hidden z-50 opacity-0 transition-opacity duration-300" role="dialog" aria-modal="true" aria-labelledby="tituloModalDetallesEmpresa">
   <div class="flex items-center justify-center min-h-screen p-4">
     <div id="detallesEmpresaContent" class="bg-white rounded-2xl shadow-xl max-w-lg w-full transform scale-95 transition-transform duration-300">
       

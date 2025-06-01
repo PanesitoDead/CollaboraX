@@ -60,7 +60,15 @@ Route::put('/super-admin/configuracion/planes/{id}', [SuperAdminConfiguracionCon
 
 //     Admin
 Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
-Route::get('/admin/areas', [AreaController::class, 'index'])->name('admin.areas');
+
+Route::get('/admin/areas', [AreaController::class, 'index'])->name('admin.areas.index');
+Route::get('/admin/areas/{id}', [AreaController::class, 'show'])->name('admin.areas.show');
+Route::put('/admin/areas/{id}', [AreaController::class, 'update'])->name('admin.areas.update');
+Route::post('/admin/areas', [AreaController::class, 'store'])->name('admin.areas.store');
+Route::delete('/admin/areas/{id}', [AreaController::class, 'destroy'])->name('admin.areas.destroy');
+
+Route::get('/admin/colaboradores/pag/', [ColaboradorController::class, 'getPaginado'])->name('admin.colaboradores.pag');
+
 Route::get('/admin/colaboradores', [ColaboradorController::class, 'index'])->name('admin.colaboradores');
 Route::get('/admin/coordinadores-equipos', [CoordinadorEquipoController::class, 'index' ])->name('admin.coordinadores-equipos');
 Route::get('/admin/coordinadores-generales', [CoordinadorGeneralController::class, 'index'])->name('admin.coordinadores-generales');
@@ -73,24 +81,6 @@ Route::get('/colaborador/mensajes', [\App\Http\Controllers\colaborador\MensajeCo
 Route::get('/colaborador/reuniones', [\App\Http\Controllers\colaborador\ReunionController::class, 'index'])->name('colaborador.reuniones');
 Route::get('/colaborador/invitaciones', [\App\Http\Controllers\colaborador\InvitacionController::class, 'index'])->name('colaborador.invitaciones');
 Route::get('/colaborador/configuracion', [\App\Http\Controllers\colaborador\ConfiguracionController::class, 'index'])->name('colaborador.configuracion');
-
-// Route::resource('areas', AreaController::class);
-// Route::resource('coordinadores-equipo', CoordinadorEquipoController::class);
-// Route::resource('coordinadores-generales', CoordinadorGeneralController::class);
-
-// Route::get('estadisticas', [EstadisticaController::class, 'index'])->name('estadisticas');
-// Route::get('configuracion', [ConfiguracionController::class, 'index'])->name('configuracion');
-
-
-// Route::get('/dashboard-admin', [DashboardController::class, 'admin'])
-// ->middleware(['auth', 'verified', CheckAdmin::class])->name('dashboard.admin');
-
-// Route::get('/dashboard-user', [DashboardController::class, 'user'])
-// ->middleware(['auth', 'verified', CheckUser::class])->name('dashboard.user');
-
-// Route::get('/prontuario/{id}/view', [ProntuarioController::class, 'viewProntuarioPdf'])->name('prontuario.view');
-
-
 
 
 //  Coordinador de Equipo

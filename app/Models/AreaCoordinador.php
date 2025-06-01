@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Traits\Timestamp;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -10,6 +11,8 @@ class AreaCoordinador extends Model
     use SoftDeletes;
 
     protected $table = 'areas_coordinador';
+
+    public $timestamps = false;
 
     protected $fillable = ['area_id', 'trabajador_id', 'fecha_inicio', 'fecha_fin'];
 

@@ -54,4 +54,28 @@ class Area extends Model
         return $this->metas()
                     ->whereIn('estado_id', [1, 2]);
     }
+
+    public function porcentajeProgreso(): float
+    {
+        $metasConContadores = $this->metas()
+            ->withCount([
+                // Total de tareas por meta
+                'tareas as tareas_count',
+
+                // Solo tareas con estado_id = 3 (Completado)
+                'tareas as tareas_finalizadas_count' => function ($query) {
+                    $query->where('estado_id', 3);
+                },
+            ])
+            ->get();
+
+        $totalTareas = $metasConContadores->sum('tareas_count');
+        $tareasFinalizadas = $metasConContadores->sum('tareas_finalizadas_count');
+
+        if ($totalTareas === 0) {
+            return 0.0;
+        }
+
+        return round(($tareasFinalizadas / $totalTareas) * 100, 2);
+    }    
 }

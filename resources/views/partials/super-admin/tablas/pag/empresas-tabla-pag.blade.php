@@ -90,6 +90,13 @@
     @endif
 </div>
 
+<!-- Modal para ver detalles de la empresa -->
+@include('partials.super-admin.modales.detalles.empresas-modal-detalles')
+<!-- Modal para crear/editar empresa -->
+@include('partials.super-admin.modales.edicion.empresas-modal-edicion')
+<!-- Modal para cambiar estado de la empresa -->
+@include('partials.super-admin.modales.confirmacion.empresas-modal-confirmacion')
+
 <script>
     function confirmarCambioEstado(event, id, estadoActual) {
     event.preventDefault(); // evita que el checkbox cambie su estado

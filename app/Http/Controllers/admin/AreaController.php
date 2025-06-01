@@ -5,10 +5,11 @@ namespace App\Http\Controllers\admin;
 use App\Http\Controllers\Controller;
 use App\Repositories\AreaRepositorio;
 use App\Repositories\EmpresaRepositorio;
+use App\Repositories\TrabajadorRepositorio;
 use App\Traits\Http\Controllers\CriterioTrait;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
-use Auth;
+use Illuminate\Support\Facades\Auth;
 
 class AreaController extends Controller
 {
@@ -35,11 +36,25 @@ class AreaController extends Controller
         // Aplicamos los criterios de búsqueda
         $areasPag = $this->areaRepositorio->obtenerPaginado($criterios, $query);
         $areasParse = $areasPag->getCollection()->map(function ($area) {
+            // Si existe un coordinador activo, extraemos nombre y correo
+            if ($area->coordinador && $area->coordinador->trabajador) {
+                $area->coordinador_nombres = $area->coordinador->trabajador->nombres;
+                $area->coordinador_apellido_paterno = $area->coordinador->trabajador->apellido_paterno;
+                $area->coordinador_apellido_materno = $area->coordinador->trabajador->apellido_materno;
+                $area->coordinador_correo = $area->coordinador->trabajador->usuario->correo; 
+            } else {
+                $area->coordinador_nombre = null;
+                $area->coordinador_correo = null;
+            }
             $area->nro_equipos = $area->equipos->count();
             $area->nro_colaboradores = $area->equipos->sum(function ($equipo) {
                 return $equipo->miembros->count();
             });
+            $area->progreso = $area->porcentajeProgreso();
             $area->nro_metas_activas = $area->metasActivas->count();
+            $area->fecha_creacion = $area->fecha_creacion
+                ? Carbon::parse($area->fecha_creacion)->format('d/m/Y')
+                : 'No disponible';
             return $area;
         });
         $areasPag->setCollection($areasParse);
@@ -50,166 +65,102 @@ class AreaController extends Controller
         ]);
     }
 
-    // public function store(Request $request)
-    // {
-    //     $request->validate([
-    //         'nombre' => 'required|string|max:255|unique:areas,nombre',
-    //         'codigo' => 'required|string|max:10|unique:areas,codigo',
-    //         'descripcion' => 'required|string',
-    //         'color' => 'required|string|in:blue,green,purple,orange,red,indigo,pink,teal',
-    //         'estado' => 'required|string|in:activa,inactiva',
-    //         'objetivos' => 'nullable|string',
-    //         'coordinador_id' => 'nullable|exists:users,id',
-    //     ]);
+    public function store(Request $request)
+    {
+        try {
+            // Validar los datos de entrada
+            $request->validate([
+                'nombre' => 'required|string|max:255',
+                'descripcion' => 'nullable|string|max:1000',
+            ]);
 
-    //     try {
-    //         DB::beginTransaction();
+            $usuario = Auth::user();
+            $empresa = $this->empresaRepositorio->findOneBy('usuario_id', $usuario->id);
 
-    //         $area = Area::create([
-    //             'nombre' => $request->nombre,
-    //             'codigo' => strtoupper($request->codigo),
-    //             'descripcion' => $request->descripcion,
-    //             'color' => $request->color,
-    //             'estado' => $request->estado,
-    //             'objetivos' => $request->objetivos,
-    //             'coordinador_general_id' => $request->coordinador_id,
-    //         ]);
+            // Crear el área con los datos validados
+            $areaCreada = $this->areaRepositorio->create([
+                'nombre'        => $request->nombre,
+                'descripcion'   => $request->descripcion,
+                'empresa_id'    => $empresa->id,
+                'codigo'        => $request->codigo,
+                'color'         => $request->color,
+                'activo'        => $request->activo,
+                'fecha_creacion'=> now(),
+            ]);
+            // Asignar el coordinador si se proporciona
+            $this->areaRepositorio->asignarCoordinador($areaCreada->id, $request->coordinador_id);
 
-    //         // Si se asignó un coordinador, actualizar el usuario
-    //         if ($request->coordinador_id) {
-    //             User::where('id', $request->coordinador_id)->update([
-    //                 'rol' => 'coordinador_general',
-    //                 'area_id' => $area->id,
-    //             ]);
-    //         }
+            return redirect()->route('admin.areas.index')
+                ->with('success', 'Área creada correctamente.');
+        } catch (\Exception $e) {
+            return redirect()->route('admin.areas.index')
+                ->with('error', 'Error al crear el área. Inténtalo de nuevo. ' . $e->getMessage());
+        }
+    }
 
-    //         DB::commit();
+    public function update(Request $request, $id)
+    {
+        try {
+            $area = $this->areaRepositorio->findOneBy('id', $id);
+            if (!$area) {
+                return redirect()->route('admin.areas.index')
+                    ->with('error', 'Área no encontrada.');
+            }
 
-    //         return redirect()->route('admin.areas.index')
-    //             ->with('success', 'Área creada correctamente.');
+            // Actualizar el área con los datos validados
+            $area = $this->areaRepositorio->update($id, $request->all());
+            // Actualizar el coordinador si se proporciona
+            if ($request->has('coordinador_id')) {
+                $this->areaRepositorio->actualizarCoordinador($id, $request->coordinador_id);
+            }
 
-    //     } catch (\Exception $e) {
-    //         DB::rollback();
-            
-    //         return redirect()->route('admin.areas.index')
-    //             ->with('error', 'Error al crear el área. Inténtalo de nuevo.');
-    //     }
-    // }
+            return redirect()->route('admin.areas.index')
+                ->with('success', 'Área actualizada correctamente.');
+        } catch (\Exception $e) {
+            return redirect()->route('admin.areas.index')
+                ->with('error', 'Error al actualizar el área. Inténtalo de nuevo.');
+        }
+    }
 
-    // public function edit($id)
-    // {
-    //     // Simular datos del área para edición
-    //     $area = [
-    //         'id' => $id,
-    //         'nombre' => 'Marketing',
-    //         'codigo' => 'MKT',
-    //         'descripcion' => 'Área encargada de la promoción y posicionamiento de la marca en el mercado.',
-    //         'color' => 'blue',
-    //         'estado' => 'activa',
-    //         'objetivos' => 'Incrementar el reconocimiento de marca y generar leads cualificados.',
-    //         'coordinador_id' => 1,
-    //     ];
+    public function destroy($id)
+    {
+        try {
+            $area = $this->areaRepositorio->findOneBy('id', $id);
+            if (!$area) {
+                return redirect()->route('admin.areas.index')
+                    ->with('error', 'Área no encontrada.');
+            }
 
-    //     return response()->json($area);
-    // }
+            // Eliminar el área
+            $this->areaRepositorio->delete($id);
 
-    // public function update(Request $request, $id)
-    // {
-    //     $request->validate([
-    //         'nombre' => 'required|string|max:255|unique:areas,nombre,' . $id,
-    //         'codigo' => 'required|string|max:10|unique:areas,codigo,' . $id,
-    //         'descripcion' => 'required|string',
-    //         'color' => 'required|string|in:blue,green,purple,orange,red,indigo,pink,teal',
-    //         'estado' => 'required|string|in:activa,inactiva',
-    //         'objetivos' => 'nullable|string',
-    //         'coordinador_id' => 'nullable|exists:users,id',
-    //     ]);
-
-    //     try {
-    //         DB::beginTransaction();
-
-    //         $area = Area::findOrFail($id);
-    //         $coordinador_anterior = $area->coordinador_general_id;
-
-    //         $area->update([
-    //             'nombre' => $request->nombre,
-    //             'codigo' => strtoupper($request->codigo),
-    //             'descripcion' => $request->descripcion,
-    //             'color' => $request->color,
-    //             'estado' => $request->estado,
-    //             'objetivos' => $request->objetivos,
-    //             'coordinador_general_id' => $request->coordinador_id,
-    //         ]);
-
-    //         // Actualizar coordinador anterior si cambió
-    //         if ($coordinador_anterior && $coordinador_anterior != $request->coordinador_id) {
-    //             User::where('id', $coordinador_anterior)->update([
-    //                 'rol' => 'colaborador',
-    //                 'area_id' => null,
-    //             ]);
-    //         }
-
-    //         // Asignar nuevo coordinador si se seleccionó
-    //         if ($request->coordinador_id) {
-    //             User::where('id', $request->coordinador_id)->update([
-    //                 'rol' => 'coordinador_general',
-    //                 'area_id' => $area->id,
-    //             ]);
-    //         }
-
-    //         DB::commit();
-
-    //         return redirect()->route('admin.areas.index')
-    //             ->with('success', 'Área actualizada correctamente.');
-
-    //     } catch (\Exception $e) {
-    //         DB::rollback();
-            
-    //         return redirect()->route('admin.areas.index')
-    //             ->with('error', 'Error al actualizar el área. Inténtalo de nuevo.');
-    //     }
-    // }
-
-    // public function destroy($id)
-    // {
-    //     try {
-    //         DB::beginTransaction();
-
-    //         $area = Area::findOrFail($id);
-
-    //         // Verificar si tiene equipos o colaboradores asignados
-    //         if ($area->equipos()->count() > 0 || $area->usuarios()->count() > 0) {
-    //             return redirect()->route('admin.areas.index')
-    //                 ->with('error', 'No se puede eliminar el área porque tiene equipos o colaboradores asignados.');
-    //         }
-
-    //         // Liberar coordinador si existe
-    //         if ($area->coordinador_general_id) {
-    //             User::where('id', $area->coordinador_general_id)->update([
-    //                 'rol' => 'colaborador',
-    //                 'area_id' => null,
-    //             ]);
-    //         }
-
-    //         $area->delete();
-
-    //         DB::commit();
-
-    //         return redirect()->route('admin.areas.index')
-    //             ->with('success', 'Área eliminada correctamente.');
-
-    //     } catch (\Exception $e) {
-    //         DB::rollback();
-            
-    //         return redirect()->route('admin.areas.index')
-    //             ->with('error', 'Error al eliminar el área. Inténtalo de nuevo.');
-    //     }
-    // }
+            return redirect()->route('admin.areas.index')
+                ->with('success', 'Área eliminada correctamente.');
+        } catch (\Exception $e) {
+            return redirect()->route('admin.areas.index')
+                ->with('error', 'Error al eliminar el área. Inténtalo de nuevo.');
+        }
+    }
 
     public function show($id)
     {
-        // Vista detallada del área
-        return view('admin.areas.show', compact('id'));
+      $area = $this->areaRepositorio->getById($id);
+        if (!$area) {
+            return redirect()->route('admin.areas.index')->with('error', 'Área no encontrada.');
+        }
+        // Agregamos el campo nro_equipos
+        $area->nro_equipos = $area->equipos->count();
+        // Agregamos el campo nro_colaboradores
+        $area->nro_colaboradores = $area->equipos->sum(function ($equipo) {
+            return $equipo->miembros->count();
+        });
+        // Agregamos el campo nro_metas_activas
+        $area->nro_metas_activas = $area->metasActivas->count();
+        // Parseamos la fecha de creación
+        $area->fecha_creacion = $area->fecha_creacion
+            ? Carbon::parse($area->fecha_creacion)->format('d/m/Y')
+            : 'No disponible';
+        return response()->json($area);
     }
 
     public function manage($id)

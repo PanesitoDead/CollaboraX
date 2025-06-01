@@ -5,12 +5,18 @@
  use App\Models\MiembroEquipo;
  use App\Models\Trabajador;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class TrabajadorRepositorio extends RepositorioBase
  {
     public function __construct(Trabajador $model)
     {
         parent::__construct($model);
+    }
+
+    public function getModel(): Model
+    {
+        return $this->model;
     }
 
     public function getMiembrosEquipo($idEquipo)
@@ -69,6 +75,10 @@ class TrabajadorRepositorio extends RepositorioBase
     }
     protected function aplicarBusqueda(Builder $consulta, ?string $searchTerm, ?string $searchColumn): void
     {
+        // Si no hay columna de búsqueda, ponemos la columna por defecto
+        if (!$searchColumn) {
+            $searchColumn = 'nombres'; // Columna por defecto para búsqueda
+        }
         if ($searchTerm && $searchColumn) {
             switch ($searchColumn) {
                 case 'id':

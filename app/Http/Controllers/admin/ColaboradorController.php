@@ -3,90 +3,51 @@
 namespace App\Http\Controllers\admin;
 
 use App\Http\Controllers\Controller;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
+use App\Repositories\EmpresaRepositorio;
+use App\Repositories\TrabajadorRepositorio;
 use Illuminate\Pagination\LengthAwarePaginator;
+use App\Traits\Http\Controllers\CriterioTrait;
+use Illuminate\Http\Request;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class ColaboradorController extends Controller
 {
-    public function index()
+    use CriterioTrait;
+    protected EmpresaRepositorio $empresaRepositorio;
+
+    protected TrabajadorRepositorio $trabajadorRepositorio;
+
+    public function __construct(EmpresaRepositorio $empresaRepositorio, TrabajadorRepositorio $trabajadorRepositorio)
     {
-        $coordinadoresData = collect([
-            (object)[
-                'id' => 1,
-                'name' => 'Ana López',
-                'email' => 'ana.lopez@example.com',
-                'area' => (object)['nombre' => 'Recursos Humanos'],
-                'equipo' => (object)['nombre' => 'Equipo A'],
-                'asignadoPor' => (object)['name' => 'Carlos Pérez'],
-                'estado' => 'activo',
-                'created_at' => Carbon::parse('2024-01-15'),
-            ],
-            (object)[
-                'id' => 2,
-                'name' => 'Luis Torres',
-                'email' => 'luis.torres@example.com',
-                'area' => null,
-                'equipo' => (object)['nombre' => 'Equipo A'],
-                'asignadoPor' => null,
-                'estado' => 'inactivo',
-                'created_at' => Carbon::parse('2024-03-22'),
-            ],
-            (object)[
-                'id' => 3,
-                'name' => 'María Díaz',
-                'email' => 'maria.diaz@example.com',
-                'area' => (object)['nombre' => 'Logística'],
-                'equipo' => (object)['nombre' => 'Equipo A'],
-                'asignadoPor' => (object)['name' => 'Ana López'],
-                'estado' => 'activo',
-                'created_at' => Carbon::parse('2024-04-10'),
-            ],
-            (object)[
-                'id' => 4,
-                'name' => 'Jorge Ramírez',
-                'email' => 'jorge.ramirez@example.com',
-                'area' => (object)['nombre' => 'Sistemas'],
-                'equipo' => (object)['nombre' => 'Equipo A'],
-                'asignadoPor' => (object)['name' => 'Luis Torres'],
-                'estado' => 'inactivo',
-                'created_at' => Carbon::parse('2024-05-01'),
-            ],
-            (object)[
-                'id' => 5,
-                'name' => 'Elena Vargas',
-                'email' => 'elena.vargas@example.com',
-                'area' => (object)['nombre' => 'Marketing'],
-                'equipo' => (object)['nombre' => 'Equipo A'],
-                'asignadoPor' => null,
-                'estado' => 'activo',
-                'created_at' => Carbon::parse('2024-05-20'),
-            ],
+        $this->empresaRepositorio = $empresaRepositorio;
+        $this->trabajadorRepositorio = $trabajadorRepositorio;
+    }
+    public function index(Request $request)
+    {
+        $coordinadores = $this->getPaginado($request);
+        return view('private.admin.colaboradores', [
+            'coordinadores' => $coordinadores,
         ]);
+    }
 
-
-        // Simular paginación (ej: 2 elementos por página, página actual = 1)
-        $page = request()->get('page', 1);
-        $perPage = 2;
-        $coordinadores = new LengthAwarePaginator(
-            $coordinadoresData->forPage($page, $perPage),
-            $coordinadoresData->count(),
-            $perPage,
-            $page,
-            ['path' => request()->url(), 'query' => request()->query()]
-        );
-
-        // Simulación de datos de coordinadores
-
-        $areas = [
-            (object)[ 'id' => 1, 'nombre' => 'Recursos Humanos' ],
-            (object)[ 'id' => 2, 'nombre' => 'Logística' ],
-            (object)[ 'id' => 3, 'nombre' => 'Sistemas' ],
-            (object)[ 'id' => 4, 'nombre' => 'Marketing' ],
-            (object)[ 'id' => 5, 'nombre' => 'Administración' ],
-        ];
-
-        return view('private.admin.colaboradores', compact('coordinadores', 'areas'));
+    public function getPaginado(Request $request)
+    {
+        $usuario = Auth::user();
+        $empresa = $this->empresaRepositorio->findOneBy('usuario_id', $usuario->id);
+        // dd($empresa);
+        $criterios = $this->obtenerCriterios($request);
+        // Creamos el query builder para las áreas
+        $query = $this->trabajadorRepositorio->getModel()->newQuery();
+        // Filtramos por la empresa del usuario autenticado
+        $query->where('empresa_id', $empresa->id);
+        // Aplicamos los criterios de búsqueda
+        $trabajadoresPag = $this->trabajadorRepositorio->obtenerPaginado($criterios, $query);
+        $trabajadoresParse = $trabajadoresPag->getCollection()->map(function ($trabajador) {
+            $trabajador->correo = $trabajador->usuario->correo ?? 'No disponible';
+            return $trabajador;
+        });
+        return $trabajadoresPag->setCollection($trabajadoresParse);
     }
 
     public function invite(Request $request)

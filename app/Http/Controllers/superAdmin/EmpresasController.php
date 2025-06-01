@@ -85,14 +85,6 @@ class EmpresasController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-
-    }
-
-    /**
      * Cambiar de estado una empresa.
      */
     public function cambiarEstado(Request $request, string $id)

@@ -1,7 +1,6 @@
-<!-- Modal Editar Empresa -->
 <div
   id="modalEmpresa"
-  class="fixed inset-0 bg-black/50 hidden z-50 opacity-0 transition-opacity duration-300"
+  class="fixed inset-0 w-screen h-screen bg-black/50 hidden z-50 opacity-0 transition-opacity duration-300"
   role="dialog"
   aria-modal="true"
   aria-labelledby="tituloModalEmpresa"
@@ -231,14 +230,12 @@
   async function abrirModalEmpresa(id) {
     idEmpresaActual = id;
 
-    // 1) Asignar action + _method al formulario (Laravel: PUT a /super-admin/empresas/{id})
     const formulario = document.getElementById('formularioEmpresa');
     formulario.action = `/super-admin/empresas/${id}`;
 
     const methodField = document.getElementById('campoMetodoEmpresa');
     methodField.innerHTML = `<input type="hidden" name="_method" value="PUT">`;
 
-    // 2) Hacer fetch para obtener datos de la empresa
     try {
       const respuesta = await fetch(`/super-admin/empresas/${id}`);
       if (!respuesta.ok) throw new Error('No se recibieron datos de la empresa');
@@ -253,7 +250,7 @@
       document.getElementById('inputActivoEmpresa').value = data.activo ? '1' : '0';
       document.getElementById('vistaPreviaAvatar').src = '/images/default-avatar.png';
 
-      // 4) Mostrar modal con animación
+      // Mostrar modal con animación
       const modal = document.getElementById('modalEmpresa');
       const contenido = document.getElementById('contenidoModalEmpresa');
 

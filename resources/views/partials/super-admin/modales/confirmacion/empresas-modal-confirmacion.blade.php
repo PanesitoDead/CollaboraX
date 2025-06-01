@@ -1,6 +1,6 @@
 <div
   id="modalCambioEstado"
-  class="fixed inset-0 bg-black/50 hidden z-50 opacity-0 transition-opacity duration-300"
+  class="fixed inset-0 w-screen h-screen bg-black/50 hidden z-50 opacity-0 transition-opacity duration-300"
   role="dialog"
   aria-modal="true"
   aria-labelledby="tituloModalCambioEstado"
