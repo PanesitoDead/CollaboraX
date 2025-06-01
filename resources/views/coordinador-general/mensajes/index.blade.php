@@ -67,10 +67,10 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between">
-                                <p class="text-sm font-medium text-gray-900 truncate">{{ $contact['name'] }}</p>
-                                <p class="text-xs text-gray-500">{{ $contact['time'] }}</p>
+                                <p class="contact-name text-sm font-medium text-gray-900 truncate">{{ $contact['name'] }}</p>
+                                <p class="contact-time text-xs text-gray-500">{{ $contact['time'] }}</p>
                             </div>
-                            <p class="text-sm text-gray-500 truncate">{{ $contact['lastMessage'] }}</p>
+                            <p class="contact-last-message text-sm text-gray-500 truncate">{{ $contact['lastMessage'] }}</p>
                         </div>
                         @if($contact['unreadCount'] > 0)
                         <div class="bg-blue-500 text-white text-xs font-medium px-2 py-1 rounded-full min-w-[20px] text-center">
@@ -444,7 +444,7 @@ function selectContact(contactId) {
             item.classList.add('bg-blue-50');
             
             // Obtener datos del contacto
-            const nameElement = item.querySelector('.text-gray-900');
+            const nameElement = item.querySelector('.contact-name');
             const onlineIndicator = item.querySelector('.bg-green-500');
             const avatarElement = item.querySelector('img');
             
@@ -513,82 +513,6 @@ function loadMessages(contactId) {
         console.error('Error:', error);
         messagesContainer.innerHTML = '<div class="flex justify-center py-4"><div class="text-red-500">Error al cargar mensajes</div></div>';
     });
-}
-
-// Enviar mensaje
-function sendMessage(e) {
-    e.preventDefault();
-    
-    const message = messageInput.value.trim();
-    if (!message && selectedFiles.length === 0 && selectedImages.length === 0) return;
-    if (!currentContactId) return;
-    
-    // Crear FormData para enviar archivos
-    const formData = new FormData();
-    formData.append('contact_id', currentContactId);
-    if (message) formData.append('message', message);
-    
-    selectedFiles.forEach((file, index) => {
-        formData.append(`files[${index}]`, file);
-    });
-    
-    selectedImages.forEach((image, index) => {
-        formData.append(`images[${index}]`, image);
-    });
-    
-    // Limpiar input y archivos inmediatamente
-    messageInput.value = '';
-    clearFiles();
-    
-    // Enviar a servidor
-    fetch('{{ route("coordinador-general.mensajes.send") }}', {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Actualizar el último mensaje en la lista de contactos
-            updateContactLastMessage(data.contact_id, data.last_message, data.time);
-            
-            // Recargar mensajes para mostrar los nuevos mensajes enviados
-            loadMessages(currentContactId);
-        } else {
-            console.error('Error al enviar el mensaje');
-            alert('Error al enviar el mensaje');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error al enviar el mensaje');
-    });
-}
-
-// Nueva función para actualizar el último mensaje en la lista de contactos
-function updateContactLastMessage(contactId, lastMessage, time) {
-    const contactItem = document.querySelector(`[data-contact-id="${contactId}"]`);
-    if (contactItem) {
-        // Actualizar el último mensaje
-        const lastMessageElement = contactItem.querySelector('.text-gray-500');
-        if (lastMessageElement) {
-            lastMessageElement.textContent = lastMessage;
-        }
-        
-        // Actualizar la hora
-        const timeElement = contactItem.querySelector('.text-xs.text-gray-500');
-        if (timeElement) {
-            timeElement.textContent = time;
-        }
-        
-        // Mover el contacto al principio de la lista si no está ya ahí
-        const contactsContainer = document.getElementById('contacts-container');
-        if (contactsContainer && contactItem !== contactsContainer.firstElementChild) {
-            contactsContainer.insertBefore(contactItem, contactsContainer.firstElementChild);
-        }
-    }
 }
 
 // Función mejorada para mostrar mensajes en la interfaz
@@ -667,6 +591,160 @@ function displayMessages(messages) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
+// Función para actualizar el último mensaje en tiempo real (estilo WhatsApp)
+function updateContactLastMessage(contactId, lastMessage, time) {
+    const contactItem = document.querySelector(`[data-contact-id="${contactId}"]`);
+    if (contactItem) {
+        // Actualizar el último mensaje
+        const lastMessageElement = contactItem.querySelector('.contact-last-message');
+        if (lastMessageElement) {
+            lastMessageElement.textContent = lastMessage;
+        }
+        
+        // Actualizar la hora
+        const timeElement = contactItem.querySelector('.contact-time');
+        if (timeElement) {
+            timeElement.textContent = time;
+        }
+        
+        // Mover el contacto al principio de la lista (comportamiento tipo WhatsApp)
+        const contactsContainer = document.getElementById('contacts-container');
+        if (contactsContainer && contactItem !== contactsContainer.firstElementChild) {
+            // Agregar efecto de transición suave
+            contactItem.style.transition = 'all 0.3s ease';
+            
+            // Mover al principio
+            contactsContainer.insertBefore(contactItem, contactsContainer.firstElementChild);
+            
+            // Si este contacto está seleccionado, mantener el fondo azul
+            if (parseInt(contactItem.dataset.contactId) === currentContactId) {
+                contactItem.classList.add('bg-blue-50');
+            }
+        }
+    }
+}
+
+// Enviar mensaje con actualización en tiempo real
+function sendMessage(e) {
+    e.preventDefault();
+    
+    const message = messageInput.value.trim();
+    if (!message && selectedFiles.length === 0 && selectedImages.length === 0) return;
+    if (!currentContactId) return;
+    
+    // Crear FormData para enviar archivos
+    const formData = new FormData();
+    formData.append('contact_id', currentContactId);
+    if (message) formData.append('message', message);
+    
+    selectedFiles.forEach((file, index) => {
+        formData.append(`files[${index}]`, file);
+    });
+    
+    selectedImages.forEach((image, index) => {
+        formData.append(`images[${index}]`, image);
+    });
+    
+    // Mostrar mensaje inmediatamente en el chat (optimistic UI)
+    if (message || selectedFiles.length > 0 || selectedImages.length > 0) {
+        const currentTime = new Date().toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
+        let previewMessage = message;
+        
+        // Si hay archivos, mostrar preview
+        if (selectedFiles.length > 0) {
+            previewMessage = previewMessage ? previewMessage : '📎 Archivo';
+        }
+        if (selectedImages.length > 0) {
+            previewMessage = previewMessage ? previewMessage : '🖼️ Imagen';
+        }
+        
+        // Actualizar inmediatamente la lista de contactos
+        updateContactLastMessage(currentContactId, previewMessage, currentTime);
+        
+        // Mostrar mensaje temporal en el chat
+        showTemporaryMessage(message, selectedFiles, selectedImages);
+    }
+    
+    // Limpiar input y archivos inmediatamente
+    messageInput.value = '';
+    clearFiles();
+    
+    // Enviar a servidor
+    fetch('{{ route("coordinador-general.mensajes.send") }}', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Recargar mensajes para mostrar la versión final desde el servidor
+            loadMessages(currentContactId);
+        } else {
+            console.error('Error al enviar el mensaje');
+            alert('Error al enviar el mensaje');
+            // Recargar para quitar el mensaje temporal
+            loadMessages(currentContactId);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al enviar el mensaje');
+        // Recargar para quitar el mensaje temporal
+        loadMessages(currentContactId);
+    });
+}
+
+// Función para mostrar mensaje temporal inmediatamente
+function showTemporaryMessage(text, files, images) {
+    const messageEl = document.createElement('div');
+    messageEl.className = 'flex justify-end fade-in temporary-message';
+    
+    const currentTime = new Date().toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
+    
+    let attachmentHtml = '';
+    const allFiles = [...files, ...images];
+    if (allFiles.length > 0) {
+        attachmentHtml = allFiles.map(file => `
+            <div class="mt-2 p-2 bg-blue-600 rounded border border-blue-400">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="${getFileIcon(file.type)}" class="w-4 h-4"></i>
+                        <div>
+                            <p class="text-xs font-medium">${file.name}</p>
+                            <p class="text-xs opacity-75">${formatFileSize(file.size)}</p>
+                        </div>
+                    </div>
+                    <span class="text-xs bg-blue-700 px-2 py-1 rounded">
+                        Enviando...
+                    </span>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    messageEl.innerHTML = `
+        <div class="max-w-xs lg:max-w-md">
+            <div class="bg-blue-500 text-white rounded-lg px-4 py-2">
+                ${text ? `<p class="text-sm">${text}</p>` : ''}
+                ${attachmentHtml}
+            </div>
+            <div class="flex items-center justify-end mt-1 space-x-1">
+                <span class="text-xs text-gray-500">${currentTime}</span>
+                <span class="text-xs text-gray-500">⏳</span>
+            </div>
+        </div>
+    `;
+    
+    messagesContainer.appendChild(messageEl);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    
+    // Reinicializar iconos
+    lucide.createIcons();
+}
+
 // Filtrar contactos por pestaña
 function filterContacts(tab) {
     activeTab = tab;
@@ -703,8 +781,8 @@ function searchContacts(query) {
     
     const contactItems = document.querySelectorAll('.contact-item');
     contactItems.forEach(item => {
-        const name = item.querySelector('.text-gray-900').textContent.toLowerCase();
-        const message = item.querySelector('.text-gray-500').textContent.toLowerCase();
+        const name = item.querySelector('.contact-name').textContent.toLowerCase();
+        const message = item.querySelector('.contact-last-message').textContent.toLowerCase();
         
         if (name.includes(query) || message.includes(query)) {
             item.classList.remove('hidden');
@@ -909,6 +987,11 @@ document.addEventListener('DOMContentLoaded', function() {
 #chat-interface {
     max-height: 100%;
     overflow: hidden;
+}
+
+/* Transición suave para contactos que se mueven */
+.contact-item {
+    transition: all 0.3s ease;
 }
 </style>
 @endsection
