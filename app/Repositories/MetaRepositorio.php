@@ -22,7 +22,7 @@ class MetaRepositorio extends RepositorioBase
 
     public function getMetasPorEquipo($equipo)
     {
-        return $this->model->where('equipo_id', $equipo)->with('tareas')->get();
+        return $this->model->where('equipo_id', $equipo)->with(['tareas', 'estado'])->get();
     }
 
     public function getMetasConProgresoPorEquipo(int $equipoId)

@@ -40,9 +40,45 @@
         <div class="text-sm text-gray-600 mb-4">
             Mostrando <span id="activityCount">0</span> actividades de todos los equipos
         </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 flex-1">
+            @foreach ($estados as $estado)
+                @php
+                    // Mapeo de colores según el estado (puedes mover esto a un helper o método del modelo Estado)
+                    $colors = [
+                        'incompleta' => ['bg' => 'bg-yellow-100', 'text' => 'text-yellow-800'],
+                        'en-proceso' => ['bg' => 'bg-blue-100', 'text' => 'text-blue-800'],
+                        'completo' => ['bg' => 'bg-green-100', 'text' => 'text-green-800'],
+                        'suspendida' => ['bg' => 'bg-red-100', 'text' => 'text-red-800'],
+                    ];
+
+                    $slug = \Illuminate\Support\Str::slug($estado->nombre); // genera ids como 'en-proceso'
+                    $color = $colors[$slug] ?? ['bg' => 'bg-gray-100', 'text' => 'text-gray-800'];
+                @endphp
+
+                <div class="bg-white rounded-lg shadow-lg hover:shadow-xl form-transition flex flex-col">
+                    <div class="p-4 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-semibold text-gray-900">{{ $estado->nombre }}</h3>
+                            <span class="{{ $color['bg'] }} {{ $color['text'] }} text-xs font-medium px-2.5 py-0.5 rounded-full" id="{{ $slug }}-count">0</span>
+                        </div>
+                    </div>
+                    <div class="p-4 space-y-3 overflow-y-auto flex-1 kanban-column" id="{{ $slug }}-column" data-estado="{{ $slug }}">
+                        <!-- Actividades se cargan con JavaScript -->
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+
+
+    <!-- Kanban Board -->
+    {{-- <div class="flex-1 p-6 min-h-screen flex flex-col">
+        <div class="text-sm text-gray-600 mb-4">
+            Mostrando <span id="activityCount">0</span> actividades de todos los equipos
+        </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 flex-1">
-            <!-- Reutilizamos este bloque para cada columna -->
             <div class="bg-white rounded-lg shadow-lg hover:shadow-xl form-transition flex flex-col">
                 <div class="p-4 border-b border-gray-200">
                     <div class="flex items-center justify-between">
@@ -51,12 +87,9 @@
                     </div>
                 </div>
                 <div class="p-4 space-y-3 overflow-y-auto flex-1 kanban-column" id="pendientes-column" data-estado="pendiente">
-                    <!-- Actividades se cargan con JavaScript -->
                 </div>
             </div>
 
-            <!-- Repite los otros 3 bloques cambiando ids y clases de color -->
-            <!-- En Proceso -->
             <div class="bg-white rounded-lg shadow-lg hover:shadow-xl form-transition flex flex-col">
                 <div class="p-4 border-b border-gray-200">
                     <div class="flex items-center justify-between">
@@ -68,7 +101,6 @@
                 </div>
             </div>
 
-            <!-- Completadas -->
             <div class="bg-white rounded-lg shadow-lg hover:shadow-xl form-transition flex flex-col">
                 <div class="p-4 border-b border-gray-200">
                     <div class="flex items-center justify-between">
@@ -80,7 +112,6 @@
                 </div>
             </div>
 
-            <!-- Retrasadas -->
             <div class="bg-white rounded-lg shadow-lg hover:shadow-xl form-transition flex flex-col">
                 <div class="p-4 border-b border-gray-200">
                     <div class="flex items-center justify-between">
@@ -92,7 +123,9 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> --}}
+
+
 </div>
 
 <!-- Create Activity Modal -->
@@ -200,548 +233,445 @@
 @endsection
 
 @push('scripts')
-<!-- Sortable.js para drag and drop -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
 <script>
-// Variables globales
-let actividades = [];
-let equiposDisponibles = [];
-let metasDisponibles = [];
-let filteredActividades = [];
-let nextId = 25;
-let sortableInstances = {};
+    // Arrays globales que ahora vendrán del servidor
+    let actividades = [];
+    let estadosDisponibles = [];
+    let metasDisponibles = [];
+    let filteredActividades = [];
 
-// Datos hardcodeados completos para carga instantánea
-const actividadesHardcoded = [
-    // Pendientes (6 actividades)
-    { id: 1, titulo: "Implementar autenticación", descripcion: "Desarrollar sistema de login y registro de usuarios", equipo: "Equipo Desarrollo", prioridad: "Alta", fechaLimite: "2024-02-15", asignadoA: "Carlos Ruiz", estado: "pendiente" },
-    { id: 2, titulo: "Diseñar landing page", descripcion: "Crear diseño para página principal del sitio web", equipo: "Equipo Marketing", prioridad: "Media", fechaLimite: "2024-02-20", asignadoA: "Ana García", estado: "pendiente" },
-    { id: 3, titulo: "Configurar base de datos", descripcion: "Establecer estructura de base de datos principal", equipo: "Equipo Desarrollo", prioridad: "Alta", fechaLimite: "2024-02-10", asignadoA: "Miguel Torres", estado: "pendiente" },
-    { id: 4, titulo: "Análisis de mercado", descripcion: "Investigar competencia y tendencias del mercado", equipo: "Equipo Ventas", prioridad: "Media", fechaLimite: "2024-02-25", asignadoA: "Laura Mendez", estado: "pendiente" },
-    { id: 5, titulo: "Preparar presentación", descripcion: "Crear slides para reunión con cliente importante", equipo: "Equipo Ventas", prioridad: "Alta", fechaLimite: "2024-02-12", asignadoA: "Roberto Silva", estado: "pendiente" },
-    { id: 6, titulo: "Documentar API", descripcion: "Crear documentación técnica completa de la API", equipo: "Equipo IT", prioridad: "Baja", fechaLimite: "2024-03-01", asignadoA: "Elena Vargas", estado: "pendiente" },
-    
-    // En Proceso (6 actividades)
-    { id: 7, titulo: "Desarrollar dashboard", descripcion: "Panel de control administrativo para gestión", equipo: "Equipo Desarrollo", prioridad: "Alta", fechaLimite: "2024-02-18", asignadoA: "Pedro López", estado: "en-proceso" },
-    { id: 8, titulo: "Campaña redes sociales", descripcion: "Estrategia de marketing digital en redes sociales", equipo: "Equipo Marketing", prioridad: "Media", fechaLimite: "2024-02-22", asignadoA: "Sofia Herrera", estado: "en-proceso" },
-    { id: 9, titulo: "Optimizar rendimiento", descripcion: "Mejorar velocidad de carga de la aplicación", equipo: "Equipo Desarrollo", prioridad: "Media", fechaLimite: "2024-02-28", asignadoA: "Diego Morales", estado: "en-proceso" },
-    { id: 10, titulo: "Seguimiento clientes", descripcion: "Contactar y dar seguimiento a leads potenciales", equipo: "Equipo Ventas", prioridad: "Alta", fechaLimite: "2024-02-16", asignadoA: "Carmen Jiménez", estado: "en-proceso" },
-    { id: 11, titulo: "Testing aplicación", descripcion: "Pruebas de funcionalidad y usabilidad", equipo: "Equipo Desarrollo", prioridad: "Alta", fechaLimite: "2024-02-20", asignadoA: "Andrés Castro", estado: "en-proceso" },
-    { id: 12, titulo: "Manual usuario", descripcion: "Guía de uso completa para clientes finales", equipo: "Equipo IT", prioridad: "Media", fechaLimite: "2024-02-26", asignadoA: "Valeria Ramos", estado: "en-proceso" },
-    
-    // Completadas (6 actividades)
-    { id: 13, titulo: "Configurar servidor", descripcion: "Setup inicial del hosting y configuración", equipo: "Equipo Desarrollo", prioridad: "Alta", fechaLimite: "2024-02-05", asignadoA: "Fernando Díaz", estado: "completada" },
-    { id: 14, titulo: "Crear logo empresa", descripcion: "Diseño de identidad visual corporativa", equipo: "Equipo Marketing", prioridad: "Media", fechaLimite: "2024-02-08", asignadoA: "Gabriela Soto", estado: "completada" },
-    { id: 15, titulo: "Definir arquitectura", descripcion: "Estructura técnica del sistema completo", equipo: "Equipo Desarrollo", prioridad: "Alta", fechaLimite: "2024-02-03", asignadoA: "Ricardo Peña", estado: "completada" },
-    { id: 16, titulo: "Estrategia contenido", descripcion: "Plan de publicaciones y contenido digital", equipo: "Equipo Marketing", prioridad: "Media", fechaLimite: "2024-02-07", asignadoA: "Mónica Reyes", estado: "completada" },
-    { id: 17, titulo: "Contactar proveedores", descripcion: "Negociar precios y términos comerciales", equipo: "Equipo Ventas", prioridad: "Baja", fechaLimite: "2024-02-06", asignadoA: "Javier Ortiz", estado: "completada" },
-    { id: 18, titulo: "Análisis competencia", descripcion: "Estudio detallado de mercado y competidores", equipo: "Equipo Marketing", prioridad: "Media", fechaLimite: "2024-02-09", asignadoA: "Patricia Luna", estado: "completada" },
-    
-    // Retrasadas (6 actividades)
-    { id: 19, titulo: "Integrar pasarela pago", descripcion: "Conectar sistema de pagos en línea", equipo: "Equipo Desarrollo", prioridad: "Alta", fechaLimite: "2024-01-30", asignadoA: "Alejandro Vega", estado: "retrasada" },
-    { id: 20, titulo: "Auditoría seguridad", descripcion: "Revisar vulnerabilidades del sistema", equipo: "Equipo IT", prioridad: "Alta", fechaLimite: "2024-01-28", asignadoA: "Cristina Flores", estado: "retrasada" },
-    { id: 21, titulo: "Capacitar equipo ventas", descripcion: "Training sobre nuevo producto y procesos", equipo: "Equipo Ventas", prioridad: "Media", fechaLimite: "2024-01-25", asignadoA: "Raúl Guerrero", estado: "retrasada" },
-    { id: 22, titulo: "Backup automático", descripcion: "Sistema de respaldos automatizado", equipo: "Equipo IT", prioridad: "Alta", fechaLimite: "2024-01-20", asignadoA: "Beatriz Campos", estado: "retrasada" },
-    { id: 23, titulo: "Optimizar SEO", descripcion: "Mejorar posicionamiento en buscadores", equipo: "Equipo Marketing", prioridad: "Media", fechaLimite: "2024-01-31", asignadoA: "Sergio Medina", estado: "retrasada" },
-    { id: 24, titulo: "Monitoreo sistema", descripcion: "Implementar alertas y métricas de rendimiento", equipo: "Equipo IT", prioridad: "Alta", fechaLimite: "2024-01-22", asignadoA: "Natalia Cruz", estado: "retrasada" }
-];
+    let nextId = 0;            // en caso de crear nuevas actividades desde cliente
+    let sortableInstances = {};
 
-const equiposHardcoded = ['Equipo Desarrollo', 'Equipo Marketing', 'Equipo Ventas', 'Equipo Operaciones', 'Equipo IT', 'Equipo RRHH'];
-
-// Inicializar con datos hardcodeados inmediatamente
-function initializeData() {
-    actividades = [...actividadesHardcoded];
-    equiposDisponibles = [...equiposHardcoded];
-    metasDisponibles = [
-        { id: 1, titulo: "Lanzamiento MVP", descripcion: "Versión mínima viable del producto" },
-        { id: 2, titulo: "Incrementar ventas 20%", descripcion: "Meta trimestral de crecimiento" },
-        { id: 3, titulo: "Mejorar satisfacción cliente", descripcion: "Alcanzar 95% de satisfacción" },
-        { id: 4, titulo: "Optimización de procesos", descripcion: "Reducir tiempos de entrega en 30%" }
-    ];
-    
-    filteredActividades = [...actividades];
-    nextId = Math.max(...actividades.map(a => a.id)) + 1;
-    
-    // Renderizar inmediatamente
-    loadActivities();
-    renderEquiposInSelects();
-    //generateTeamSummary();
-    initSortable();
-}
-
-// Cargar datos desde el controlador en background
-async function loadDataFromServer() {
-    try {
-        const actividadesResponse = await fetch('/coordinador-general/api/actividades');
-        const equiposResponse = await fetch('/coordinador-general/api/actividades/equipos');
-        const metasResponse = await fetch('/coordinador-general/api/actividades/metas');
-        
-        if (actividadesResponse.ok && equiposResponse.ok && metasResponse.ok) {
-            const serverActividades = await actividadesResponse.json();
-            const serverEquipos = await equiposResponse.json();
-            const serverMetas = await metasResponse.json();
-            
-            // Solo actualizar si los datos del servidor son diferentes
-            if (JSON.stringify(serverActividades) !== JSON.stringify(actividades)) {
-                actividades = serverActividades;
-                filteredActividades = [...actividades];
-                loadActivities();
-                //generateTeamSummary();
-                initSortable(); // Reinicializar sortable con los nuevos datos
+    // ====================================================
+    // CARGA INICIAL Y FETCH A LA API
+    // ====================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        // Primero, jalar estados y metas (para llenar selects y/o preparar columnas)
+        Promise.all([
+            fetch('/api/estados'),
+            fetch('/api/metas'),
+            fetch('/api/actividades')
+        ])
+        .then(async ([estadosRes, metasRes, actividadesRes]) => {
+            if (!estadosRes.ok || !metasRes.ok || !actividadesRes.ok) {
+                throw new Error('Error al obtener datos del servidor');
             }
-            
-            if (JSON.stringify(serverEquipos) !== JSON.stringify(equiposDisponibles)) {
-                equiposDisponibles = serverEquipos;
-                renderEquiposInSelects();
-            }
-            
-            if (JSON.stringify(serverMetas) !== JSON.stringify(metasDisponibles)) {
-                metasDisponibles = serverMetas;
-            }
-        }
-    } catch (error) {
-        console.log('Manteniendo datos hardcodeados debido a:', error.message);
-    }
-}
 
-// Renderizar equipos en selects
-function renderEquiposInSelects() {
-    const teamFilter = document.getElementById('teamFilter');
-    const equipoSelect = document.getElementById('equipoSelect');
+            estadosDisponibles = await estadosRes.json();   // ej: [{ id:1, nombre:'Pendiente', slug:'pendiente' }, …]
+            metasDisponibles   = await metasRes.json();      // ej: [{ id:1, titulo:'Lanzamiento MVP' }, …]
+            actividades       = await actividadesRes.json(); // ej: [{ id:5, titulo:'…', descripcion:'…', prioridad:'Alta', fecha_limite:'2025-06-01', asignado_a:'Juan', estado_slug:'pendiente', meta: {id:2, titulo:'…'} }, …]
 
-    const equiposHTML = equiposDisponibles.map(equipo => 
-        `<option value="${equipo}">${equipo}</option>`
-    ).join('');
+            // Inicializamos el filtrado completo
+            filteredActividades = [...actividades];
+            nextId = actividades.length > 0
+                ? Math.max(...actividades.map(a => a.id)) + 1
+                : 1;
 
-    teamFilter.innerHTML = '<option value="">Todos los equipos</option>' + equiposHTML;
-    equipoSelect.innerHTML = '<option value="">Seleccionar equipo...</option>' + equiposHTML;
-}
+            // Renderizamos el select de metas para filtrar
+            renderMetasInSelects();
 
-// Initialize the board
-document.addEventListener('DOMContentLoaded', function() {
-    lucide.createIcons();
-    // Cargar datos inmediatamente
-    initializeData();
-    // Cargar datos del servidor en background
-    loadDataFromServer();
-});
+            // Renderizamos todas las actividades en columnas
+            loadActivities();
 
-function loadActivities() {
-    const columns = {
-        'pendiente': document.getElementById('pendientes-column'),
-        'en-proceso': document.getElementById('en-proceso-column'),
-        'completada': document.getElementById('completadas-column'),
-        'retrasada': document.getElementById('retrasadas-column')
-    };
-
-    // Clear columns
-    Object.values(columns).forEach(column => column.innerHTML = '');
-
-    // Count activities by status
-    const counts = {
-        'pendiente': 0,
-        'en-proceso': 0,
-        'completada': 0,
-        'retrasada': 0
-    };
-
-    // Load activities into columns
-    filteredActividades.forEach(actividad => {
-        const column = columns[actividad.estado];
-        if (column) {
-            const activityCard = createActivityCard(actividad);
-            column.appendChild(activityCard);
-            counts[actividad.estado]++;
-        }
-    });
-
-    // Update counts
-    document.getElementById('pendientes-count').textContent = counts['pendiente'];
-    document.getElementById('en-proceso-count').textContent = counts['en-proceso'];
-    document.getElementById('completadas-count').textContent = counts['completada'];
-    document.getElementById('retrasadas-count').textContent = counts['retrasada'];
-    document.getElementById('activityCount').textContent = filteredActividades.length;
-
-    // Re-initialize icons
-    lucide.createIcons();
-}
-
-function createActivityCard(actividad) {
-    const card = document.createElement('div');
-    card.className = 'bg-white border border-gray-200 rounded-lg p-3 shadow-md hover:shadow-lg cursor-move form-transition hover-scale activity-card';
-    card.setAttribute('data-id', actividad.id);
-    
-    // Evitar que el click para arrastrar abra el modal de detalles
-    card.addEventListener('click', function(e) {
-        // Solo mostrar detalles si no estamos arrastrando
-        if (!card.classList.contains('sortable-drag')) {
-            showActivityDetails(actividad);
-        }
-    });
-
-    const priorityColors = {
-        'Alta': 'bg-red-100 text-red-800',
-        'Media': 'bg-yellow-100 text-yellow-800',
-        'Baja': 'bg-green-100 text-green-800'
-    };
-
-    card.innerHTML = `
-        <div class="flex items-start justify-between mb-2">
-            <h4 class="font-medium text-gray-900 text-sm">${actividad.titulo}</h4>
-            <span class="text-xs px-2 py-1 rounded-full ${priorityColors[actividad.prioridad]}">${actividad.prioridad}</span>
-        </div>
-        <p class="text-gray-600 text-xs mb-3">${actividad.descripcion}</p>
-        <div class="flex items-center justify-between text-xs text-gray-500">
-            <span class="bg-gray-100 px-2 py-1 rounded">${actividad.equipo}</span>
-            <span>${actividad.fechaLimite}</span>
-        </div>
-        <div class="mt-2 text-xs text-gray-600">
-            <i data-lucide="user" class="w-3 h-3 inline mr-1"></i>
-            ${actividad.asignadoA}
-        </div>
-    `;
-
-    return card;
-}
-
-// Inicializar Sortable.js para drag and drop
-function initSortable() {
-    // Destruir instancias previas si existen
-    Object.values(sortableInstances).forEach(instance => {
-        if (instance && typeof instance.destroy === 'function') {
-            instance.destroy();
-        }
-    });
-    
-    sortableInstances = {};
-    
-    // Obtener todas las columnas
-    const columns = document.querySelectorAll('.kanban-column');
-    
-    // Inicializar Sortable en cada columna
-    columns.forEach(column => {
-        const estado = column.getAttribute('data-estado');
-        
-        sortableInstances[estado] = new Sortable(column, {
-            group: 'actividades', // Permite arrastrar entre columnas
-            animation: 150, // Duración de la animación en ms
-            ghostClass: 'bg-gray-100', // Clase para el elemento fantasma durante el arrastre
-            chosenClass: 'bg-gray-200', // Clase para el elemento seleccionado
-            dragClass: 'sortable-drag', // Clase para el elemento durante el arrastre
-            
-            // Cuando se completa el arrastre
-            onEnd: function(evt) {
-                const actividadId = parseInt(evt.item.getAttribute('data-id'));
-                const nuevoEstado = evt.to.getAttribute('data-estado');
-                
-                // Actualizar el estado de la actividad en el array
-                updateActivityStatus(actividadId, nuevoEstado);
-            }
+            // Inicializar drag & drop
+            initSortable();
+        })
+        .catch(err => {
+            console.error('No se pudo cargar todo desde servidor, revisa la consola:', err);
         });
     });
-}
 
-// Actualizar el estado de una actividad
-function updateActivityStatus(actividadId, nuevoEstado) {
-    // Encontrar la actividad en el array
-    const actividad = actividades.find(a => a.id === actividadId);
-    
-    if (actividad) {
-        const estadoAnterior = actividad.estado;
+    // ====================================================
+    // RENDERIZAR SELECT DE METAS
+    // ====================================================
+    function renderMetasInSelects() {
+        const metaFilter = document.getElementById('metaFilter'); // asume que en tu HTML tienes <select id="metaFilter">
         
-        // Actualizar el estado
-        actividad.estado = nuevoEstado;
-        
-        // Actualizar también en el array filtrado si existe
-        const actividadFiltrada = filteredActividades.find(a => a.id === actividadId);
-        if (actividadFiltrada) {
-            actividadFiltrada.estado = nuevoEstado;
-        }
-        
-        // Actualizar contadores
-        updateStatusCounts();
-        
-        // Actualizar resumen por equipo
-        //generateTeamSummary();
-        
-        // Mostrar notificación
-        const estadosLabels = {
-            'pendiente': 'Pendiente',
-            'en-proceso': 'En Proceso',
-            'completada': 'Completada',
-            'retrasada': 'Retrasada'
-        };
-        
-        showToast(`Actividad "${actividad.titulo}" movida a ${estadosLabels[nuevoEstado]}`);
-        
-        // Aquí se podría hacer una llamada al servidor para persistir el cambio
-        // saveActivityStatus(actividadId, nuevoEstado);
+        if (!metaFilter) return;
+
+        // Opcional: puedes agregar 'Todas las metas' o vacío
+        let html = '<option value="">Todas las metas</option>';
+
+        metasDisponibles.forEach(meta => {
+            html += `<option value="${meta.id}">${meta.titulo}</option>`;
+        });
+
+        metaFilter.innerHTML = html;
     }
-}
 
-// Actualizar contadores de actividades por estado
-function updateStatusCounts() {
-    const counts = {
-        'pendiente': 0,
-        'en-proceso': 0,
-        'completada': 0,
-        'retrasada': 0
-    };
-    
-    filteredActividades.forEach(actividad => {
-        if (counts[actividad.estado] !== undefined) {
-            counts[actividad.estado]++;
+    // ====================================================
+    // CARGAR ACTIVIDADES EN CADA COLUMNA
+    // ====================================================
+    function loadActivities() {
+        // Obtenemos dinámicamente todas las columnas según los estados disponibles
+        // Cada columna ya debería existir en el HTML generada por Blade con data-estado="{{ $slug }}"
+        const columns = {};
+        estadosDisponibles.forEach(est => {
+            const slug = est.slug; // ej: 'pendiente','en-proceso','completada','retrasada',…
+            const colEl = document.querySelector(`.kanban-column[data-estado="${slug}"]`);
+            if (colEl) {
+                columns[slug] = colEl;
+                colEl.innerHTML = ''; // limpiamos antes de re-llenar
+            }
+        });
+
+        // Contadores de forma dinámica
+        const counts = {};
+        estadosDisponibles.forEach(est => {
+            counts[est.slug] = 0;
+        });
+
+        // Iteramos sobre las actividades filtradas y las insertamos en su columna
+        filteredActividades.forEach(act => {
+            const estadoSlug = act.estado_slug; // suponemos que tu API retorna `estado_slug`
+            const column = columns[estadoSlug];
+            if (column) {
+                const card = createActivityCard(act);
+                column.appendChild(card);
+                counts[estadoSlug]++;
+            }
+        });
+
+        // Actualizar los badges de cada estado (asumiendo que en Blade el span tiene id="{slug}-count")
+        estadosDisponibles.forEach(est => {
+            const slug = est.slug;
+            const badge = document.getElementById(`${slug}-count`);
+            if (badge) badge.textContent = counts[slug] || 0;
+        });
+
+        // Total de actividades mostradas
+        const totalEl = document.getElementById('activityCount');
+        if (totalEl) totalEl.textContent = filteredActividades.length;
+    }
+
+    // ====================================================
+    // CREAR LA CARTA DE CADA ACTIVIDAD
+    // ====================================================
+    function createActivityCard(actividad) {
+        const card = document.createElement('div');
+        card.className = 'bg-white border border-gray-200 rounded-lg p-3 shadow-md hover:shadow-lg cursor-move form-transition hover-scale activity-card';
+        card.setAttribute('data-id', actividad.id);
+
+        // Si tienen datos adicionales (por ejemplo: meta), puedes mostrarlos también si gustas
+        // Mapeo de colores según prioridad
+        const priorityColors = {
+            'Alta': 'bg-red-100 text-red-800',
+            'Media': 'bg-yellow-100 text-yellow-800',
+            'Baja': 'bg-green-100 text-green-800'
+        };
+
+        // Construimos el innerHTML con los campos que sí trae tu API:
+        // - actividad.titulo
+        // - actividad.descripcion
+        // - actividad.prioridad
+        // - actividad.fecha_limite (o fechaLimite si lo transformas en el controlador)
+        // - actividad.asignado_a
+        // - (opcional) actividad.meta.titulo
+        card.innerHTML = `
+            <div class="flex items-start justify-between mb-2">
+                <h4 class="font-medium text-gray-900 text-sm">${actividad.titulo}</h4>
+                <span class="text-xs px-2 py-1 rounded-full ${priorityColors[actividad.prioridad] || 'bg-gray-100 text-gray-800'}">${actividad.prioridad}</span>
+            </div>
+            <p class="text-gray-600 text-xs mb-2">${actividad.descripcion}</p>
+            <div class="flex items-center justify-between text-xs text-gray-500 mb-2">
+                <span>${actividad.fecha_limite}</span>
+                ${actividad.meta ? `<span class="italic text-xs text-gray-400">Meta: ${actividad.meta.titulo}</span>` : ''}
+            </div>
+            <div class="mt-2 text-xs text-gray-600 flex items-center">
+                <i data-lucide="user" class="w-3 h-3 inline mr-1"></i>
+                ${actividad.asignado_a}
+            </div>
+        `;
+
+        // Cuando clickean la tarjeta, abrimos el modal de detalles
+        card.addEventListener('click', function(e) {
+            if (!card.classList.contains('sortable-drag')) {
+                showActivityDetails(actividad);
+            }
+        });
+
+        return card;
+    }
+
+    // ====================================================
+    // INICIALIZAR SORTABLE.JS PARA ARRASTRE
+    // ====================================================
+    function initSortable() {
+        // Destruir instancias anteriores
+        Object.values(sortableInstances).forEach(instance => {
+            if (instance && typeof instance.destroy === 'function') {
+                instance.destroy();
+            }
+        });
+        sortableInstances = {};
+
+        // Recolectamos todas las columnas que Blade generó (tienen la clase .kanban-column)
+        const columns = document.querySelectorAll('.kanban-column');
+
+        columns.forEach(column => {
+            const estado = column.getAttribute('data-estado');
+            sortableInstances[estado] = new Sortable(column, {
+                group: 'actividades',
+                animation: 150,
+                ghostClass: 'bg-gray-100',
+                chosenClass: 'bg-gray-200',
+                dragClass: 'sortable-drag',
+                onEnd: function(evt) {
+                    const actividadId = parseInt(evt.item.getAttribute('data-id'));
+                    const nuevoEstado = evt.to.getAttribute('data-estado');
+                    updateActivityStatus(actividadId, nuevoEstado);
+                }
+            });
+        });
+    }
+
+    // ====================================================
+    // ACTUALIZAR ESTADO DE LA ACTIVIDAD (CLIENTE → SERVIDOR)
+    // ====================================================
+    function updateActivityStatus(actividadId, nuevoEstado) {
+        const actividad = actividades.find(a => a.id === actividadId);
+        if (!actividad) return;
+
+        actividad.estado_slug = nuevoEstado;
+
+        // Actualizar en el array de filtradas
+        const idx = filteredActividades.findIndex(a => a.id === actividadId);
+        if (idx > -1) filteredActividades[idx].estado_slug = nuevoEstado;
+
+        // Actualizar contadores en pantalla (sin recargar todo)
+        updateStatusCounts();
+
+        // Mostrar notificación
+        const estadosLabels = {};
+        estadosDisponibles.forEach(e => {
+            estadosLabels[e.slug] = e.nombre;
+        });
+        showToast(`Actividad "${actividad.titulo}" movida a ${estadosLabels[nuevoEstado]}`);
+
+        // Llamada al endpoint para persistir (opcional, depende de tu API)
+        fetch(`/api/actividades/${actividadId}/cambiar-estado`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            body: JSON.stringify({ estado_slug: nuevoEstado })
+        })
+        .then(res => {
+            if (!res.ok) console.error('No se pudo actualizar el estado en el servidor');
+        })
+        .catch(err => console.error('Error en fetch al actualizar estado:', err));
+    }
+
+    function updateStatusCounts() {
+        const counts = {};
+        estadosDisponibles.forEach(e => counts[e.slug] = 0);
+        filteredActividades.forEach(a => {
+            if (counts[a.estado_slug] !== undefined) {
+                counts[a.estado_slug]++;
+            }
+        });
+        estadosDisponibles.forEach(e => {
+            const badge = document.getElementById(`${e.slug}-count`);
+            if (badge) badge.textContent = counts[e.slug];
+        });
+        const totalEl = document.getElementById('activityCount');
+        if (totalEl) totalEl.textContent = filteredActividades.length;
+    }
+
+    // ====================================================
+    // FILTRADO POR BÚSQUEDA Y META
+    // ====================================================
+    function filterActivities() {
+        const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+        const metaFilterValue = document.getElementById('metaFilter')?.value;
+
+        filteredActividades = actividades.filter(act => {
+            const matchesSearch = act.titulo.toLowerCase().includes(searchTerm) ||
+                                  act.descripcion.toLowerCase().includes(searchTerm);
+
+            const matchesMeta = !metaFilterValue || (act.meta && act.meta.id.toString() === metaFilterValue);
+
+            return matchesSearch && matchesMeta;
+        });
+
+        loadActivities();
+        initSortable();
+    }
+
+    // Si usas input de búsqueda y select de meta, agrégalos con event listeners:
+    document.addEventListener('input', function(e) {
+        if (e.target && e.target.id === 'searchInput') {
+            filterActivities();
         }
     });
-    
-    document.getElementById('pendientes-count').textContent = counts['pendiente'];
-    document.getElementById('en-proceso-count').textContent = counts['en-proceso'];
-    document.getElementById('completadas-count').textContent = counts['completada'];
-    document.getElementById('retrasadas-count').textContent = counts['retrasada'];
-}
-
-// Función para guardar el cambio de estado en el servidor (simulada)
-function saveActivityStatus(actividadId, nuevoEstado) {
-    // Aquí iría el código para enviar la actualización al servidor
-    console.log(`Guardando cambio de estado para actividad ${actividadId}: ${nuevoEstado}`);
-    
-    // Ejemplo de cómo sería con fetch:
-    /*
-    fetch('/coordinador-general/api/actividades/actualizar-estado', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify({
-            id: actividadId,
-            estado: nuevoEstado
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Actualización exitosa:', data);
-    })
-    .catch(error => {
-        console.error('Error al actualizar:', error);
-    });
-    */
-}
-
-function filterActivities() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const teamFilter = document.getElementById('teamFilter').value;
-
-    filteredActividades = actividades.filter(actividad => {
-        const matchesSearch = actividad.titulo.toLowerCase().includes(searchTerm) || 
-                            actividad.descripcion.toLowerCase().includes(searchTerm);
-        const matchesTeam = !teamFilter || actividad.equipo === teamFilter;
-
-        return matchesSearch && matchesTeam;
+    document.addEventListener('change', function(e) {
+        if (e.target && e.target.id === 'metaFilter') {
+            filterActivities();
+        }
     });
 
-    loadActivities();
-    initSortable(); // Reinicializar sortable después de filtrar
-}
+    // ====================================================
+    // MOSTRAR DETALLES EN UN MODAL
+    // ====================================================
+    function showActivityDetails(actividad) {
+        const modal = document.getElementById('detailsModal');
+        const title = document.getElementById('activityTitle');
+        const details = document.getElementById('activityDetails');
 
-// function generateTeamSummary() {
-//     const teamSummary = document.getElementById('teamSummary');
-//     const teamStats = {};
+        // Mapeo dinámico de colores según estado y prioridad
+        const priorityColors = {
+            'Alta': 'bg-red-100 text-red-800',
+            'Media': 'bg-yellow-100 text-yellow-800',
+            'Baja': 'bg-green-100 text-green-800'
+        };
+        const statusColors = {};
+        const statusLabels = {};
+        estadosDisponibles.forEach(e => {
+            // Ej: asumiendo que en tu modelo Estado definiste clases CSS o las mapeas aquí
+            const mapeo = {
+                'pendiente': ['bg-yellow-100','text-yellow-800'],
+                'en-proceso': ['bg-blue-100','text-blue-800'],
+                'completada': ['bg-green-100','text-green-800'],
+                'retrasada': ['bg-red-100','text-red-800']
+            };
+            if (mapeo[e.slug]) {
+                statusColors[e.slug] = mapeo[e.slug].join(' ');
+            } else {
+                statusColors[e.slug] = 'bg-gray-100 text-gray-800';
+            }
+            statusLabels[e.slug] = e.nombre;
+        });
 
-//     // Calculate stats for each team
-//     equiposDisponibles.forEach(equipo => {
-//         teamStats[equipo] = {
-//             pendiente: 0,
-//             'en-proceso': 0,
-//             completada: 0,
-//             retrasada: 0,
-//             total: 0
-//         };
-//     });
-
-//     actividades.forEach(actividad => {
-//         if (teamStats[actividad.equipo]) {
-//             teamStats[actividad.equipo][actividad.estado]++;
-//             teamStats[actividad.equipo].total++;
-//         }
-//     });
-
-//     // Generate HTML for each team
-//     const summaryHTML = Object.entries(teamStats).map(([equipo, stats]) => {
-//         if (stats.total === 0) return '';
-
-//         const pendientePercent = (stats.pendiente / stats.total) * 100;
-//         const procesoPercent = (stats['en-proceso'] / stats.total) * 100;
-//         const completadaPercent = (stats.completada / stats.total) * 100;
-//         const retrasadaPercent = (stats.retrasada / stats.total) * 100;
-
-//         return `
-//             <div>
-//                 <div class="flex items-center justify-between mb-2">
-//                     <h4 class="font-medium text-gray-900">${equipo}</h4>
-//                     <span class="text-sm text-gray-500">${stats.total} actividades</span>
-//                 </div>
-//                 <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
-//                     <div class="h-2 rounded-full flex">
-//                         <div class="bg-yellow-500 h-2 rounded-l-full" style="width: ${pendientePercent}%"></div>
-//                         <div class="bg-blue-500 h-2" style="width: ${procesoPercent}%"></div>
-//                         <div class="bg-green-500 h-2" style="width: ${completadaPercent}%"></div>
-//                         <div class="bg-red-500 h-2 rounded-r-full" style="width: ${retrasadaPercent}%"></div>
-//                     </div>
-//                 </div>
-//                 <div class="flex items-center justify-between text-xs text-gray-600">
-//                     <span><span class="inline-block w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>Pendientes (${stats.pendiente})</span>
-//                     <span><span class="inline-block w-2 h-2 bg-blue-500 rounded-full mr-1"></span>En progreso (${stats['en-proceso']})</span>
-//                     <span><span class="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>Completadas (${stats.completada})</span>
-//                     <span><span class="inline-block w-2 h-2 bg-red-500 rounded-full mr-1"></span>Retrasadas (${stats.retrasada})</span>
-//                 </div>
-//             </div>
-//         `;
-//     }).join('');
-
-//     teamSummary.innerHTML = summaryHTML;
-// }
-
-function showActivityDetails(actividad) {
-    const modal = document.getElementById('detailsModal');
-    const title = document.getElementById('activityTitle');
-    const details = document.getElementById('activityDetails');
-
-    title.textContent = actividad.titulo;
-
-    const priorityColors = {
-        'Alta': 'bg-red-100 text-red-800',
-        'Media': 'bg-yellow-100 text-yellow-800',
-        'Baja': 'bg-green-100 text-green-800'
-    };
-
-    const statusColors = {
-        'pendiente': 'bg-yellow-100 text-yellow-800',
-        'en-proceso': 'bg-blue-100 text-blue-800',
-        'completada': 'bg-green-100 text-green-800',
-        'retrasada': 'bg-red-100 text-red-800'
-    };
-
-    const statusLabels = {
-        'pendiente': 'Pendiente',
-        'en-proceso': 'En Proceso',
-        'completada': 'Completada',
-        'retrasada': 'Retrasada'
-    };
-
-    details.innerHTML = `
-        <div class="space-y-3">
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Descripción</label>
-                <p class="text-gray-900">${actividad.descripcion}</p>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
+        title.textContent = actividad.titulo;
+        details.innerHTML = `
+            <div class="space-y-3">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Equipo</label>
-                    <p class="text-gray-900">${actividad.equipo}</p>
+                    <label class="block text-sm font-medium text-gray-700">Descripción</label>
+                    <p class="text-gray-900">${actividad.descripcion}</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Meta</label>
+                        <p class="text-gray-900">${actividad.meta ? actividad.meta.titulo : '—'}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Prioridad</label>
+                        <span class="inline-block px-2 py-1 text-xs rounded-full ${priorityColors[actividad.prioridad] || 'bg-gray-100 text-gray-800'}">${actividad.prioridad}</span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Estado</label>
+                        <span class="inline-block px-2 py-1 text-xs rounded-full ${statusColors[actividad.estado_slug]}">${statusLabels[actividad.estado_slug]}</span>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Fecha límite</label>
+                        <p class="text-gray-900">${actividad.fecha_limite}</p>
+                    </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Prioridad</label>
-                    <span class="inline-block px-2 py-1 text-xs rounded-full ${priorityColors[actividad.prioridad]}">${actividad.prioridad}</span>
+                    <label class="block text-sm font-medium text-gray-700">Asignado a</label>
+                    <p class="text-gray-900">${actividad.asignado_a}</p>
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Estado</label>
-                    <span class="inline-block px-2 py-1 text-xs rounded-full ${statusColors[actividad.estado]}">${statusLabels[actividad.estado]}</span>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Fecha límite</label>
-                    <p class="text-gray-900">${actividad.fechaLimite}</p>
-                </div>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Asignado a</label>
-                <p class="text-gray-900">${actividad.asignadoA}</p>
-            </div>
-        </div>
-    `;
+        `;
 
-    modal.classList.remove('hidden');
-    setTimeout(() => {
-        modal.classList.remove('opacity-0');
-        document.getElementById('detailsModalContent').classList.remove('scale-95');
-    }, 10);
-}
+        // Mostrar modal con animación
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            document.getElementById('detailsModalContent').classList.remove('scale-95');
+        }, 10);
+    }
 
-function closeDetailsModal() {
-    const modal = document.getElementById('detailsModal');
-    const content = document.getElementById('detailsModalContent');
-    
-    modal.classList.add('opacity-0');
-    content.classList.add('scale-95');
-    
-    setTimeout(() => {
-        modal.classList.add('hidden');
-    }, 300);
-}
+    function closeDetailsModal() {
+        const modal = document.getElementById('detailsModal');
+        const content = document.getElementById('detailsModalContent');
+        
+        modal.classList.add('opacity-0');
+        content.classList.add('scale-95');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
 
-function openCreateModal() {
-    const modal = document.getElementById('createModal');
-    modal.classList.remove('hidden');
-    setTimeout(() => {
-        modal.classList.remove('opacity-0');
-        document.getElementById('createModalContent').classList.remove('scale-95');
-    }, 10);
-}
+    // ====================================================
+    // CREAR NUEVA ACTIVIDAD DESDE EL CLIENTE (OPCIONAL)
+    // ====================================================
+    function openCreateModal() {
+        const modal = document.getElementById('createModal');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            document.getElementById('createModalContent').classList.remove('scale-95');
+        }, 10);
+    }
 
-function closeCreateModal() {
-    const modal = document.getElementById('createModal');
-    const content = document.getElementById('createModalContent');
-    
-    modal.classList.add('opacity-0');
-    content.classList.add('scale-95');
-    
-    setTimeout(() => {
-        modal.classList.add('hidden');
-    }, 300);
-}
+    function closeCreateModal() {
+        const modal = document.getElementById('createModal');
+        const content = document.getElementById('createModalContent');
+        
+        modal.classList.add('opacity-0');
+        content.classList.add('scale-95');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
 
-function createActivity() {
-    const form = document.getElementById('createActivityForm');
-    const formData = new FormData(form);
+    function createActivity() {
+        const form = document.getElementById('createActivityForm');
+        const formData = new FormData(form);
 
-    const nuevaActividad = {
-        id: nextId++,
-        titulo: formData.get('titulo'),
-        descripcion: formData.get('descripcion'),
-        equipo: formData.get('equipo'),
-        prioridad: formData.get('prioridad'),
-        fechaLimite: formData.get('fechaLimite'),
-        asignadoA: formData.get('asignadoA'),
-        estado: 'pendiente'
-    };
+        // Asumimos que tu formulario en el HTML ahora incluye:
+        // nombre="titulo", "descripcion", "prioridad", "fecha_limite", "asignado_a", "meta_id"
+        const nuevaActividad = {
+            id: nextId++,
+            titulo: formData.get('titulo'),
+            descripcion: formData.get('descripcion'),
+            prioridad: formData.get('prioridad'),
+            fecha_limite: formData.get('fecha_limite'),
+            asignado_a: formData.get('asignado_a'),
+            estado_slug: 'pendiente',
+            meta: metasDisponibles.find(m => m.id.toString() === formData.get('meta_id')) || null
+        };
 
-    actividades.push(nuevaActividad);
-    filteredActividades = [...actividades];
-    loadActivities();
-    //generateTeamSummary();
-    initSortable(); // Reinicializar sortable después de añadir actividad
-    closeCreateModal();
-    showToast('Actividad creada correctamente');
-    form.reset();
-}
+        // La agregamos localmente y recargamos
+        actividades.push(nuevaActividad);
+        filteredActividades = [...actividades];
+        loadActivities();
+        initSortable();
+        closeCreateModal();
+        showToast('Actividad creada correctamente');
 
-function showToast(message) {
-    const toast = document.getElementById('custom-toast');
-    const toastMessage = document.getElementById('custom-toast-message');
-    
-    toastMessage.textContent = message;
-    toast.classList.remove('translate-x-full', 'opacity-0');
-    toast.classList.add('translate-x-0', 'opacity-100');
-    
-    setTimeout(() => {
-        toast.classList.remove('translate-x-0', 'opacity-100');
-        toast.classList.add('translate-x-full', 'opacity-0');
-    }, 3000);
-}
+        // Opcional: también puedes mandar un POST a tu API para guardarla permanentemente
+        // fetch('/api/actividades', { method:'POST', headers:{ 'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}' },
+        // body: JSON.stringify(nuevaActividad) })
+        //   .then(res => res.json()).then(data => { /* actualizar id real si viene del servidor */ });
+        
+        form.reset();
+    }
+
+    // ====================================================
+    // TOAST (NOTIFICACIÓN)
+    // ====================================================
+    function showToast(message) {
+        const toast = document.getElementById('custom-toast');
+        const toastMessage = document.getElementById('custom-toast-message');
+        
+        toastMessage.textContent = message;
+        toast.classList.remove('translate-x-full', 'opacity-0');
+        toast.classList.add('translate-x-0', 'opacity-100');
+        
+        setTimeout(() => {
+            toast.classList.remove('translate-x-0', 'opacity-100');
+            toast.classList.add('translate-x-full', 'opacity-0');
+        }, 3000);
+    }
 </script>
+
 
 <style>
 .sortable-ghost {

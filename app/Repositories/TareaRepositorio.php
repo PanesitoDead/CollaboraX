@@ -18,7 +18,7 @@ class TareaRepositorio extends RepositorioBase
 
     public function getTareasPorEquipo(int $equipoId)
     {
-        return $this->model
+        return $this->model->with(['meta.estado', 'estado'])
             ->whereHas('meta', function ($query) use ($equipoId) {
                 $query->where('equipo_id', $equipoId);
             })

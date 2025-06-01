@@ -120,6 +120,12 @@ Route::get('/colaborador/configuracion', [\App\Http\Controllers\colaborador\Conf
 
     Route::get('/coord-equipo/actividades', [ActividadesCoordinadorController::class, 'index'])->name('coord-equipo.actividades');
 
+    //API
+    Route::get('/coord-equipo/api/actividades/equipo', [ActividadesCoordinadorController::class, 'actividadesPorEquipo'])->name('api.coord-equipo.actividades.equipo');
+    Route::get('/coord-equipo/api/estados', [ActividadesCoordinadorController::class, 'estados'])->name('api.coord-equipo.estados');
+    Route::get('/coord-equipo/api/metas/equipo', [ActividadesCoordinadorController::class, 'metasPorEquipo'])->name('api.coord-equipo.metas.equipo');
+    Route::post('/coord-equipo/api/actividades/{id}/cambiar-estado', [ActividadesCoordinadorController::class, 'actualizarEstadoActividad'])->name('api.coord-equipo.actividades.estado');
+
 Route::middleware('auth')->group(function () {
     // Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     // Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
