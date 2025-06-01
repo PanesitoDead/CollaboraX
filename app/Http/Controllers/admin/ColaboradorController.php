@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\admin;
 
 use App\Http\Controllers\Controller;
+use App\Repositories\AreaRepositorio;
 use App\Repositories\EmpresaRepositorio;
 use App\Repositories\TrabajadorRepositorio;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -18,15 +19,32 @@ class ColaboradorController extends Controller
 
     protected TrabajadorRepositorio $trabajadorRepositorio;
 
-    public function __construct(EmpresaRepositorio $empresaRepositorio, TrabajadorRepositorio $trabajadorRepositorio)
+    protected AreaRepositorio $areaRepositorio;
+
+    public function __construct(EmpresaRepositorio $empresaRepositorio, TrabajadorRepositorio $trabajadorRepositorio, AreaRepositorio $areaRepositorio)
     {
         $this->empresaRepositorio = $empresaRepositorio;
         $this->trabajadorRepositorio = $trabajadorRepositorio;
+        $this->areaRepositorio = $areaRepositorio;
+    }
+
+    public function getEmpresa()
+    {
+        $usuario = Auth::user();
+        $empresa = $this->empresaRepositorio->findOneBy('usuario_id', $usuario->id);
+        if (!$empresa) {
+            return redirect()->route('admin.dashboard')->with('error', 'No se encontró la empresa asociada al usuario.');
+        }
+        return $empresa;
     }
     public function index(Request $request)
     {
+        $empresa = $this->getEmpresa();
+        $areas = $this->areaRepositorio->findBy('empresa_id', $empresa->id);
+
         $coordinadores = $this->getPaginado($request);
         return view('private.admin.colaboradores', [
+            'areas' => $areas,
             'coordinadores' => $coordinadores,
         ]);
     }
@@ -35,7 +53,7 @@ class ColaboradorController extends Controller
     {
         $usuario = Auth::user();
         $empresa = $this->empresaRepositorio->findOneBy('usuario_id', $usuario->id);
-        // dd($empresa);
+
         $criterios = $this->obtenerCriterios($request);
         // Creamos el query builder para las áreas
         $query = $this->trabajadorRepositorio->getModel()->newQuery();
@@ -45,25 +63,10 @@ class ColaboradorController extends Controller
         $trabajadoresPag = $this->trabajadorRepositorio->obtenerPaginado($criterios, $query);
         $trabajadoresParse = $trabajadoresPag->getCollection()->map(function ($trabajador) {
             $trabajador->correo = $trabajador->usuario->correo ?? 'No disponible';
+            $trabajador->fecha_registro = Carbon::parse($trabajador->usuario->fecha_registro)->format('d/m/Y');
             return $trabajador;
         });
         return $trabajadoresPag->setCollection($trabajadoresParse);
-    }
-
-    public function invite(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email|unique:users,email',
-            'nombre' => 'required|string|max:255',
-            'area_id' => 'required|exists:areas,id',
-            'mensaje' => 'nullable|string',
-        ]);
-
-        // Lógica para enviar invitación
-        // Mail::to($request->email)->send(new InvitacionColaborador($request->all()));
-
-        return redirect()->route('admin.colaboradores.index')
-            ->with('success', 'Invitación enviada correctamente.');
     }
 
     /**
@@ -79,7 +82,7 @@ class ColaboradorController extends Controller
      */
     public function store(Request $request)
     {
-        //
+       
     }
 
     /**
@@ -87,7 +90,15 @@ class ColaboradorController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $trabajador = $this->trabajadorRepositorio->getById($id);
+        if (!$trabajador) {
+            return redirect()->route('admin.colaboradores.index')->with('error', 'Colaborador no encontrado.');
+        }
+
+        // Agregamos el campo correo
+        $trabajador->correo = $trabajador->usuario->correo ?? 'No disponible';
+        $trabajador->fecha_registro = Carbon::parse($trabajador->usuario->fecha_registro)->format('d/m/Y');
+        return response()->json($trabajador);
     }
 
     /**

@@ -67,6 +67,9 @@ class TrabajadorRepositorio extends RepositorioBase
                 case 'id':
                     $consulta->where('id', $value);
                     break;
+                case 'rol_id':
+                    $this->aplicarJoinCondicional($consulta, 'usuarios', 'usuario_id', '=', 'usuarios.id');
+                    $consulta->where('usuarios.rol_id', $value);
                 default:
                     $consulta->where($key, $value);
                     break;
