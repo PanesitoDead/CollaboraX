@@ -7,7 +7,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">Gestión de Metas</h1>
-                <p class="text-gray-600 mt-1">Supervisa y gestiona las metas de todos los equipos</p>
+                <p class="text-gray-600 mt-1">Supervisa y gestiona las metas de todos los equipos{{ isset($empresa) ? ' de ' . $empresa->nombre : '' }}</p>
             </div>
             <button onclick="openCreateModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium tab-transition hover-scale">
                 <i data-lucide="plus" class="w-4 h-4 inline mr-2"></i>
@@ -628,4 +628,46 @@ document.addEventListener('keydown', function(event) {
     }
 });
 </script>
+
+<style>
+/* Animaciones y transiciones */
+.slide-in {
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.hover-scale {
+    transition: transform 0.2s ease-in-out;
+}
+
+.hover-scale:hover {
+    transform: scale(1.02);
+}
+
+.form-transition {
+    transition: all 0.3s ease;
+}
+
+.tab-transition {
+    transition: all 0.2s ease;
+}
+
+.meta-card {
+    transition: all 0.3s ease;
+}
+
+.meta-card:hover {
+    transform: translateY(-2px);
+}
+</style>
 @endsection

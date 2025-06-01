@@ -179,7 +179,7 @@ route::post('coordinador-general/equipos/{id}/miembros', [EquiposController::cla
 
 
 //CRUD DE REUNIONES
-Route::get('/coordinador-general/reuniones', [ReunionesController::class, 'index'])->name('coordinador-general.reuniones');
+
 Route::get('/coordinador-general/reuniones', [ReunionesController::class, 'index'])->name('coordinador-general.reuniones');
 Route::post('/coordinador-general/reuniones', [ReunionesController::class, 'store'])->name('coordinador-general.reuniones.store');
 Route::put('/coordinador-general/reuniones/{id}', [ReunionesController::class, 'update'])->name('coordinador-general.reuniones.update');
@@ -190,7 +190,6 @@ Route::post('/coordinador-general/reuniones/{id}/join', [ReunionesController::cl
 Route::get('/coordinador-general/metas', [MetasController::class, 'index'])->name('coordinador-general.metas');
 route::post('/coordinador-general/metas', [MetasController::class, 'store'])->name('coordinador-general.metas.store');
 Route::get('/coordinador-general/metas/{id}', [MetasController::class, 'show'])->name('coordinador-general.metas.show');
-Route::get('/coordinador-general/metas/{id}/edit', [MetasController::class, 'edit'])->name('coordinador-general.metas.edit');
 Route::put('/coordinador-general/metas/{id}', [MetasController::class, 'update'])->name('coordinador-general.metas.update');
 Route::delete('/coordinador-general/metas/{id}', [MetasController::class, 'destroy'])->name('coordinador-general.metas.destroy');
 

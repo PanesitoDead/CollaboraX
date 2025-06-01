@@ -7,6 +7,8 @@ use App\Repositories\MetaRepositorio;
 use App\Repositories\EquipoRepositorio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class MetasController extends Controller
 {
@@ -22,15 +24,47 @@ class MetasController extends Controller
     public function index()
     {
         try {
-            // Por ahora usaremos empresa ID = 1 para pruebas
-            $empresaId = 1;
+            // Obtener la empresa del coordinador general autenticado
+            $user = Auth::user();
+            $trabajador = $user->trabajador;
             
-            // Obtener SOLO metas de equipos válidos de la empresa
-            $metas = $this->metaRepositorio->getAllByEmpresa($empresaId);
+            if (!$trabajador) {
+                return back()->with('error', 'No se encontró información del trabajador');
+            }
+
+            // Obtener la empresa del trabajador directamente por ID
+            $empresaId = $trabajador->empresa_id;
+            if (!$empresaId) {
+                return back()->with('error', 'No se encontró la empresa asociada al trabajador');
+            }
+
+            $empresa = DB::table('empresas')->find($empresaId);
+            if (!$empresa) {
+                return back()->with('error', 'No se encontró la empresa en la base de datos');
+            }
             
-            // Obtener TODOS los equipos válidos de la empresa (con coordinador válido)
-            $equipos = $this->equipoRepositorio->getAllByEmpresa($empresaId);
+            // Obtener las áreas asignadas al coordinador general
+            $areasCoordinador = $this->equipoRepositorio->getAreasCoordinadorGeneral($trabajador->id);
+            
+            if ($areasCoordinador->isEmpty()) {
+                return back()->with('error', 'No tienes áreas asignadas como coordinador general');
+            }
+
+            // Obtener SOLO metas de equipos válidos de las áreas del coordinador
+            $metas = $this->metaRepositorio->getMetasByAreas($areasCoordinador->pluck('id')->toArray());
+            
+            // Obtener TODOS los equipos válidos de las áreas del coordinador (con coordinador válido)
+            $equipos = $this->equipoRepositorio->getEquiposByAreas($areasCoordinador->pluck('id')->toArray());
             $estados = $this->metaRepositorio->getEstadosDisponibles();
+
+            // Debug: Ver qué se está obteniendo
+            Log::info('Datos obtenidos para coordinador general - metas', [
+                'empresa_id' => $empresaId,
+                'trabajador_id' => $trabajador->id,
+                'areas_count' => $areasCoordinador->count(),
+                'metas_count' => $metas->count(),
+                'equipos_count' => $equipos->count()
+            ]);
 
             // Transformar datos para la vista
             $metasTransformadas = $metas->map(function($meta) {
@@ -58,7 +92,7 @@ class MetasController extends Controller
                 ];
             });
 
-            // Transformar equipos para la vista (SOLO equipos sin metas)
+            // Transformar equipos para la vista
             $equiposTransformados = $equipos->map(function($equipo) {
                 return [
                     'id' => $equipo->id,
@@ -69,7 +103,8 @@ class MetasController extends Controller
             return view('coordinador-general.metas.index', [
                 'metas' => $metasTransformadas,
                 'equipos' => $equiposTransformados,
-                'estados' => $estados
+                'estados' => $estados,
+                'empresa' => $empresa
             ]);
 
         } catch (\Exception $e) {
@@ -89,10 +124,24 @@ class MetasController extends Controller
         ]);
 
         try {
-            // Verificar que el equipo pertenece a la empresa y tiene coordinador válido
+            // Obtener la empresa del coordinador general autenticado
+            $user = Auth::user();
+            $trabajador = $user->trabajador;
+            
+            if (!$trabajador) {
+                return back()->with('error', 'No se encontró información del trabajador');
+            }
+
+            // Verificar que el equipo pertenece a las áreas del coordinador general
+            if (!$this->equipoRepositorio->equipoPerteneceeACoordinadorGeneral($request->equipo_id, $trabajador->id)) {
+                return back()->with('error', 'El equipo seleccionado no está bajo tu coordinación')
+                            ->withInput();
+            }
+
+            // Verificar que el equipo es válido (tiene coordinador de equipo)
             $equipo = $this->equipoRepositorio->getById($request->equipo_id);
             if (!$equipo) {
-                return back()->with('error', 'El equipo seleccionado no es válido o no pertenece a esta empresa')
+                return back()->with('error', 'El equipo seleccionado no es válido o no tiene coordinador de equipo')
                             ->withInput();
             }
 
@@ -103,6 +152,12 @@ class MetasController extends Controller
                 'estado_id' => $request->estado_id,
                 'fecha_creacion' => now(),
                 'fecha_entrega' => $request->fecha_entrega
+            ]);
+
+            Log::info('Meta creada exitosamente', [
+                'meta_id' => $meta->id,
+                'equipo_id' => $request->equipo_id,
+                'trabajador_id' => $trabajador->id
             ]);
 
             return redirect()->route('coordinador-general.metas')
@@ -118,6 +173,14 @@ class MetasController extends Controller
     public function show($id)
     {
         try {
+            // Verificar permisos
+            $user = Auth::user();
+            $trabajador = $user->trabajador;
+            
+            if (!$this->metaRepositorio->metaPerteneceeACoordinadorGeneral($id, $trabajador->id)) {
+                return response()->json(['error' => 'No tienes permisos para ver esta meta'], 403);
+            }
+
             $meta = $this->metaRepositorio->getById($id);
             
             if (!$meta) {
@@ -160,10 +223,23 @@ class MetasController extends Controller
         ]);
 
         try {
-            // Verificar que el equipo pertenece a la empresa y tiene coordinador válido
+            // Verificar permisos
+            $user = Auth::user();
+            $trabajador = $user->trabajador;
+            
+            if (!$this->metaRepositorio->metaPerteneceeACoordinadorGeneral($id, $trabajador->id)) {
+                return response()->json(['error' => 'No tienes permisos para editar esta meta'], 403);
+            }
+
+            // Verificar que el equipo pertenece a las áreas del coordinador general
+            if (!$this->equipoRepositorio->equipoPerteneceeACoordinadorGeneral($request->equipo_id, $trabajador->id)) {
+                return response()->json(['error' => 'El equipo seleccionado no está bajo tu coordinación'], 400);
+            }
+
+            // Verificar que el equipo es válido (tiene coordinador de equipo)
             $equipo = $this->equipoRepositorio->getById($request->equipo_id);
             if (!$equipo) {
-                return response()->json(['error' => 'El equipo seleccionado no es válido o no pertenece a esta empresa'], 400);
+                return response()->json(['error' => 'El equipo seleccionado no es válido o no tiene coordinador de equipo'], 400);
             }
 
             $actualizado = $this->metaRepositorio->update($id, [
@@ -195,6 +271,14 @@ class MetasController extends Controller
     public function destroy($id)
     {
         try {
+            // Verificar permisos
+            $user = Auth::user();
+            $trabajador = $user->trabajador;
+            
+            if (!$this->metaRepositorio->metaPerteneceeACoordinadorGeneral($id, $trabajador->id)) {
+                return response()->json(['error' => 'No tienes permisos para eliminar esta meta'], 403);
+            }
+
             $eliminado = $this->metaRepositorio->delete($id);
 
             if (!$eliminado) {

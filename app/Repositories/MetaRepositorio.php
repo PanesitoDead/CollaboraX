@@ -106,36 +106,32 @@ class MetaRepositorio extends RepositorioBase
 
     
    /**
-     * Obtener todas las metas de una empresa específica
-     * SOLO metas de equipos que tengan coordinadores de equipo válidos de esta empresa
+     * Obtener metas por áreas específicas
+     * SOLO metas de equipos que tengan al menos un coordinador de equipo válido
      */
-    public function getAllByEmpresa(int $empresaId): Collection
+    public function getMetasByAreas(array $areaIds): Collection
     {
         return $this->model->with([
             'equipo.coordinador.usuario.rol',
             'equipo.area',
+            'equipo.miembros' => function($query) {
+                $query->where('activo', true);
+            },
+            'equipo.miembros.trabajador.usuario.rol',
             'estado',
             'tareas.estado'
         ])
-        // FILTRO 1: El equipo debe pertenecer a un área de esta empresa
-        ->whereHas('equipo.area', function($query) use ($empresaId) {
-            $query->where('empresa_id', $empresaId);
+        // FILTRO 1: El equipo debe pertenecer a las áreas especificadas
+        ->whereHas('equipo', function($query) use ($areaIds) {
+            $query->whereIn('area_id', $areaIds)
+                  ->whereNull('deleted_at');
         })
-        // FILTRO 2: El equipo debe tener un coordinador válido de esta empresa
-        ->whereHas('equipo.coordinador', function($query) use ($empresaId) {
-            $query->whereHas('miembrosEquipo', function($miembrosQuery) use ($empresaId) {
-                $miembrosQuery->where('activo', true)
-                    ->whereHas('equipo.area', function($areaQuery) use ($empresaId) {
-                        $areaQuery->where('empresa_id', $empresaId);
-                    });
-            })
-            ->whereHas('usuario.rol', function($rolQuery) {
-                $rolQuery->whereIn('nombre', ['Coord. Equipo', 'Coordinador de Equipo']);
-            });
-        })
-        // FILTRO 3: El equipo no debe estar eliminado
-        ->whereHas('equipo', function($query) {
-            $query->whereNull('deleted_at');
+        // FILTRO 2: El equipo debe tener al menos un coordinador de equipo válido
+        ->whereHas('equipo.miembros', function($query) {
+            $query->where('activo', true)
+                  ->whereHas('trabajador.usuario.rol', function($rolQuery) {
+                      $rolQuery->where('nombre', 'Coord. Equipo');
+                  });
         })
         ->whereNull('deleted_at')
         ->orderBy('fecha_creacion', 'desc')
@@ -150,7 +146,7 @@ class MetaRepositorio extends RepositorioBase
         try {
             Log::info('MetaRepositorio::getByEquipo iniciado', ['equipo_id' => $equipoId]);
         
-            $metas = $this->model->with(['estado'])
+            $metas = $this->model->with(['estado', 'tareas.estado'])
                 ->where('equipo_id', $equipoId)
                 ->whereNull('deleted_at')
                 ->orderBy('fecha_creacion', 'desc')
@@ -172,6 +168,79 @@ class MetaRepositorio extends RepositorioBase
             ]);
             return collect([]); // Devolver colección vacía en caso de error
         }
+    }
+
+    /**
+     * Verificar si una meta pertenece a las áreas de un coordinador general
+     */
+    public function metaPerteneceeACoordinadorGeneral(int $metaId, int $trabajadorId): bool
+    {
+        try {
+            // Primero verificamos si el trabajador existe
+            $trabajador = Trabajador::find($trabajadorId);
+            if (!$trabajador) {
+                return false;
+            }
+
+            // Obtenemos la meta
+            $meta = $this->model->with(['equipo.area'])->find($metaId);
+            if (!$meta || !$meta->equipo || !$meta->equipo->area) {
+                return false;
+            }
+
+            // Verificar que el equipo tenga al menos un coordinador de equipo
+            $tieneCoordinadorEquipo = $this->equipoTieneCoordinadorEquipo($meta->equipo_id);
+            if (!$tieneCoordinadorEquipo) {
+                return false;
+            }
+
+            // Verificamos si hay registros en areas_coordinador
+            $areasCoordinador = DB::table('areas_coordinador')
+                ->where('trabajador_id', $trabajadorId)
+                ->whereNull('deleted_at')
+                ->count();
+
+            // Si no hay registros, verificamos si la meta pertenece a la empresa
+            if ($areasCoordinador === 0) {
+                return $meta->equipo->area->empresa_id === $trabajador->empresa_id;
+            }
+
+            // Si hay registros, verificamos si la meta está en un área asignada al coordinador
+            return DB::table('areas_coordinador')
+                ->where('area_id', $meta->equipo->area_id)
+                ->where('trabajador_id', $trabajadorId)
+                ->whereNull('deleted_at')
+                ->where(function($query) {
+                    $query->whereNull('fecha_fin')
+                      ->orWhere('fecha_fin', '>', now());
+            })
+                ->exists();
+        } catch (\Exception $e) {
+            Log::error('Error al verificar si la meta pertenece al coordinador', [
+                'meta_id' => $metaId,
+                'trabajador_id' => $trabajadorId,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Verificar si un equipo tiene al menos un coordinador de equipo
+     */
+    private function equipoTieneCoordinadorEquipo(int $equipoId): bool
+    {
+        return DB::table('miembros_equipo')
+            ->join('trabajadores', 'miembros_equipo.trabajador_id', '=', 'trabajadores.id')
+            ->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
+            ->join('roles', 'usuarios.rol_id', '=', 'roles.id')
+            ->where('miembros_equipo.equipo_id', $equipoId)
+            ->where('miembros_equipo.activo', true)
+            ->where('roles.nombre', 'Coord. Equipo')
+            ->whereNull('miembros_equipo.deleted_at')
+            ->whereNull('trabajadores.deleted_at')
+            ->whereNull('usuarios.deleted_at')
+            ->exists();
     }
 
     /**
@@ -198,17 +267,20 @@ class MetaRepositorio extends RepositorioBase
         $meta = $this->model->with([
             'equipo.coordinador.usuario.rol',
             'equipo.area.empresa',
+            'equipo.miembros' => function($query) {
+                $query->where('activo', true);
+            },
+            'equipo.miembros.trabajador.usuario.rol',
             'estado',
             'tareas.estado'
-        ])->find($id);
+        ])
+        ->whereNull('deleted_at')
+        ->find($id);
 
-        // Verificar que el equipo tenga coordinador válido para la empresa
-        if ($meta && $meta->equipo && $meta->equipo->area && $meta->equipo->coordinador) {
-            $empresaId = $meta->equipo->area->empresa_id;
-            $esCoordinadorValido = $this->equipoTieneCoordinadorValido($meta->equipo_id, $empresaId);
-            if (!$esCoordinadorValido) {
-                return null; // No mostrar la meta si el equipo no tiene coordinador válido
-            }
+        // Verificar que el equipo tenga coordinador válido
+        if ($meta && $meta->equipo && !$this->equipoTieneCoordinadorEquipo($meta->equipo_id)) {
+            Log::warning('Meta con equipo sin coordinador de equipo válido', ['meta_id' => $id]);
+            return null;
         }
 
         return $meta;
@@ -222,6 +294,12 @@ class MetaRepositorio extends RepositorioBase
         try {
             $meta = $this->model->find($id);
             if (!$meta) {
+                return false;
+            }
+
+            // Verificar que el equipo tenga coordinador válido antes de actualizar
+            if (isset($data['equipo_id']) && !$this->equipoTieneCoordinadorEquipo($data['equipo_id'])) {
+                Log::error('No se puede asignar meta a equipo sin coordinador de equipo', ['equipo_id' => $data['equipo_id']]);
                 return false;
             }
 
@@ -302,25 +380,72 @@ class MetaRepositorio extends RepositorioBase
     }
 
     /**
-     * Verificar si un equipo tiene coordinador válido para una empresa
+     * Buscar metas por nombre en las áreas del coordinador
+     * SOLO metas de equipos con coordinadores de equipo válidos
      */
-    private function equipoTieneCoordinadorValido(int $equipoId, int $empresaId): bool
+    public function buscarPorNombre(string $nombre, array $areaIds): Collection
     {
-        return DB::table('equipos')
+        return $this->model->with([
+            'equipo.coordinador.usuario.rol',
+            'equipo.area',
+            'estado',
+            'tareas.estado'
+        ])
+        ->where('nombre', 'LIKE', "%{$nombre}%")
+        ->whereHas('equipo', function($query) use ($areaIds) {
+            $query->whereIn('area_id', $areaIds)
+                  ->whereNull('deleted_at');
+        })
+        // FILTRO: Solo metas de equipos que tengan al menos un coordinador de equipo
+        ->whereHas('equipo.miembros', function($query) {
+            $query->where('activo', true)
+                  ->whereHas('trabajador.usuario.rol', function($rolQuery) {
+                      $rolQuery->where('nombre', 'Coord. Equipo');
+                  });
+        })
+        ->whereNull('deleted_at')
+        ->get();
+    }
+
+    /**
+     * Obtener estadísticas de metas por áreas
+     * SOLO metas de equipos con coordinadores de equipo válidos
+     */
+    public function getEstadisticasPorAreas(array $areaIds): array
+    {
+        $metas = $this->getMetasByAreas($areaIds);
+        
+        $total = $metas->count();
+        $completadas = $metas->where('estado.nombre', 'Completo')->count();
+        $enProceso = $metas->where('estado.nombre', 'En proceso')->count();
+        $pendientes = $metas->where('estado.nombre', 'Incompleta')->count();
+
+        return [
+            'total' => $total,
+            'completadas' => $completadas,
+            'en_proceso' => $enProceso,
+            'pendientes' => $pendientes,
+            'promedio_progreso' => $total > 0 ? round($metas->avg('progreso'), 1) : 0
+        ];
+    }
+
+    /**
+     * Obtener metas sin equipos válidos (para limpieza)
+     */
+    public function getMetasSinEquipoValido(int $empresaId): Collection
+    {
+        return $this->model->select('metas.*')
+            ->join('equipos', 'metas.equipo_id', '=', 'equipos.id')
             ->join('areas', 'equipos.area_id', '=', 'areas.id')
-            ->join('trabajadores', 'equipos.coordinador_id', '=', 'trabajadores.id')
-            ->join('miembros_equipo', 'trabajadores.id', '=', 'miembros_equipo.trabajador_id')
-            ->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
-            ->join('roles', 'usuarios.rol_id', '=', 'roles.id')
-            ->where('equipos.id', $equipoId)
             ->where('areas.empresa_id', $empresaId)
-            ->where('miembros_equipo.activo', true)
-            ->whereIn('roles.nombre', ['Coord. Equipo', 'Coordinador de Equipo'])
-            ->whereNull('equipos.deleted_at')
-            ->whereNull('areas.deleted_at')
-            ->whereNull('trabajadores.deleted_at')
-            ->whereNull('usuarios.deleted_at')
-            ->exists();
+            ->whereNull('metas.deleted_at')
+            ->whereDoesntHave('equipo.miembros', function($query) {
+                $query->where('activo', true)
+                      ->whereHas('trabajador.usuario.rol', function($rolQuery) {
+                          $rolQuery->where('nombre', 'Coord. Equipo');
+                      });
+            })
+            ->get();
     }
     
  }
