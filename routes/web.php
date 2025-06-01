@@ -13,6 +13,7 @@ use App\Http\Controllers\coordEquipo\ActividadesCoordinadorController;
 use App\Http\Controllers\coordEquipo\ConfiguracionCoordinadorController;
 use App\Http\Controllers\coordEquipo\CoordEquipoController;
 use App\Http\Controllers\coordEquipo\EquipoCoordinadorController;
+use App\Http\Controllers\coordEquipo\MetasCoordinadorController;
 use App\Http\Controllers\coordEquipo\ReunionesCoordinadorController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -87,7 +88,7 @@ Route::get('/colaborador/configuracion', [\App\Http\Controllers\colaborador\Conf
     Route::get('/coord-equipo/dashboard', [CoordEquipoController::class, 'dashboard'])->name('coord-equipo.dashboard');
 
     //Route::post('/coord-equipo/actividades', [CoordEquipoController::class, 'storeActividad'])->name('coord-equipo.actividades.store');
-    Route::post('/coord-equipo/metas', [CoordEquipoController::class, 'crearMeta'])->name('coord-equipo.metas.store');
+    //Route::post('/coord-equipo/metas', [CoordEquipoController::class, 'crearMeta'])->name('coord-equipo.metas.store');
     Route::get('/coord-equipo/configuracion', [CoordEquipoController::class, 'dashboard'])->name('coord-equipo.configuracion');
 
     Route::get('/coord-equipo/equipo', [EquipoCoordinadorController::class, 'index'])->name('coord-equipo.equipo');
@@ -110,6 +111,11 @@ Route::get('/colaborador/configuracion', [\App\Http\Controllers\colaborador\Conf
 
     Route::get('/coord-equipo/actividades', [ActividadesCoordinadorController::class, 'index'])->name('coord-equipo.actividades');
     Route::post('/coord-equipo/actividades', [ActividadesCoordinadorController::class, 'storeActividad'])->name('coord-equipo.actividades.store');
+
+    Route::get('/coord-equipo/metas', [MetasCoordinadorController::class, 'index'])->name('coord-equipo.metas');
+    Route::post('/coord-equipo/metas', [MetasCoordinadorController::class, 'store'])->name('coord-equipo.metas.store');
+    Route::put('/coord-equipo/metas/{id}', [MetasCoordinadorController::class, 'update'])->name('coord-equipo.metas.update');
+    Route::delete('/coord-equipo/metas/{id}', [MetasCoordinadorController::class, 'destroy'])->name('coord-equipo.metas.destroy');
 
     //API
     Route::get('/coord-equipo/api/actividades/equipo', [ActividadesCoordinadorController::class, 'actividadesPorEquipo'])->name('api.coord-equipo.actividades.equipo');

@@ -22,7 +22,7 @@ class MetaRepositorio extends RepositorioBase
 
     public function getMetasPorEquipo($equipo)
     {
-        return $this->model->where('equipo_id', $equipo)->with(['tareas', 'estado'])->get();
+        return $this->model->where('equipo_id', $equipo)->with(['tareas.estado', 'estado'])->get();
     }
 
     public function getMetasPorEquipoCustom($equipoId)
@@ -54,6 +54,8 @@ class MetaRepositorio extends RepositorioBase
                 : 0;
 
             $meta->porcentaje = $porcentaje;
+            $meta->tareas_totales = $tareasTotales;
+            $meta->tareas_completadas = $tareasCompletadas;
 
             return $meta;
         });
