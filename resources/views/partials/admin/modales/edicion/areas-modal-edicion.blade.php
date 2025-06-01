@@ -231,7 +231,7 @@
         document.getElementById('inputDescripcionArea').value = data.descripcion ?? '';
         document.getElementById('selectColorArea').value = data.color ?? '';
         document.getElementById('selectEstadoArea').value = data.activo? 1 : 0;
-        document.getElementById('inputMostrarCoordinador').value = data.coordinador?.nombre ?? '';
+        document.getElementById('inputMostrarCoordinador').value = data.coordinador_nombres + ' ' + data.coordinador_apellido_paterno + ' ' + data.coordinador_apellido_materno;
         document.getElementById('inputHiddenCoordinador').value = data.coordinador_id?.toString() ?? '';
       } catch (error) {
         console.error(error);

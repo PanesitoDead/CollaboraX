@@ -60,6 +60,9 @@
           </div>
         </div>
       </div>
+      <!-- Pie del Modal -->
+      <div class="bg-gray-50 px-6 py-3 flex justify-end space-x-2 rounded-b-2xl">
+      </div>
     </div>
   </div>
 </div>
