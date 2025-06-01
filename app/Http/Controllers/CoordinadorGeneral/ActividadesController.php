@@ -8,6 +8,8 @@ use App\Repositories\EquipoRepositorio;
 use App\Repositories\MetaRepositorio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ActividadesController extends Controller
 {
@@ -28,13 +30,47 @@ class ActividadesController extends Controller
     public function index()
     {
         try {
-            // Por ahora usaremos empresa ID = 1 para pruebas
-            $empresaId = 1;
+            // Obtener la empresa del coordinador general autenticado
+            $user = Auth::user();
+            $trabajador = $user->trabajador;
             
-            // Obtener todas las tareas de equipos válidos de la empresa
-            $tareas = $this->tareaRepositorio->getAllByEmpresa($empresaId);
-            $equipos = $this->equipoRepositorio->getAllByEmpresa($empresaId);
-            $estados = $this->metaRepositorio->getEstadosDisponibles();
+            if (!$trabajador) {
+                return back()->with('error', 'No se encontró información del trabajador');
+            }
+
+            // Obtener la empresa del trabajador directamente por ID
+            $empresaId = $trabajador->empresa_id;
+            if (!$empresaId) {
+                return back()->with('error', 'No se encontró la empresa asociada al trabajador');
+            }
+
+            $empresa = DB::table('empresas')->find($empresaId);
+            if (!$empresa) {
+                return back()->with('error', 'No se encontró la empresa en la base de datos');
+            }
+            
+            // Obtener las áreas asignadas al coordinador general
+            $areasCoordinador = $this->equipoRepositorio->getAreasCoordinadorGeneral($trabajador->id);
+            
+            if ($areasCoordinador->isEmpty()) {
+                return back()->with('error', 'No tienes áreas asignadas como coordinador general');
+            }
+
+            // Obtener SOLO tareas de equipos válidos de las áreas del coordinador
+            $tareas = $this->tareaRepositorio->getTareasByAreas($areasCoordinador->pluck('id')->toArray());
+            
+            // Obtener TODOS los equipos válidos de las áreas del coordinador (con coordinador válido)
+            $equipos = $this->equipoRepositorio->getEquiposByAreas($areasCoordinador->pluck('id')->toArray());
+            $estados = $this->tareaRepositorio->getEstadosDisponibles();
+
+            // Debug: Ver qué se está obteniendo
+            Log::info('Datos obtenidos para coordinador general - actividades', [
+                'empresa_id' => $empresaId,
+                'trabajador_id' => $trabajador->id,
+                'areas_count' => $areasCoordinador->count(),
+                'tareas_count' => $tareas->count(),
+                'equipos_count' => $equipos->count()
+            ]);
 
             // Transformar datos para la vista
             $tareasTransformadas = $tareas->map(function($tarea) {
@@ -63,19 +99,11 @@ class ActividadesController extends Controller
                 ];
             });
 
-            // Transformar estados para la vista
-            $estadosTransformados = $estados->map(function($estado) {
-                return [
-                    'id' => $estado->id,
-                    'nombre' => $estado->nombre,
-                    'descripcion' => $estado->descripcion
-                ];
-            });
-
             return view('coordinador-general.actividades.index', [
                 'tareas' => $tareasTransformadas,
                 'equipos' => $equiposTransformados,
-                'estados' => $estadosTransformados
+                'estados' => $estados,
+                'empresa' => $empresa
             ]);
 
         } catch (\Exception $e) {
@@ -92,11 +120,19 @@ class ActividadesController extends Controller
                 return response()->json(['error' => 'ID de equipo inválido'], 400);
             }
 
-            // Verificar que el equipo existe
+            // Verificar permisos del coordinador general
+            $user = Auth::user();
+            $trabajador = $user->trabajador;
+            
+            if (!$this->equipoRepositorio->equipoPerteneceeACoordinadorGeneral($equipoId, $trabajador->id)) {
+                return response()->json(['error' => 'No tienes permisos para ver las metas de este equipo'], 403);
+            }
+
+            // Verificar que el equipo existe y es válido
             $equipo = $this->equipoRepositorio->getById($equipoId);
             
             if (!$equipo) {
-                return response()->json(['error' => 'Equipo no encontrado'], 404);
+                return response()->json(['error' => 'Equipo no encontrado o no válido'], 404);
             }
 
             // Obtener las metas del equipo
@@ -134,6 +170,25 @@ class ActividadesController extends Controller
         ]);
 
         try {
+            // Obtener la empresa del coordinador general autenticado
+            $user = Auth::user();
+            $trabajador = $user->trabajador;
+            
+            if (!$trabajador) {
+                return response()->json(['error' => 'No se encontró información del trabajador'], 400);
+            }
+
+            // Verificar que la meta pertenece a las áreas del coordinador general
+            if (!$this->metaRepositorio->metaPerteneceeACoordinadorGeneral($request->meta_id, $trabajador->id)) {
+                return response()->json(['error' => 'La meta seleccionada no está bajo tu coordinación'], 400);
+            }
+
+            // Verificar que la meta es válida (pertenece a un equipo válido)
+            $meta = $this->metaRepositorio->getById($request->meta_id);
+            if (!$meta) {
+                return response()->json(['error' => 'La meta seleccionada no es válida o no tiene equipo con coordinador válido'], 400);
+            }
+
             $tarea = $this->tareaRepositorio->create([
                 'nombre' => $request->nombre,
                 'descripcion' => $request->descripcion,
@@ -145,6 +200,12 @@ class ActividadesController extends Controller
 
             // Cargar relaciones para la respuesta
             $tarea->load(['meta.equipo', 'estado']);
+
+            Log::info('Tarea creada exitosamente', [
+                'tarea_id' => $tarea->id,
+                'meta_id' => $request->meta_id,
+                'trabajador_id' => $trabajador->id
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -175,10 +236,18 @@ class ActividadesController extends Controller
     public function show($id)
     {
         try {
+            // Verificar permisos
+            $user = Auth::user();
+            $trabajador = $user->trabajador;
+            
+            if (!$this->tareaRepositorio->tareaPerteneceeACoordinadorGeneral($id, $trabajador->id)) {
+                return response()->json(['error' => 'No tienes permisos para ver esta actividad'], 403);
+            }
+
             $tarea = $this->tareaRepositorio->getById($id);
             
             if (!$tarea) {
-                return response()->json(['error' => 'Actividad no encontrada'], 404);
+                return response()->json(['error' => 'Actividad no encontrada o no válida'], 404);
             }
 
             return response()->json([
@@ -214,6 +283,25 @@ class ActividadesController extends Controller
         ]);
 
         try {
+            // Verificar permisos
+            $user = Auth::user();
+            $trabajador = $user->trabajador;
+            
+            if (!$this->tareaRepositorio->tareaPerteneceeACoordinadorGeneral($id, $trabajador->id)) {
+                return response()->json(['error' => 'No tienes permisos para editar esta actividad'], 403);
+            }
+
+            // Verificar que la meta pertenece a las áreas del coordinador general
+            if (!$this->metaRepositorio->metaPerteneceeACoordinadorGeneral($request->meta_id, $trabajador->id)) {
+                return response()->json(['error' => 'La meta seleccionada no está bajo tu coordinación'], 400);
+            }
+
+            // Verificar que la meta es válida (pertenece a un equipo válido)
+            $meta = $this->metaRepositorio->getById($request->meta_id);
+            if (!$meta) {
+                return response()->json(['error' => 'La meta seleccionada no es válida o no tiene equipo con coordinador válido'], 400);
+            }
+
             $actualizado = $this->tareaRepositorio->update($id, [
                 'nombre' => $request->nombre,
                 'descripcion' => $request->descripcion,
@@ -250,6 +338,14 @@ class ActividadesController extends Controller
         ]);
 
         try {
+            // Verificar permisos
+            $user = Auth::user();
+            $trabajador = $user->trabajador;
+            
+            if (!$this->tareaRepositorio->tareaPerteneceeACoordinadorGeneral($request->id, $trabajador->id)) {
+                return response()->json(['error' => 'No tienes permisos para modificar esta actividad'], 403);
+            }
+
             $actualizado = $this->tareaRepositorio->update($request->id, [
                 'estado_id' => $request->estado_id
             ]);
@@ -278,6 +374,14 @@ class ActividadesController extends Controller
     public function destroy($id)
     {
         try {
+            // Verificar permisos
+            $user = Auth::user();
+            $trabajador = $user->trabajador;
+            
+            if (!$this->tareaRepositorio->tareaPerteneceeACoordinadorGeneral($id, $trabajador->id)) {
+                return response()->json(['error' => 'No tienes permisos para eliminar esta actividad'], 403);
+            }
+
             $eliminado = $this->tareaRepositorio->delete($id);
 
             if (!$eliminado) {

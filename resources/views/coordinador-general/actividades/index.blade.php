@@ -7,7 +7,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">Actividades</h1>
-                <p class="text-gray-600 mt-1">Gestiona y supervisa las actividades de todos los equipos</p>
+                <p class="text-gray-600 mt-1">Gestiona y supervisa las actividades de todos los equipos{{ isset($empresa) ? ' de ' . $empresa->nombre : '' }}</p>
             </div>
             <div class="flex space-x-3">
                 <button onclick="openCreateModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium tab-transition hover-scale">
@@ -164,7 +164,7 @@
                             <select name="estado_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent form-transition">
                                 <option value="">Seleccionar estado...</option>
                                 @foreach($estados as $estado)
-                                    <option value="{{ $estado['id'] }}">{{ $estado['nombre'] }}</option>
+                                    <option value="{{ $estado->id }}">{{ $estado->nombre }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -290,6 +290,15 @@ document.addEventListener('DOMContentLoaded', function() {
     loadActivities();
     generateTeamSummary();
     initSortable();
+    
+    // Mostrar mensajes de sesión
+    @if(session('success'))
+        showToast("{{ session('success') }}");
+    @endif
+    
+    @if(session('error'))
+        showToast("{{ session('error') }}", 'error');
+    @endif
 });
 
 // Mapeo de estados de la base de datos a columnas del kanban

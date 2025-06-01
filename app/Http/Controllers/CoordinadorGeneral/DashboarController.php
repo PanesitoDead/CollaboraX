@@ -34,7 +34,7 @@ class DashboarController extends Controller
             // Obtener datos reales de la base de datos
             //$equipos = $this->equipoRepositorio->getAllByEmpresa($empresaId);
            
-            $tareas = $this->tareaRepositorio->getAllByEmpresa($empresaId);
+            //$tareas = $this->tareaRepositorio->getAllByEmpresa($empresaId);
             
             // Calcular métricas reales
             $metricas = [
