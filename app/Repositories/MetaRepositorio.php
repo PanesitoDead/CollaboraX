@@ -25,6 +25,19 @@ class MetaRepositorio extends RepositorioBase
         return $this->model->where('equipo_id', $equipo)->with(['tareas', 'estado'])->get();
     }
 
+    public function getMetasPorEquipoCustom($equipoId)
+    {
+        return $this->model->where('equipo_id', $equipoId)
+            ->get()
+            ->map(function ($meta) {
+                return [
+                    'id' => $meta->id,
+                    'titulo' => $meta->nombre,
+                ];
+            });
+    }
+
+
     public function getMetasConProgresoPorEquipo(int $equipoId)
     {
         $metas = $this->getMetasPorEquipo($equipoId);

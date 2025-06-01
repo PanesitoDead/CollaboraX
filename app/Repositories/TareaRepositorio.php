@@ -8,6 +8,7 @@ use App\Models\Estado;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Str;
 
 class TareaRepositorio extends RepositorioBase
 {
@@ -23,6 +24,29 @@ class TareaRepositorio extends RepositorioBase
                 $query->where('equipo_id', $equipoId);
             })
             ->get();
+    }
+
+    public function getTareasPorEquipoCustom($equipoId)
+    {
+        return $this->model->with(['meta', 'estado'])
+            ->whereHas('meta', function ($q) use ($equipoId) {
+                $q->where('equipo_id', $equipoId);
+            })
+            ->get()
+            ->map(function ($tarea) {
+                return [
+                    'id' => $tarea->id,
+                    'titulo' => $tarea->nombre,
+                    'descripcion' => $tarea->descripcion,
+                    'fecha_limite' => $tarea->fecha_entrega,
+                    'estado_slug' => Str::slug($tarea->estado->nombre),
+                    'meta' => [
+                        'id' => $tarea->meta->id,
+                        'titulo' => $tarea->meta->nombre,
+                    ],
+                ];
+            })
+            ->values(); // ← limpia keys si las hay
     }
 
     public function getTareasCompletadasPorEquipo(int $equipoId)

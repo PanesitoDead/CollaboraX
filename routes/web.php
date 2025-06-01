@@ -86,7 +86,7 @@ Route::get('/colaborador/configuracion', [\App\Http\Controllers\colaborador\Conf
 //  Coordinador de Equipo
     Route::get('/coord-equipo/dashboard', [CoordEquipoController::class, 'dashboard'])->name('coord-equipo.dashboard');
 
-    Route::post('/coord-equipo/actividades', [CoordEquipoController::class, 'crearActividad'])->name('coord-equipo.actividades.store');
+    //Route::post('/coord-equipo/actividades', [CoordEquipoController::class, 'storeActividad'])->name('coord-equipo.actividades.store');
     Route::post('/coord-equipo/metas', [CoordEquipoController::class, 'crearMeta'])->name('coord-equipo.metas.store');
     Route::get('/coord-equipo/configuracion', [CoordEquipoController::class, 'dashboard'])->name('coord-equipo.configuracion');
 
@@ -109,12 +109,14 @@ Route::get('/colaborador/configuracion', [\App\Http\Controllers\colaborador\Conf
     Route::post('/coord-equipo/configuracion/apariencia', [ConfiguracionCoordinadorController::class, 'actualizarApariencia'])->name('coord-equipo.configuracion.apariencia');
 
     Route::get('/coord-equipo/actividades', [ActividadesCoordinadorController::class, 'index'])->name('coord-equipo.actividades');
+    Route::post('/coord-equipo/actividades', [ActividadesCoordinadorController::class, 'storeActividad'])->name('coord-equipo.actividades.store');
 
     //API
     Route::get('/coord-equipo/api/actividades/equipo', [ActividadesCoordinadorController::class, 'actividadesPorEquipo'])->name('api.coord-equipo.actividades.equipo');
     Route::get('/coord-equipo/api/estados', [ActividadesCoordinadorController::class, 'estados'])->name('api.coord-equipo.estados');
     Route::get('/coord-equipo/api/metas/equipo', [ActividadesCoordinadorController::class, 'metasPorEquipo'])->name('api.coord-equipo.metas.equipo');
     Route::post('/coord-equipo/api/actividades/{id}/cambiar-estado', [ActividadesCoordinadorController::class, 'actualizarEstadoActividad'])->name('api.coord-equipo.actividades.estado');
+    Route::post('/coord-equipo/api/actividades/crear', [ActividadesCoordinadorController::class, 'crearActividad'])->name('api.coord-equipo.actividades.crear');
 
 Route::middleware('auth')->group(function () {
     // Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
