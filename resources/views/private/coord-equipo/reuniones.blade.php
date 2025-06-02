@@ -84,11 +84,11 @@
                         data-tab="completadas">
                     Reuniones Completadas
                 </button>
-                <button id="tab-btn-calendario" 
+                {{-- <button id="tab-btn-calendario" 
                         class="tab-button border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
                         data-tab="calendario">
                     Vista Calendario
-                </button>
+                </button> --}}
             </nav>
         </div>
 
@@ -413,7 +413,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Tab event listeners
     document.getElementById('tab-btn-programadas').addEventListener('click', () => showTab('programadas'));
     document.getElementById('tab-btn-completadas').addEventListener('click', () => showTab('completadas'));
-    document.getElementById('tab-btn-calendario').addEventListener('click', () => showTab('calendario'));
+    //document.getElementById('tab-btn-calendario').addEventListener('click', () => showTab('calendario'));
 
     // Modal functionality
     const reunionModal = document.getElementById('reunionModal');

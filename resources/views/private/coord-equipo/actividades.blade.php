@@ -156,9 +156,9 @@
                     <button onclick="closeDetailsModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800 tab-transition">
                         Cerrar
                     </button>
-                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg tab-transition">
+                    {{-- <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg tab-transition">
                         Editar
-                    </button>
+                    </button> --}}
                 </div>
             </div>
         </div>
@@ -179,20 +179,16 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
 <script>
-    // Arrays globales que ahora vendrán del servidor
     let actividades = [];
     let estadosDisponibles = [];
     let metasDisponibles = [];
     let filteredActividades = [];
 
-    let nextId = 0;            // en caso de crear nuevas actividades desde cliente
+    let nextId = 0;        
     let sortableInstances = {};
 
-    // ====================================================
     // CARGA INICIAL Y FETCH A LA API
-    // ====================================================
     document.addEventListener('DOMContentLoaded', function() {
-        // Primero, jalar estados y metas (para llenar selects y/o preparar columnas)
         Promise.all([
             fetch('/coord-equipo/api/estados'),
             fetch('/coord-equipo/api/metas/equipo'),
@@ -212,19 +208,13 @@
             console.log('Actividades:', actividades);
 
 
-            // Inicializamos el filtrado completo
             filteredActividades = [...actividades];
             nextId = actividades.length > 0
                 ? Math.max(...actividades.map(a => a.id)) + 1
                 : 1;
 
-            // Renderizamos el select de metas para filtrar
             renderMetasInSelects();
-
-            // Renderizamos todas las actividades en columnas
             loadActivities();
-
-            // Inicializar drag & drop
             initSortable();
         })
         .catch(err => {
@@ -232,16 +222,13 @@
         });
     });
 
-    // ====================================================
     // RENDERIZAR SELECT DE METAS
-    // ====================================================
     function renderMetasInSelects() {
-        const metaFilter = document.getElementById('metaFilter'); // asume que en tu HTML tienes <select id="metaFilter">
+        const metaFilter = document.getElementById('metaFilter');
         console.log("ANTES DE ENTRAR A SELECT");
         if (!metaFilter) return;
 
         console.log("DENTRO DE SELECT");
-        // Opcional: puedes agregar 'Todas las metas' o vacío
         let html = '<option value="">Todas las metas</option>';
 
         metasDisponibles.forEach(meta => {
@@ -251,31 +238,25 @@
         metaFilter.innerHTML = html;
     }
 
-    // ====================================================
     // CARGAR ACTIVIDADES EN CADA COLUMNA
-    // ====================================================
     function loadActivities() {
-        // Obtenemos dinámicamente todas las columnas según los estados disponibles
-        // Cada columna ya debería existir en el HTML generada por Blade con data-estado="{{ $slug }}"
         const columns = {};
         estadosDisponibles.forEach(est => {
-            const slug = est.slug; // ej: 'pendiente','en-proceso','completada','retrasada',…
+            const slug = est.slug;
             const colEl = document.querySelector(`.kanban-column[data-estado="${slug}"]`);
             if (colEl) {
                 columns[slug] = colEl;
-                colEl.innerHTML = ''; // limpiamos antes de re-llenar
+                colEl.innerHTML = '';
             }
         });
 
-        // Contadores de forma dinámica
         const counts = {};
         estadosDisponibles.forEach(est => {
             counts[est.slug] = 0;
         });
 
-        // Iteramos sobre las actividades filtradas y las insertamos en su columna
         filteredActividades.forEach(act => {
-            const estadoSlug = act.estado_slug; // suponemos que tu API retorna `estado_slug`
+            const estadoSlug = act.estado_slug; 
             const column = columns[estadoSlug];
             if (column) {
                 const card = createActivityCard(act);
@@ -284,40 +265,28 @@
             }
         });
 
-        // Actualizar los badges de cada estado (asumiendo que en Blade el span tiene id="{slug}-count")
         estadosDisponibles.forEach(est => {
             const slug = est.slug;
             const badge = document.getElementById(`${slug}-count`);
             if (badge) badge.textContent = counts[slug] || 0;
         });
 
-        // Total de actividades mostradas
         const totalEl = document.getElementById('activityCount');
         if (totalEl) totalEl.textContent = filteredActividades.length;
     }
 
-    // ====================================================
     // CREAR LA CARTA DE CADA ACTIVIDAD
-    // ====================================================
     function createActivityCard(actividad) {
         const card = document.createElement('div');
         card.className = 'bg-white border border-gray-200 rounded-lg p-3 shadow-md hover:shadow-lg cursor-move form-transition hover-scale activity-card';
         card.setAttribute('data-id', actividad.id);
 
-        // Si tienen datos adicionales (por ejemplo: meta), puedes mostrarlos también si gustas
-        // Mapeo de colores según prioridad
         const priorityColors = {
             'Alta': 'bg-red-100 text-red-800',
             'Media': 'bg-yellow-100 text-yellow-800',
             'Baja': 'bg-green-100 text-green-800'
         };
 
-        // Construimos el innerHTML con los campos que sí trae tu API:
-        // - actividad.titulo
-        // - actividad.descripcion
-        // - actividad.prioridad
-        // - actividad.fecha_limite (o fechaLimite si lo transformas en el controlador)
-        // - (opcional) actividad.meta.titulo
         card.innerHTML = `
             <div class="bg-white shadow rounded-lg p-3 border border-gray-200 hover:shadow-md transition-shadow duration-200">
                 <div class="flex items-start justify-between mb-2">
@@ -346,8 +315,6 @@
             </div>
         `;
 
-
-        // Cuando clickean la tarjeta, abrimos el modal de detalles
         card.addEventListener('click', function(e) {
             if (!card.classList.contains('sortable-drag')) {
                 showActivityDetails(actividad);
@@ -357,11 +324,8 @@
         return card;
     }
 
-    // ====================================================
     // INICIALIZAR SORTABLE.JS PARA ARRASTRE
-    // ====================================================
     function initSortable() {
-        // Destruir instancias anteriores
         Object.values(sortableInstances).forEach(instance => {
             if (instance && typeof instance.destroy === 'function') {
                 instance.destroy();
@@ -369,7 +333,6 @@
         });
         sortableInstances = {};
 
-        // Recolectamos todas las columnas que Blade generó (tienen la clase .kanban-column)
         const columns = document.querySelectorAll('.kanban-column');
 
         columns.forEach(column => {
@@ -389,73 +352,25 @@
         });
     }
 
-    // ====================================================
-    // ACTUALIZAR ESTADO DE LA ACTIVIDAD (CLIENTE → SERVIDOR)
-    // ====================================================
-    // function updateActivityStatus(actividadId, nuevoEstado) {
-    //     const actividad = actividades.find(a => a.id === actividadId);
-    //     if (!actividad) return;
-
-    //     actividad.estado_slug = nuevoEstado;
-
-    //     // Actualizar en el array de filtradas
-    //     const idx = filteredActividades.findIndex(a => a.id === actividadId);
-    //     if (idx > -1) filteredActividades[idx].estado_slug = nuevoEstado;
-
-    //     // Actualizar contadores en pantalla (sin recargar todo)
-    //     updateStatusCounts();
-
-    //     // Mostrar notificación
-    //     const estadosLabels = {};
-    //     estadosDisponibles.forEach(e => {
-    //         estadosLabels[e.slug] = e.nombre;
-    //     });
-    //     showToast(`Actividad "${actividad.titulo}" movida a ${estadosLabels[nuevoEstado]}`);
-
-
-    //     console.log("ANTES DEL LLAMAR AL FETCH");
-
-    //     // Llamada al endpoint para persistir (opcional, depende de tu API)
-    //     fetch(`/coord-equipo/api/actividades/${actividadId}/cambiar-estado`, {
-    //         method: 'POST',
-    //         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-    //         body: JSON.stringify({ estado_slug: nuevoEstado })
-    //     })
-    //     .then(res => {
-    //         if (!res.ok) console.error('No se pudo actualizar el estado en el servidor');
-    //     })
-    //     .catch(err => console.error('Error en fetch al actualizar estado:', err));
-
-    //     console.log("DESPUES DE LLAMAR AL FETCH");
-    // }
-
     function updateActivityStatus(actividadId, nuevoEstadoSlug) {
         const actividad = actividades.find(a => a.id === actividadId);
 
         if (!actividad) return;
 
-        // Buscar el estado correspondiente por slug
         const estado = estadosDisponibles.find(e => e.slug === nuevoEstadoSlug);
         if (!estado) return;
 
         const estadoId = estado.id;
 
-        // Actualizar en memoria
         actividad.estado_slug = nuevoEstadoSlug;
 
         const idx = filteredActividades.findIndex(a => a.id === actividadId);
         if (idx > -1) filteredActividades[idx].estado_slug = nuevoEstadoSlug;
 
-        // Actualizar contadores
         updateStatusCounts();
 
-        // Mostrar notificación
         showToast(`Actividad "${actividad.titulo}" movida a "${estado.nombre}"`);
 
-        console.log("ACTIVIDAD ID " + actividadId);
-        console.log("ESTADO ID " + estadoId);
-
-        // Llamada al backend para persistir el cambio
         fetch(`/coord-equipo/api/actividades/${actividadId}/cambiar-estado`, {
             method: 'POST',
             headers: {
@@ -489,9 +404,7 @@
         if (totalEl) totalEl.textContent = filteredActividades.length;
     }
 
-    // ====================================================
     // FILTRADO POR BÚSQUEDA Y META
-    // ====================================================
     function filterActivities() {
         const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
         const metaFilterValue = document.getElementById('metaFilter')?.value;
@@ -509,7 +422,6 @@
         initSortable();
     }
 
-    // Si usas input de búsqueda y select de meta, agrégalos con event listeners:
     document.addEventListener('input', function(e) {
         if (e.target && e.target.id === 'searchInput') {
             filterActivities();
@@ -521,15 +433,12 @@
         }
     });
 
-    // ====================================================
     // MOSTRAR DETALLES EN UN MODAL
-    // ====================================================
     function showActivityDetails(actividad) {
         const modal = document.getElementById('detailsModal');
         const title = document.getElementById('activityTitle');
         const details = document.getElementById('activityDetails');
 
-        // Mapeo dinámico de colores según estado y prioridad
         const priorityColors = {
             'Alta': 'bg-red-100 text-red-800',
             'Media': 'bg-yellow-100 text-yellow-800',
@@ -538,7 +447,6 @@
         const statusColors = {};
         const statusLabels = {};
         estadosDisponibles.forEach(e => {
-            // Ej: asumiendo que en tu modelo Estado definiste clases CSS o las mapeas aquí
             const mapeo = {
                 'pendiente': ['bg-yellow-100','text-yellow-800'],
                 'en-proceso': ['bg-blue-100','text-blue-800'],
@@ -605,9 +513,7 @@
         }, 300);
     }
 
-    // ====================================================
-    // CREAR NUEVA ACTIVIDAD DESDE EL CLIENTE (OPCIONAL)
-    // ====================================================
+    // CREAR NUEVA ACTIVIDAD DESDE EL CLIENTE
     function openCreateModal() {
         const modal = document.getElementById('createModal');
         modal.classList.remove('hidden');
@@ -677,9 +583,7 @@
         }
     }
 
-    // ====================================================
     // TOAST (NOTIFICACIÓN)
-    // ====================================================
     function showToast(message) {
         const toast = document.getElementById('custom-toast');
         const toastMessage = document.getElementById('custom-toast-message');

@@ -112,6 +112,7 @@ Route::get('/colaborador/configuracion', [\App\Http\Controllers\colaborador\Conf
 
     Route::get('/coord-equipo/actividades', [ActividadesCoordinadorController::class, 'index'])->name('coord-equipo.actividades');
     Route::post('/coord-equipo/actividades', [ActividadesCoordinadorController::class, 'storeActividad'])->name('coord-equipo.actividades.store');
+    Route::put('/coord-equipo/actividades/{id}/actualizar', [ActividadesCoordinadorController::class, 'actualizarActividad'])->name('coord-equipo.actividades.actualizar');
 
     Route::get('/coord-equipo/metas', [MetasCoordinadorController::class, 'index'])->name('coord-equipo.metas');
     Route::post('/coord-equipo/metas', [MetasCoordinadorController::class, 'store'])->name('coord-equipo.metas.store');

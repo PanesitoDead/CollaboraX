@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\coordEquipo;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CoordEquipo\ActualizarActividadRequest;
 use App\Http\Requests\CoordEquipo\ActualizarEstadoActividadRequest;
 use App\Http\Requests\CoordEquipo\CrearTareaEquipoRequest;
 use App\Repositories\EquipoRepositorio;
@@ -177,6 +178,32 @@ class ActividadesCoordinadorController extends Controller
                 'error' => 'Error al crear la actividad.',
                 'detalle' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function actualizarActividad(ActualizarActividadRequest $request, $id)
+    {
+        try {
+            $data = $request->only(['nombre', 'descripcion', 'meta_id', 'fecha_creacion', 'fecha_entrega']);
+
+            $actividad = $this->tareaRepositorio->getById($id);
+
+            if (!$actividad) {
+                return redirect()->back()->withErrors('Actividad no encontrada.');
+            }
+
+            $actualizado = $this->tareaRepositorio->update($id, $data);
+
+            if (!$actualizado) {
+                return redirect()->back()->withErrors('No se pudo actualizar la actividad.');
+            }
+
+            return redirect()->back()->with('success', 'Actividad actualizada correctamente.');
+
+        } catch (\Throwable $e) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['error' => 'Error al actualizar la actividad: ' . $e->getMessage()]);
         }
     }
 }

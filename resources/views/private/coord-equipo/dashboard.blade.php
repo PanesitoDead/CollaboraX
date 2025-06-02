@@ -12,13 +12,6 @@
                 <p class="text-gray-600">{{ $equipo->nombre }} - {{ $equipo->area->nombre }}</p>
             </div>
             <div class="flex gap-2">
-                {{-- <button id="btn-nueva-meta" 
-                        class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                    </svg>
-                    Nueva Meta
-                </button> --}}
                 <button id="btn-nueva-actividad" 
                         class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -101,7 +94,6 @@
             </div>
 
             {{-- Tab Content: Metas --}}
-
             <div id="tab-metas" class="tab-content p-6">
                 <div class="mb-4">
                     <h3 class="text-lg font-medium">Metas del Equipo</h3>
@@ -151,9 +143,13 @@
                                 </div>
 
                                 <div class="flex gap-2">
-                                    <a href="{{-- route('metas.show', $meta->id) --}}" class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
+                                    <button onclick='abrirMetaModal(@json($meta))' class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
                                         Ver Detalles
-                                    </a>
+                                    </button>
+
+                                    {{-- <a href="route('metas.show', $meta->id)" class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
+                                        Ver Detalles
+                                    </a> --}}
                                 </div>
                             </div>
                         </div>
@@ -203,10 +199,10 @@
                             </div>
 
                             <div class="flex gap-2">
-                                <button class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
+                                <button class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50" onclick='abrirModalDetalles(@json($actividad))'>
                                     Ver Detalles
                                 </button>
-                                <button class="px-3 py-1 text-sm border border-blue-300 text-blue-600 rounded-md hover:bg-blue-50">
+                                <button class="px-3 py-1 text-sm border border-blue-300 text-blue-600 rounded-md hover:bg-blue-50" onclick='abrirEditarModal(@json($actividad))'>
                                     Editar
                                 </button>
                             </div>
@@ -268,44 +264,57 @@
         </div>
     </div>
 
-    {{-- Modal para Nueva Meta --}}
-    <div id="metaModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-medium">Crear Nueva Meta</h3>
-                    <p class="text-sm text-gray-500 mt-1">
-                        Define una nueva meta para el grupo de trabajo.
-                    </p>
+
+    <div id="metaDetalleModal" class="fixed inset-0 hidden z-50" role="dialog" aria-modal="true">
+        <!-- Fondo oscuro -->
+        <div class="fixed inset-0 bg-black/50" onclick="cerrarMetaModal()"></div>
+
+        <!-- Contenedor del modal -->
+        <div class="fixed inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto border border-gray-300">
+                <!-- Header -->
+                <div class="px-6 py-5 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-t-2xl">
+                    <h2 id="metaTitulo" class="text-2xl font-bold">Nombre de la Meta</h2>
+                    <p id="metaDescripcion" class="text-sm text-blue-100 mt-1">Descripción breve de la meta</p>
                 </div>
 
-                <div class="px-6 py-4 space-y-4">
-                    <div>
-                        <label for="titulo" class="block text-sm font-medium text-gray-700">Título</label>
-                        <input type="text" name="titulo" id="titulo" required 
-                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                <!-- Detalles -->
+                <div class="px-6 py-6 space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="flex flex-col">
+                            <span class="text-sm text-gray-500">Estado</span>
+                            <span id="metaEstado" class="font-medium text-gray-900"></span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-sm text-gray-500">Fecha de creación</span>
+                            <span id="metaFechaCreacion" class="font-medium text-gray-900"></span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-sm text-gray-500">Fecha de entrega</span>
+                            <span id="metaFechaEntrega" class="font-medium text-gray-900"></span>
+                        </div>
                     </div>
 
+                    <!-- Actividades -->
                     <div>
-                        <label for="descripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
-                        <textarea name="descripcion" id="descripcion" rows="3" required 
-                                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        <h4 class="text-sm font-semibold text-gray-700 mb-2">Actividades asociadas</h4>
+                        <ul id="metaActividades" class="space-y-2">
+                            <!-- Rellenado por JS -->
+                        </ul>
                     </div>
                 </div>
 
-                <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-                    <button type="button" id="btn-cerrar-meta" 
-                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                        Cancelar
-                    </button>
-                    <button type="submit" 
-                            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700">
-                        Crear Meta
+                <!-- Footer -->
+                <div class="px-6 py-4 border-t border-gray-200 flex justify-end bg-gray-50 rounded-b-2xl">
+                    <button type="button" onclick="cerrarMetaModal()"
+                            class="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100">
+                        Cerrar
                     </button>
                 </div>
             </div>
         </div>
     </div>
+
 
 
     {{-- Modal para Nueva Actividad --}}
@@ -367,73 +376,164 @@
         </div>
     </div>
 
-
-
-    {{-- Modal para Nueva Actividad --}}
-    {{-- <div id="actividadModal" class="fixed inset-0 hidden z-50" role="dialog" aria-modal="true">
-        <div class="fixed inset-0 bg-black/50"></div>
+    {{-- Modal para Editar Actividad --}}
+    <div id="editarActividadModal" class="fixed inset-0 hidden z-50" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-black/50" onclick="cerrarEditarModal()"></div>
         <div class="fixed inset-0 flex items-center justify-center p-4">
-            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[70vh] overflow-y-auto">
-
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-medium">Crear Nueva Actividad</h3>
-                    <p class="text-sm text-gray-500 mt-1">
-                        Asigna una nueva actividad a un colaborador.
-                    </p>
-                </div>
-
-                <div class="px-6 py-4 space-y-4">
-                    <div>
-                        <label for="actividad_titulo" class="block text-sm font-medium text-gray-700">Título</label>
-                        <input type="text" name="titulo" id="actividad_titulo" required 
-                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                <form id="formEditarActividad" method="POST">
+                    @csrf
+                    @method('PUT')
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-medium">Editar Actividad</h3>
+                        <p class="text-sm text-gray-500 mt-1">Modifica los datos de la actividad seleccionada.</p>
                     </div>
 
-                    <div>
-                        <label for="actividad_descripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
-                        <textarea name="descripcion" id="actividad_descripcion" rows="3" required 
-                                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
-                    </div>
-                </div>
+                    <div class="px-6 py-4 space-y-4">
+                        <div>
+                            <label for="edit_actividad_titulo" class="block text-sm font-medium text-gray-700">Título</label>
+                            <input type="text" name="nombre" id="edit_actividad_titulo" required
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
 
-                <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-                    <button type="button" id="btn-cerrar-actividad" 
+                        <div>
+                            <label for="edit_actividad_descripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
+                            <textarea name="descripcion" id="edit_actividad_descripcion" rows="3" required
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        </div>
+
+                        <div>
+                            <label for="edit_meta_id" class="block text-sm font-medium text-gray-700">Meta asociada</label>
+                            <select name="meta_id" id="edit_meta_id" required
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Seleccione una meta</option>
+                                @foreach ($metas as $meta)
+                                    <option value="{{ $meta->id }}">{{ $meta->nombre }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="edit_fecha_creacion" class="block text-sm font-medium text-gray-700">Fecha y hora de creación</label>
+                            <input type="datetime-local" name="fecha_creacion" id="edit_fecha_creacion" required
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+
+                        <div>
+                            <label for="edit_fecha_entrega" class="block text-sm font-medium text-gray-700">Fecha y hora de entrega</label>
+                            <input type="datetime-local" name="fecha_entrega" id="edit_fecha_entrega" required
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+
+                    <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                        <button type="button" onclick="cerrarEditarModal()"
                             class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                        Cancelar
-                    </button>
-                    <button type="submit" 
-                            class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700">
-                        Crear Actividad
-                    </button>
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700">
+                            Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detalles Actividad Mejorado -->
+    <div id="modal-detalles-actividad" class="fixed inset-0 hidden z-50" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-black/50" onclick="cerrarModalDetalles()"></div>
+
+        <div class="fixed inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                <div class="p-6">
+                    <!-- Encabezado -->
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-xl font-semibold text-gray-900" id="activityTitle">Detalles de Actividad</h3>
+                        <button type="button" onclick="cerrarModalDetalles()" class="text-gray-400 hover:text-gray-600" aria-label="Cerrar">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Detalles en grid -->
+                    <div class="grid grid-cols-1 gap-y-3 text-gray-700 text-base" id="activityDetails">
+                        <div class="grid grid-cols-[140px_1fr]">
+                            <span class="font-semibold text-gray-900">Nombre:</span>
+                            <span id="detalle_nombre">-</span>
+                        </div>
+                        <div class="grid grid-cols-[140px_1fr]">
+                            <span class="font-semibold text-gray-900">Descripción:</span>
+                            <span id="detalle_descripcion">-</span>
+                        </div>
+                        <div class="grid grid-cols-[140px_1fr]">
+                            <span class="font-semibold text-gray-900">Fecha creación:</span>
+                            <span id="detalle_fecha_creacion">-</span>
+                        </div>
+                        <div class="grid grid-cols-[140px_1fr]">
+                            <span class="font-semibold text-gray-900">Fecha entrega:</span>
+                            <span id="detalle_fecha_entrega">-</span>
+                        </div>
+                        <div class="grid grid-cols-[140px_1fr]">
+                            <span class="font-semibold text-gray-900">Estado:</span>
+                            <span id="detalle_estado">-</span>
+                        </div>
+                        <div class="grid grid-cols-[140px_1fr]">
+                            <span class="font-semibold text-gray-900">Meta:</span>
+                            <span id="detalle_meta">-</span>
+                        </div>
+                        <div class="grid grid-cols-[140px_1fr]">
+                            <span class="font-semibold text-gray-900">Equipo:</span>
+                            <span id="detalle_equipo">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Botón cerrar -->
+                    <div class="flex justify-end mt-8">
+                        <button
+                            type="button"
+                            onclick="cerrarModalDetalles()"
+                            class="px-5 py-2 rounded-md border border-gray-300 text-gray-600 hover:text-gray-900 hover:border-gray-500 transition"
+                        >
+                            Cerrar
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div> --}}
+    </div>
+
+
+
+
+
+
 @endsection
 
 @push('scripts')
 <script>
-console.log('Script cargado'); // Debug
+console.log('Script cargado'); 
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM cargado'); // Debug
+    console.log('DOM cargado'); 
     
     // Verificar que los elementos existen
-    const btnNuevaMeta = document.getElementById('btn-nueva-meta');
     const btnNuevaActividad = document.getElementById('btn-nueva-actividad');
-    const metaModal = document.getElementById('metaModal');
     const actividadModal = document.getElementById('actividadModal');
+    const editarActividadModal = document.getElementById('editarActividadModal');
+    const formEditarActividad = document.getElementById('formEditarActividad');
+
     
     console.log('Elementos encontrados:', {
-        btnNuevaMeta: !!btnNuevaMeta,
         btnNuevaActividad: !!btnNuevaActividad,
-        metaModal: !!metaModal,
         actividadModal: !!actividadModal
     });
 
     // Tab functionality
     function showTab(tabName) {
-        console.log('Cambiando a tab:', tabName); // Debug
+        console.log('Cambiando a tab:', tabName); 
         
         // Hide all tab contents
         document.querySelectorAll('.tab-content').forEach(content => {
@@ -466,68 +566,162 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function formatDateToLocalInput(datetimeString) {
+        const date = new Date(datetimeString);
+        
+        // Ajustar a zona horaria local
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+
+
+    window.abrirMetaModal = function(meta) {
+        function formatearFecha(fechaStr) {
+            if (!fechaStr) return '-';
+            const fecha = new Date(fechaStr);
+            if (isNaN(fecha)) return '-';
+            const dia = fecha.getDate();
+            const mes = fecha.getMonth() + 1;
+            const año = fecha.getFullYear();
+            return `${dia}/${mes.toString().padStart(2, '0')}/${año}`;
+        }
+
+        document.getElementById('metaTitulo').textContent = meta.nombre || '-';
+        document.getElementById('metaDescripcion').textContent = meta.descripcion || '-';
+        document.getElementById('metaFechaCreacion').textContent = formatearFecha(meta.fecha_creacion);
+        document.getElementById('metaFechaEntrega').textContent = formatearFecha(meta.fecha_entrega);
+        document.getElementById('metaEstado').textContent = meta.estado?.nombre || '-';
+
+        const actividadesList = document.getElementById('metaActividades');
+        actividadesList.innerHTML = '';
+
+        if (meta.tareas && meta.tareas.length > 0) {
+            meta.tareas.forEach(act => {
+                const li = document.createElement('li');
+                li.className = 'pl-4 border-l-4 border-blue-500 text-sm text-gray-800';
+                li.textContent = `${act.nombre} (${act.estado?.nombre || 'Sin estado'})`;
+                actividadesList.appendChild(li);
+            });
+        } else {
+            const li = document.createElement('li');
+            li.className = 'text-sm text-gray-500 italic';
+            li.textContent = 'No hay actividades registradas.';
+            actividadesList.appendChild(li);
+        }
+
+        document.getElementById('metaDetalleModal').classList.remove('hidden');
+    };
+
+    window.cerrarMetaModal = function() {
+        document.getElementById('metaDetalleModal').classList.add('hidden');
+    };
+
+
+
+    // Abrir modal de edición con datos
+    window.abrirEditarModal = function(actividad) {
+        console.log('Editando actividad:', actividad);
+
+        if (!editarActividadModal) {
+            console.warn('No se encontró el modal de edición');
+            return;
+        }
+
+        // Llenar los campos del formulario
+        document.getElementById('edit_actividad_titulo').value = actividad.nombre || '';
+        document.getElementById('edit_actividad_descripcion').value = actividad.descripcion || '';
+        document.getElementById('edit_meta_id').value = actividad.meta_id || '';
+
+        document.getElementById('edit_fecha_creacion').value = 
+            actividad.fecha_creacion ? formatDateToLocalInput(actividad.fecha_creacion) : '';
+
+        document.getElementById('edit_fecha_entrega').value = 
+            actividad.fecha_entrega ? formatDateToLocalInput(actividad.fecha_entrega) : '';
+
+        // Actualiza la acción del formulario
+        formEditarActividad.action = `/coord-equipo/actividades/${actividad.id}/actualizar`;
+
+        editarActividadModal.classList.remove('hidden');
+    }
+
+    // Cerrar el modal de edición
+    window.cerrarEditarModal = function() {
+        if (editarActividadModal) {
+            editarActividadModal.classList.add('hidden');
+        }
+    }
+
+
+    window.abrirModalDetalles = function(actividad) {
+        document.getElementById('detalle_nombre').textContent = actividad.nombre ?? '-';
+        document.getElementById('detalle_descripcion').textContent = actividad.descripcion ?? '-';
+        document.getElementById('detalle_fecha_creacion').textContent = actividad.fecha_creacion 
+            ? new Date(actividad.fecha_creacion).toLocaleString() : '-';
+        document.getElementById('detalle_fecha_entrega').textContent = actividad.fecha_entrega 
+            ? new Date(actividad.fecha_entrega).toLocaleString() : '-';
+        document.getElementById('detalle_estado').textContent = actividad.estado?.nombre ?? '-';
+        document.getElementById('detalle_meta').textContent = actividad.meta?.nombre ?? '-';
+        document.getElementById('detalle_equipo').textContent = actividad.meta?.equipo?.nombre ?? '-';
+
+        document.getElementById('modal-detalles-actividad').classList.remove('hidden');
+    }
+
+    window.cerrarModalDetalles = function() {
+        document.getElementById('modal-detalles-actividad').classList.add('hidden');
+    }
+
+
+
     // Add event listeners to tab buttons
     document.querySelectorAll('.tab-button').forEach(button => {
         button.addEventListener('click', function() {
             const tabName = this.getAttribute('data-tab');
-            console.log('Click en tab:', tabName); // Debug
+            console.log('Click en tab:', tabName);
             showTab(tabName);
         });
     });
 
-    // Modal functionality
-    if (btnNuevaMeta && metaModal) {
-        btnNuevaMeta.addEventListener('click', function() {
-            console.log('Abriendo modal meta'); // Debug
-            metaModal.classList.remove('hidden');
-        });
-    }
-
     if (btnNuevaActividad && actividadModal) {
         btnNuevaActividad.addEventListener('click', function() {
-            console.log('Abriendo modal actividad'); // Debug
+            console.log('Abriendo modal actividad');
             actividadModal.classList.remove('hidden');
         });
     }
 
     // Close modals
-    const btnCerrarMeta = document.getElementById('btn-cerrar-meta');
     const btnCerrarActividad = document.getElementById('btn-cerrar-actividad');
-
-    if (btnCerrarMeta && metaModal) {
-        btnCerrarMeta.addEventListener('click', function() {
-            console.log('Cerrando modal meta'); // Debug
-            metaModal.classList.add('hidden');
-        });
-    }
-
     if (btnCerrarActividad && actividadModal) {
         btnCerrarActividad.addEventListener('click', function() {
-            console.log('Cerrando modal actividad'); // Debug
+            console.log('Cerrando modal actividad');
             actividadModal.classList.add('hidden');
         });
     }
 
-    // Close modals when clicking outside
-    if (metaModal) {
-        metaModal.addEventListener('click', function(e) {
-            if (e.target === metaModal) {
-                console.log('Cerrando modal meta por click fuera'); // Debug
-                metaModal.classList.add('hidden');
-            }
-        });
-    }
 
     if (actividadModal) {
         actividadModal.addEventListener('click', function(e) {
             if (e.target === actividadModal) {
-                console.log('Cerrando modal actividad por click fuera'); // Debug
+                console.log('Cerrando modal actividad por click fuera'); 
                 actividadModal.classList.add('hidden');
             }
         });
     }
 
-    // Initialize first tab as active
+    if (editarActividadModal) {
+        editarActividadModal.addEventListener('click', function(e) {
+            if (e.target === editarActividadModal) {
+                console.log('Cerrando modal edición por click fuera');
+                editarActividadModal.classList.add('hidden');
+            }
+        });
+    }
+
+
     showTab('metas');
 });
 </script>
