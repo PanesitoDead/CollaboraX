@@ -90,7 +90,7 @@ Route::get('/colaborador/configuracion', [\App\Http\Controllers\colaborador\Conf
 
     //Route::post('/coord-equipo/actividades', [CoordEquipoController::class, 'storeActividad'])->name('coord-equipo.actividades.store');
     //Route::post('/coord-equipo/metas', [CoordEquipoController::class, 'crearMeta'])->name('coord-equipo.metas.store');
-    Route::get('/coord-equipo/configuracion', [CoordEquipoController::class, 'dashboard'])->name('coord-equipo.configuracion');
+    //Route::get('/coord-equipo/configuracion', [CoordEquipoController::class, 'dashboard'])->name('coord-equipo.configuracion');
 
     Route::get('/coord-equipo/equipo', [EquipoCoordinadorController::class, 'index'])->name('coord-equipo.equipo');
     Route::post('/coord-equipo/equipo/invitar', [EquipoCoordinadorController::class, 'invitarColaboradores'])->name('coord-equipo.equipo.invitar');
@@ -105,10 +105,10 @@ Route::get('/colaborador/configuracion', [\App\Http\Controllers\colaborador\Conf
 
     Route::get('/coord-equipo/configuracion', [ConfiguracionCoordinadorController::class, 'index'])->name('coord-equipo.configuracion');
     Route::post('/coord-equipo/configuracion/perfil', [ConfiguracionCoordinadorController::class, 'actualizarPerfil'])->name('coord-equipo.configuracion.perfil');
-    Route::post('/coord-equipo/configuracion/notificaciones', [ConfiguracionCoordinadorController::class, 'actualizarNotificaciones'])->name('coord-equipo.configuracion.notificaciones');
-    Route::post('/coord-equipo/configuracion/privacidad', [ConfiguracionCoordinadorController::class, 'actualizarPrivacidad'])->name('coord-equipo.configuracion.privacidad');
+    //Route::post('/coord-equipo/configuracion/notificaciones', [ConfiguracionCoordinadorController::class, 'actualizarNotificaciones'])->name('coord-equipo.configuracion.notificaciones');
+    //Route::post('/coord-equipo/configuracion/privacidad', [ConfiguracionCoordinadorController::class, 'actualizarPrivacidad'])->name('coord-equipo.configuracion.privacidad');
     Route::post('/coord-equipo/configuracion/password', [ConfiguracionCoordinadorController::class, 'cambiarPassword'])->name('coord-equipo.configuracion.password');
-    Route::post('/coord-equipo/configuracion/apariencia', [ConfiguracionCoordinadorController::class, 'actualizarApariencia'])->name('coord-equipo.configuracion.apariencia');
+    //Route::post('/coord-equipo/configuracion/apariencia', [ConfiguracionCoordinadorController::class, 'actualizarApariencia'])->name('coord-equipo.configuracion.apariencia');
 
     Route::get('/coord-equipo/actividades', [ActividadesCoordinadorController::class, 'index'])->name('coord-equipo.actividades');
     Route::post('/coord-equipo/actividades', [ActividadesCoordinadorController::class, 'storeActividad'])->name('coord-equipo.actividades.store');
