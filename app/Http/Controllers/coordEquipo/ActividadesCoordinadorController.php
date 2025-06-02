@@ -115,6 +115,16 @@ class ActividadesCoordinadorController extends Controller
                 return response()->json(['error' => 'No se pudo actualizar el estado de la actividad.'], 400);
             }
 
+            $tarea = $this->tareaRepositorio->getById($id);
+            $metaId = $tarea->meta_id;
+            $todasCompletadas = $this->tareaRepositorio->todasLasTareasCompletadas($metaId);
+            $estadoNombre = $todasCompletadas ? 'Completo' : 'En proceso';
+            $estado = $this->estadoRepositorio->findOneBy('nombre', $estadoNombre);
+
+            if ($estado) {
+                $this->metaRepositorio->update($metaId, ['estado_id' => $estado->id]);
+            }
+
             return response()->json(['success' => true], 200);
         } catch (\Throwable $e) {
             return response()->json(['error' => 'Error al actualizar estado.', 'detalle' => $e->getMessage()], 500);

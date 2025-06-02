@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Tarea;
+use App\Models\Trabajador;
 use Illuminate\Database\Eloquent\Builder;
 use App\Models\Estado;
 use Illuminate\Database\Eloquent\Collection;
@@ -24,6 +25,15 @@ class TareaRepositorio extends RepositorioBase
                 $query->where('equipo_id', $equipoId);
             })
             ->get();
+    }
+
+    public function todasLasTareasCompletadas(int $metaId): bool
+    {
+        return $this->model->where('meta_id', $metaId)
+            ->whereHas('estado', function ($query) {
+                $query->where('nombre', '!=', 'Completo');
+            })
+            ->doesntExist();
     }
 
     public function getTareasPorEquipoCustom($equipoId)
