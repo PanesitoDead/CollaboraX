@@ -36,4 +36,13 @@ class ActualizarClaveRequest extends FormRequest
             }
         });
     }
+
+    public function messages()
+    {
+        return [
+            'password.confirmed' => 'La nueva contraseña no coincide con la confirmación.',
+            'password.min' => 'La nueva contraseña debe tener al menos :min caracteres.',
+            'password_actual.required' => 'Debes ingresar tu contraseña actual.',
+        ];
+    }
 }
