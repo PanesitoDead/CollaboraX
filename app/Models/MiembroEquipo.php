@@ -19,14 +19,16 @@ class MiembroEquipo extends Model
         'activo' => 'boolean'
 
     ];
-    public function equipo()
-    {
-        return $this->belongsTo(Equipo::class);
-    }
-
+    // Relación inversa al Trabajador
     public function trabajador()
     {
-        return $this->belongsTo(Trabajador::class);
+        return $this->belongsTo(Trabajador::class, 'trabajador_id');
+    }
+
+    // Relación a Equipo
+    public function equipo()
+    {
+        return $this->belongsTo(Equipo::class, 'equipo_id');
     }
      // Accessor para verificar si es coordinador
     public function getEsCoordinadorAttribute()
