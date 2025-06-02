@@ -3,6 +3,15 @@
 namespace App\Http\Controllers\coordEquipo;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CoordEquipo\ActualizarClaveRequest;
+use App\Repositories\EquipoRepositorio;
+use App\Repositories\EstadoRepositorio;
+use App\Repositories\MetaRepositorio;
+use App\Repositories\TareaRepositorio;
+use App\Repositories\TrabajadorRepositorio;
+use App\Repositories\UsuarioRepositorio;
+use Auth;
+use Hash;
 use Illuminate\Http\Request;
 use Password;
 use PhpParser\Node\Expr\Cast\Object_;
@@ -12,51 +21,31 @@ use Validator;
 
 class ConfiguracionCoordinadorController extends Controller
 {
+
+    protected EstadoRepositorio $estadoRepositorio;
+    protected TareaRepositorio $tareaRepositorio;
+    protected MetaRepositorio $metaRepositorio;
+    protected TrabajadorRepositorio $trabajadorRepositorio;
+    protected EquipoRepositorio $equipoRepositorio;
+    protected UsuarioRepositorio $usuarioRepositorio;
+
+    public function __construct(EstadoRepositorio $estadoRepositorio, TareaRepositorio $tareaRepositorio, MetaRepositorio $metaRepositorio, TrabajadorRepositorio $trabajadorRepositorio, EquipoRepositorio $equipoRepositorio, UsuarioRepositorio $usuarioRepositorio) {
+        $this->estadoRepositorio = $estadoRepositorio;
+        $this->tareaRepositorio = $tareaRepositorio;
+        $this->metaRepositorio = $metaRepositorio;
+        $this->trabajadorRepositorio = $trabajadorRepositorio;
+        $this->equipoRepositorio = $equipoRepositorio;
+        $this->usuarioRepositorio = $usuarioRepositorio;
+    }
+
     public function index()
     {
-        // Datos del usuario actual
-        //$usuario = Auth::user();
-        $usuario = null;
-        
-        // Datos de configuración
-        $configuracion = [
-            'notificaciones' => [
-                'email' => true,
-                'push' => true,
-                'reuniones' => true,
-                'mensajes' => true,
-                'actividades' => true,
-                'metas' => false,
-            ],
-            'privacidad' => [
-                'perfil_publico' => true,
-                'mostrar_email' => false,
-                'mostrar_telefono' => false,
-                'actividad_visible' => true,
-            ],
-            'apariencia' => [
-                'tema' => 'claro',
-                'sidebar_compacta' => false,
-                'mostrar_avatares' => true,
-            ]
-        ];
-        
-        // Datos para el formulario de perfil
-        $perfil = [
-            'nombre' => $usuario->name ?? 'Carlos Mendoza',
-            'email' => $usuario->email ?? 'carlos.mendoza@empresa.com',
-            'telefono' => $usuario->telefono ?? '+52 55 1234 5678',
-            'cargo' => $usuario->cargo ?? 'Coordinador de Grupo',
-            'departamento' => $usuario->departamento ?? 'Ventas',
-            'ubicacion' => $usuario->ubicacion ?? 'Ciudad de México',
-            'bio' => $usuario->bio ?? 'Coordinador de grupo con 5 años de experiencia en gestión de equipos de ventas.',
-            'avatar' => $usuario->avatar ?? '/placeholder-40x40.png',
-        ];
+        $usuario = Auth::user();
+        $trabajador = $this->trabajadorRepositorio->findOneBy('usuario_id', $usuario->id); 
         
         return view('private.coord-equipo.configuracion', [
             'usuario' => $usuario,
-            'configuracion' => $configuracion,
-            'perfil' => $perfil,
+            'trabajador' => $trabajador
         ]);
     }
     
@@ -86,97 +75,14 @@ class ConfiguracionCoordinadorController extends Controller
             ->with('success', 'Perfil actualizado correctamente');
     }
     
-    public function actualizarNotificaciones(Request $request)
+    public function cambiarPassword(ActualizarClaveRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'email' => 'boolean',
-            'push' => 'boolean',
-            'reuniones' => 'boolean',
-            'mensajes' => 'boolean',
-            'actividades' => 'boolean',
-            'metas' => 'boolean',
+        $usuario = Auth::user();
+
+        $this->usuarioRepositorio->update($usuario->id, [
+            'clave' => Hash::make($request->password),
         ]);
-        
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-        
-        // Lógica para actualizar notificaciones
-        // ...
-        
-        return redirect()->route('coordinador-grupo.configuracion')
-            ->with('success', 'Preferencias de notificaciones actualizadas');
-    }
-    
-    public function actualizarPrivacidad(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'perfil_publico' => 'boolean',
-            'mostrar_email' => 'boolean',
-            'mostrar_telefono' => 'boolean',
-            'actividad_visible' => 'boolean',
-        ]);
-        
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-        
-        // Lógica para actualizar privacidad
-        // ...
-        
-        return redirect()->route('coordinador-grupo.configuracion')
-            ->with('success', 'Configuración de privacidad actualizada');
-    }
-    
-    public function cambiarPassword(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'password_actual' => 'required|string',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
-        
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-        
-        // Verificar contraseña actual
-        // if (!Hash::check($request->password_actual, Auth::user()->password)) {
-        //     return redirect()->back()
-        //         ->withErrors(['password_actual' => 'La contraseña actual es incorrecta'])
-        //         ->withInput();
-        // }
-        
-        // Actualizar contraseña
-        // ...
-        
-        return redirect()->route('coordinador-grupo.configuracion')
-            ->with('success', 'Contraseña actualizada correctamente');
-    }
-    
-    public function actualizarApariencia(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'tema' => 'required|in:claro,oscuro',
-            'sidebar_compacta' => 'boolean',
-            'mostrar_avatares' => 'boolean',
-        ]);
-        
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-        
-        // Lógica para actualizar apariencia
-        // ...
-        
-        return redirect()->route('coordinador-grupo.configuracion')
-            ->with('success', 'Preferencias de apariencia actualizadas');
+
+        return back()->with('success', 'Contraseña actualizada correctamente.');
     }
 }
