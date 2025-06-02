@@ -66,7 +66,8 @@ class AreaController extends Controller
     }
 
     public function store(Request $request)
-    {
+    {   
+        
         try {
             // Validar los datos de entrada
             $request->validate([
@@ -87,9 +88,15 @@ class AreaController extends Controller
                 'activo'        => $request->activo,
                 'fecha_creacion'=> now(),
             ]);
-            // Asignar el coordinador si se proporciona
-            $this->areaRepositorio->asignarCoordinador($areaCreada->id, $request->coordinador_id);
+            
+            
 
+            // Asignar el coordinador si se proporciona
+            if ($request->coordinador_id !== null) {
+                $this->areaRepositorio->actualizarCoordinador($areaCreada->id, $request->coordinador_id);
+            }
+
+            
             return redirect()->route('admin.areas.index')
                 ->with('success', 'Área creada correctamente.');
         } catch (\Exception $e) {
@@ -145,16 +152,18 @@ class AreaController extends Controller
     public function show($id)
     {
       $area = $this->areaRepositorio->getById($id);
+        // Verificamos si el área existe
+        
         if (!$area) {
             return redirect()->route('admin.areas.index')->with('error', 'Área no encontrada.');
         }
-
-        // Si existe un coordinador activo, extraemos nombre y correo
-        $area->coordinador_nombres = $area->coordinador->trabajador->nombres;
-        $area->coordinador_apellido_paterno = $area->coordinador->trabajador->apellido_paterno;
-        $area->coordinador_apellido_materno = $area->coordinador->trabajador->apellido_materno;
-        $area->coordinador_correo = $area->coordinador->trabajador->usuario->correo; 
-        $area->coordinador_id = $area->coordinador->trabajador->id ?? null;
+        if ($area->coordinador && $area->coordinador->trabajador) {
+                $area->coordinador_nombres = $area->coordinador->trabajador->nombres;
+                $area->coordinador_apellido_paterno = $area->coordinador->trabajador->apellido_paterno;
+                $area->coordinador_apellido_materno = $area->coordinador->trabajador->apellido_materno;
+                $area->coordinador_correo = $area->coordinador->trabajador->usuario->correo;
+        }
+       
         // Agregamos el campo nro_equipos
         $area->nro_equipos = $area->equipos->count();
         // Agregamos el campo nro_colaboradores

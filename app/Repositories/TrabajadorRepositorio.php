@@ -1,9 +1,9 @@
 <?php
 
- namespace App\Repositories;
+namespace App\Repositories;
 
- use App\Models\MiembroEquipo;
- use App\Models\Trabajador;
+use App\Models\MiembroEquipo;
+use App\Models\Trabajador;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -82,46 +82,47 @@ class TrabajadorRepositorio extends RepositorioBase
                 case 'id':
                     $consulta->where('id', $value);
                     break;
-                case 'area_id':
-                    if ((int) $value === 0) {
-                        // 1) Trabajadores que NO estén en ningún miembro_equipo
-                        //    (es decir, no tienen equipo y por ende no tienen área).
-                        $this->aplicarJoinCondicional(
-                            $consulta,
-                            'miembros_equipo',
-                            'trabajadores.id',
-                            '=',
-                            'miembros_equipo.trabajador_id',
-                            'left'   // LEFT JOIN para detectar los NULL
-                        );
-                        // Filtramos donde no exista registro en miembros_equipo
-                        $consulta->whereNull('miembros_equipo.trabajador_id');
-                    } else {
-                        // 2) Trabajadores que estén en un equipo cuya área sea $value
-                        $this->aplicarJoinCondicional(
-                            $consulta,
-                            'miembros_equipo',
-                            'trabajadores.id',
-                            '=',
-                            'miembros_equipo.trabajador_id'
-                        );
-                        $this->aplicarJoinCondicional(
-                            $consulta,
-                            'equipos',
-                            'miembros_equipo.equipo_id',
-                            '=',
-                            'equipos.id'
-                        );
-                        // Ahora filtramos directamente por el área del equipo
-                        $consulta->where('equipos.area_id', $value);
-                    }
-                    break;
+                // case 'area_id':
+                //     if ((int) $value === 0) {
+                //         // 1) Trabajadores que NO estén en ningún miembro_equipo
+                //         //    (es decir, no tienen equipo y por ende no tienen área).
+                //         $this->aplicarJoinCondicional(
+                //             $consulta,
+                //             'miembros_equipo',
+                //             'trabajadores.id',
+                //             '=',
+                //             'miembros_equipo.trabajador_id',
+                //             'left'   // LEFT JOIN para detectar los NULL
+                //         );
+                //         // Filtramos donde no exista registro en miembros_equipo
+                //         $consulta->whereNull('miembros_equipo.trabajador_id');
+                //     } else {
+                //         // 2) Trabajadores que estén en un equipo cuya área sea $value
+                //         $this->aplicarJoinCondicional(
+                //             $consulta,
+                //             'miembros_equipo',
+                //             'trabajadores.id',
+                //             '=',
+                //             'miembros_equipo.trabajador_id'
+                //         );
+                //         $this->aplicarJoinCondicional(
+                //             $consulta,
+                //             'equipos',
+                //             'miembros_equipo.equipo_id',
+                //             '=',
+                //             'equipos.id'
+                //         );
+                //         // Ahora filtramos directamente por el área del equipo
+                //         $consulta->where('equipos.area_id', $value);
+                //     }
+                //     break;
                 case 'estado':
                     $this->aplicarJoinCondicional($consulta, 'usuarios', 'usuario_id', '=', 'usuarios.id');
                     $consulta->where('usuarios.activo', $value);
                     break;
                 case 'rol_id':
                     $this->aplicarJoinCondicional($consulta, 'usuarios', 'usuario_id', '=', 'usuarios.id');
+                    $consulta->select('trabajadores.*');
                     $consulta->where('usuarios.rol_id', $value);
                     break;
                 default:

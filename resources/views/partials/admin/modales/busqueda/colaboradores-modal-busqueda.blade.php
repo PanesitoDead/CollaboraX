@@ -183,6 +183,8 @@
       if (!res.ok) throw new Error('Error al obtener colaboradores');
       const json = await res.json();
 
+      console.log('Colaboradores cargados:', json);
+
       json.data.forEach(function(colab) {
         const tr = document.createElement('tr');
         tr.classList.add('hover:bg-gray-50');

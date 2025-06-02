@@ -162,7 +162,7 @@
               type="hidden"
               name="coordinador_id"
               id="inputHiddenCoordinador"
-              value="{{ $area->coordinador->id ?? '' }}"
+              
             />
             <p class="mt-1 text-xs text-gray-500">
               Puedes asignar ahora o más tarde.
@@ -231,8 +231,8 @@
         document.getElementById('inputDescripcionArea').value = data.descripcion ?? '';
         document.getElementById('selectColorArea').value = data.color ?? '';
         document.getElementById('selectEstadoArea').value = data.activo? 1 : 0;
-        document.getElementById('inputMostrarCoordinador').value = data.coordinador_nombres + ' ' + data.coordinador_apellido_paterno + ' ' + data.coordinador_apellido_materno;
-        document.getElementById('inputHiddenCoordinador').value = data.coordinador_id?.toString() ?? '';
+        document.getElementById('inputMostrarCoordinador').value = data.coordinador_nombres ??''+ ' ' + data.coordinador_apellido_paterno ??''+ ' ' + data.coordinador_apellido_materno ??'';
+        document.getElementById('inputHiddenCoordinador').value = data.coordinador_id ?? '';
       } catch (error) {
         console.error(error);
         alert('Error al cargar los datos del área. Revisa la consola para más detalles.');
