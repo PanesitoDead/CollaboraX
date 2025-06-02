@@ -137,7 +137,7 @@ class AuthController extends Controller
             case 'Coord. Equipo':
                 return redirect()->route('coord-equipo.dashboard');
             case 'Colaborador':
-                return redirect()->route('colaborador.dashboard');
+                return redirect()->route('colaborador.actividades');
             default:
                 return redirect()->route('home');
         }

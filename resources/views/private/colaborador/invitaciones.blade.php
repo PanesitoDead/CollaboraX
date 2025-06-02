@@ -20,9 +20,9 @@
                 <button type="button" data-tab="pendientes" class="tab-button inline-flex items-center whitespace-nowrap border-b-2 border-blue-500 py-4 px-1 font-medium text-sm text-blue-600 transition" onclick="showTab('pendientes')">
                     <i data-lucide="clock" class="w-4 h-4 mr-1"></i>
                     <span>Pendientes</span>
-                    @if($estadisticas['total_pendientes'] > 0)
+                    @if($nro_invitacionesPendientes > 0)
                         <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {{ $estadisticas['total_pendientes'] }}
+                            {{ $nro_invitacionesPendientes }}
                         </span>
                     @endif
                 </button>
@@ -33,15 +33,13 @@
             </div>
         </nav>
         <div id="tab-pendientes" class="tab-content p-6">
-            @include('partials.colaborador.invitaciones-pendientes', ['invitaciones' => $invitacionesPendientes])
+            @include('partials.colaborador.invitaciones-pendientes')
         </div>
         <div id="tab-historial" class="tab-content hidden p-6">
-            @include('partials.colaborador.historial-invitaciones', ['historial' => $historialInvitaciones])
+            {{-- @include('partials.colaborador.historial-invitaciones') --}}
         </div>
     </div>
 
-    {{-- Toast Container --}}
-    <div id="toast-container" class="fixed top-4 right-4 space-y-2 z-50"></div>
 </div>
 @endsection
 

@@ -3,111 +3,75 @@
 namespace App\Http\Controllers\colaborador;
 
 use App\Http\Controllers\Controller;
+use App\Repositories\InvitacionRepositorio;
+use App\Repositories\TrabajadorRepositorio;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Traits\Http\Controllers\CriterioTrait;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rules\In;
 
 class InvitacionController extends Controller
 {
-    public function index()
+    use CriterioTrait;
+
+    protected InvitacionRepositorio $invitacionRepositorio;
+
+    protected TrabajadorRepositorio $trabajadorRepositorio;
+
+
+    public function __construct(InvitacionRepositorio $invitacionRepositorio, TrabajadorRepositorio $trabajadorRepositorio)
     {
-        // Datos simulados - reemplazar con consultas reales a la base de datos
-        $invitacionesPendientes = [
-            [
-                'id' => 1,
-                'equipo' => 'Desarrollo Frontend',
-                'coordinador' => 'Ana García',
-                'coordinador_avatar' => '/placeholder-40x40.png',
-                'fecha_invitacion' => '2024-01-15',
-                'mensaje' => 'Te invitamos a unirte a nuestro equipo de desarrollo frontend. Creemos que tus habilidades serían una gran adición.',
-                'tipo' => 'equipo',
-                'urgencia' => 'alta'
-            ],
-            [
-                'id' => 2,
-                'equipo' => 'Marketing Digital',
-                'coordinador' => 'Carlos López',
-                'coordinador_avatar' => '/placeholder-40x40.png',
-                'fecha_invitacion' => '2024-01-14',
-                'mensaje' => 'Nos gustaría que formes parte de nuestro equipo de marketing digital para el próximo proyecto.',
-                'tipo' => 'proyecto',
-                'urgencia' => 'media'
-            ],
-            [
-                'id' => 3,
-                'equipo' => 'Análisis de Datos',
-                'coordinador' => 'María Rodríguez',
-                'coordinador_avatar' => '/placeholder-40x40.png',
-                'fecha_invitacion' => '2024-01-13',
-                'mensaje' => 'Tu experiencia en análisis sería muy valiosa para nuestro equipo. ¿Te interesa unirte?',
-                'tipo' => 'equipo',
-                'urgencia' => 'baja'
-            ]
-        ];
+        $this->invitacionRepositorio = $invitacionRepositorio;
+        $this->trabajadorRepositorio = $trabajadorRepositorio;
+    }
 
-        $historialInvitaciones = [
-            [
-                'id' => 4,
-                'equipo' => 'Diseño UX/UI',
-                'coordinador' => 'Laura Martín',
-                'coordinador_avatar' => '/placeholder-40x40.png',
-                'fecha_invitacion' => '2024-01-10',
-                'fecha_respuesta' => '2024-01-11',
-                'estado' => 'aceptada',
-                'mensaje' => 'Te invitamos a colaborar en el rediseño de nuestra plataforma principal.',
-                'tipo' => 'proyecto',
-                'motivo_rechazo' => null
-            ],
-            [
-                'id' => 5,
-                'equipo' => 'Backend Development',
-                'coordinador' => 'Pedro Sánchez',
-                'coordinador_avatar' => '/placeholder-40x40.png',
-                'fecha_invitacion' => '2024-01-08',
-                'fecha_respuesta' => '2024-01-09',
-                'estado' => 'rechazada',
-                'mensaje' => 'Buscamos un desarrollador backend para nuestro nuevo microservicio.',
-                'tipo' => 'equipo',
-                'motivo_rechazo' => 'Conflicto de horarios con proyecto actual'
-            ],
-            [
-                'id' => 6,
-                'equipo' => 'Quality Assurance',
-                'coordinador' => 'Isabel Torres',
-                'coordinador_avatar' => '/placeholder-40x40.png',
-                'fecha_invitacion' => '2024-01-05',
-                'fecha_respuesta' => '2024-01-06',
-                'estado' => 'aceptada',
-                'mensaje' => 'Necesitamos tu expertise en testing para asegurar la calidad del producto.',
-                'tipo' => 'proyecto',
-                'motivo_rechazo' => null
-            ],
-            [
-                'id' => 7,
-                'equipo' => 'DevOps',
-                'coordinador' => 'Roberto Díaz',
-                'coordinador_avatar' => '/placeholder-40x40.png',
-                'fecha_invitacion' => '2024-01-03',
-                'fecha_respuesta' => '2024-01-04',
-                'estado' => 'rechazada',
-                'mensaje' => 'Te invitamos a formar parte del equipo de infraestructura y despliegue.',
-                'tipo' => 'equipo',
-                'motivo_rechazo' => 'Ya comprometido con otro equipo'
-            ]
-        ];
+    public function index(Request $request)
+    {
+        $usuario = Auth::user();
+        $trabajador = $this->trabajadorRepositorio->findOneBy('usuario_id', $usuario->id);
+        $criterios = $this->obtenerCriterios($request);
+        // Creamos el query builder para las invitaciones
+        $query = $this->invitacionRepositorio->getModel()->newQuery();
+        // Filtramos por el trabajador del usuario autenticado
+        $query->where('trabajador_id', $trabajador->id);
+        // Aplicamos los criterios de búsqueda
+        $invitacionesPag = $this->invitacionRepositorio->obtenerPaginado($criterios, $query);
+        $invitacionesParse = $invitacionesPag->getCollection()->map(function ($invitacion) {
+            // Formateamos la fecha de invitación
+            $invitacion->fecha_invitacion = Carbon::parse($invitacion->fecha_invitacion)->format('d/m/Y');
+            $invitacion->fecha_expiracion = Carbon::parse($invitacion->fecha_expiracion)->format('d/m/Y');
+            $invitacion->fecha_respuesta = $invitacion->fecha_respuesta ? Carbon::parse($invitacion->fecha_respuesta)->format('d/m/Y')
+                : 'No disponible';
+            // Si existe un equipo, extraemos su nombre
+            if ($invitacion->equipo) {
+                $invitacion->equipo_nombre = $invitacion->equipo->nombre;
+                $invitacion->equipo_avatar = $invitacion->equipo->avatar ?? '/placeholder-40x40.png';
+            } else {
+                $invitacion->equipo_nombre = null;
+                $invitacion->equipo_avatar = '/placeholder-40x40.png';
+            }
+            // Si existe un coordinador activo, extraemos nombre y correo
+            if ($invitacion->equipo && $invitacion->equipo->trabajador) {
+                $invitacion->coordinador_nombres = $invitacion->equipo->coordinador->nombres;
+                $invitacion->coordinador_apellido_paterno = $invitacion->equipo->coordinador->apellido_paterno;
+                $invitacion->coordinador_apellido_materno = $invitacion->equipo->coordinador->apellido_materno;
+                $invitacion->coordinador_correo = $invitacion->coordinador->equipo->coordinador->usuario->correo; 
+            } else {
+                $invitacion->coordinador_nombre = null;
+                $invitacion->coordinador_correo = null;
+            }
+            return $invitacion;
+        });
+        $invitacionesPag->setCollection($invitacionesParse);
 
-        $estadisticas = [
-            'total_pendientes' => count($invitacionesPendientes),
-            'total_aceptadas' => count(array_filter($historialInvitaciones, fn($inv) => $inv['estado'] === 'aceptada')),
-            'total_rechazadas' => count(array_filter($historialInvitaciones, fn($inv) => $inv['estado'] === 'rechazada')),
-            'tasa_aceptacion' => count($historialInvitaciones) > 0 ? 
-                round((count(array_filter($historialInvitaciones, fn($inv) => $inv['estado'] === 'aceptada')) / count($historialInvitaciones)) * 100) : 0
-        ];
-
-        return view('private.colaborador.invitaciones', compact(
-            'invitacionesPendientes',
-            'historialInvitaciones',
-            'estadisticas'
-        ));
+        $nro_invitacionesPendientes = $invitacionesPag->where('estado', 'PENDIENTE')->count();
+        return view('private.colaborador.invitaciones', [
+            'invitaciones' => $invitacionesPag,
+            'nro_invitacionesPendientes' => $nro_invitacionesPendientes,
+            'criterios' => $criterios,
+        ]);
     }
 
     public function aceptar(Request $request, $id): JsonResponse

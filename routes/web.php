@@ -95,7 +95,7 @@ Route::get('/colaborador/actividades', [ActividadController::class, 'index'])->n
 Route::get('/colaborador/mi-equipo', [\App\Http\Controllers\colaborador\MiEquipoController::class, 'index'])->name('colaborador.mi-equipo');
 Route::get('/colaborador/mensajes', [\App\Http\Controllers\colaborador\MensajeController::class, 'index'])->name('colaborador.mensajes');
 Route::get('/colaborador/reuniones', [\App\Http\Controllers\colaborador\ReunionController::class, 'index'])->name('colaborador.reuniones');
-Route::get('/colaborador/invitaciones', [\App\Http\Controllers\colaborador\InvitacionController::class, 'index'])->name('colaborador.invitaciones');
+Route::get('/colaborador/invitaciones', [\App\Http\Controllers\colaborador\InvitacionController::class, 'index'])->name('colaborador.invitaciones.index');
 Route::get('/colaborador/configuracion', [\App\Http\Controllers\colaborador\ConfiguracionController::class, 'index'])->name('colaborador.configuracion');
 
 //  Coordinador de Equipo

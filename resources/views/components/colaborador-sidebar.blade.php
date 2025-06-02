@@ -159,7 +159,7 @@
             ['route' => 'colaborador.actividades', 'icon' => 'clipboard-list', 'label' => 'Actividades'],
             ['route' => 'colaborador.mensajes', 'icon' => 'message-square', 'label' => 'Mensajes'],
             ['route' => 'colaborador.reuniones', 'icon' => 'calendar-clock', 'label' => 'Reuniones'], 
-            ['route' => 'colaborador.invitaciones', 'icon' => 'mail-plus', 'label' => 'Invitaciones'], 
+            ['route' => 'colaborador.invitaciones.index', 'icon' => 'mail-plus', 'label' => 'Invitaciones'], 
             ['route' => 'colaborador.mi-equipo', 'icon' => 'users', 'label' => 'Mi Equipo'],
             ['route' => 'colaborador.configuracion', 'icon' => 'settings', 'label' => 'Configuración'],
         ];

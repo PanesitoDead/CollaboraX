@@ -23,4 +23,18 @@ class Invitacion extends Model
     {
         return $this->belongsTo(Trabajador::class);
     }
+
+    public function area()
+{
+    return $this->hasOneThrough(
+        Area::class,     // modelo final
+        Equipo::class,   // modelo intermedio
+        'id',            // llave en Equipo (intermedio)
+        'id',            // llave en Area (final)
+        'equipo_id',     // llave en Invitacion (local)
+        'area_id'        // llave en Equipo (hacia Area)
+    );
+}
+
+
 }
