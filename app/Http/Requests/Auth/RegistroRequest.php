@@ -24,10 +24,10 @@ class RegistroRequest extends FormRequest
         return [
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'email' => ['required', 'string', 'max:64', 'regex:/^[a-zA-Z0-9._%+-]+$/'],
-            'nombre' => ['required', 'string', 'max:255'],
+            'nombre' => ['required', 'string', 'max:255','regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/'],
             'descripcion' => ['nullable', 'string', 'max:1000'],
             'ruc' => ['required', 'string', 'digits:11', 'unique:empresas,ruc'],
-            'telefono' => ['required', 'string', 'max:20'],
+            'telefono' => ['required', 'digits:9'],
             'plan' => ['required', 'exists:plan_servicios,id'],
             'terms' => ['accepted'],
         ];
@@ -36,18 +36,23 @@ class RegistroRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'password.required' => 'La contraseña es obligatoria.',
-            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
-            'password.confirmed' => 'La confirmación de contraseña no coincide.',
+            'password.required'   => 'La contraseña es obligatoria.',
+            'password.min'        => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.confirmed'  => 'La confirmación de contraseña no coincide.',
 
             'nombre.required' => 'El nombre de la empresa es obligatorio.',
+            'nombre.max'      => 'El nombre no puede superar los 255 caracteres.',
+            'nombre.regex'    => 'El nombre solo puede contener letras y espacios.',
+
             'ruc.required' => 'El RUC es obligatorio.',
-            'ruc.digits' => 'El RUC debe tener exactamente 11 dígitos.',
-            'ruc.unique' => 'Este RUC ya está registrado.',
+            'ruc.digits'   => 'El RUC debe tener exactamente 11 dígitos.',
+            'ruc.unique'   => 'Este RUC ya está registrado.',
+
             'telefono.required' => 'El teléfono es obligatorio.',
+            'telefono.digits'   => 'El teléfono debe contener exactamente 9 dígitos y no puede tener letras.',
 
             'plan.required' => 'Debe seleccionar un plan.',
-            'plan.exists' => 'El plan seleccionado no es válido.',
+            'plan.exists'   => 'El plan seleccionado no es válido.',
 
             'terms.accepted' => 'Debe aceptar los términos y condiciones.',
         ];

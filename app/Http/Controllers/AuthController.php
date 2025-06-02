@@ -58,7 +58,8 @@ class AuthController extends Controller
         }
 
         return back()->withErrors([
-            'password' => 'La contraseña es incorrecta.',
+
+            'password' => 'Las credenciales proporcionadas no coinciden con nuestros registros.',
         ])->withInput($request->only('email', 'remember'));
     }
 

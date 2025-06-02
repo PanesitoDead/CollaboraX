@@ -99,7 +99,7 @@
             </div>
 
             <!-- Recordar sesión y olvidé contraseña -->
-            <div class="flex items-center justify-between">
+            <!-- <div class="flex items-center justify-between">
                 <label class="inline-flex items-center">
                     <input 
                         type="checkbox" 
@@ -112,7 +112,7 @@
                 </label>
                 {{-- <a href="{{ route('password.request') }}"... --}}
                 <a  class="text-sm text-blue-600 hover:underline">¿Olvidaste tu contraseña?</a>
-            </div>
+            </div> -->
 
             <!-- Botón de login -->
             <button 
