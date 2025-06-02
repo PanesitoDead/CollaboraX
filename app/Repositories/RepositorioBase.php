@@ -175,11 +175,14 @@ use Illuminate\Database\Eloquent\Model;
 
         
         
+
         // Paginar los resultados
         $paginados = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
         if ($paginados->isEmpty()) {
             return $query->paginate($pageSize, ['*'], 'page', 1);
         }
+
+        
         return $paginados;
     }
 

@@ -22,6 +22,7 @@ class Usuario extends Authenticatable
     ];
     protected $hidden = [
         'clave',
+        'remember_token',
     ];
 
     public function rol()
