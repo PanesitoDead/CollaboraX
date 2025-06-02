@@ -82,6 +82,7 @@ class EmpresaRepositorio extends RepositorioBase
                     break;
                 case 'estado':
                     $this->aplicarJoinCondicional($consulta, 'usuarios', 'usuario_id', '=', 'usuarios.id');
+                    $consulta->select('empresas.*');
                     $consulta->where('usuarios.activo', $value);
                     break;
                 default:

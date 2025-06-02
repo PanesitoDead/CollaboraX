@@ -65,12 +65,12 @@ class ColaboradorController extends Controller
         // Creamos el query builder para las áreas
         $query = $this->trabajadorRepositorio->getModel()->newQuery();
         // Unimos las tablas necesarias
-        // $query->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
-        //     ->join('roles', 'usuarios.rol_id', '=', 'roles.id');
-        // // Filtramos por la empresa del usuario autenticado
+        $query->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
+            ->join('roles', 'usuarios.rol_id', '=', 'roles.id');
+        // Filtramos por la empresa del usuario autenticado
         $query->where('trabajadores.empresa_id', $empresa->id);
         // // Filtramos por el rol de colaborador id=5
-        // $query->where('usuarios.rol_id', 5);
+        $query->where('usuarios.rol_id', 5);
 
         // Aplicamos los criterios de búsqueda
         $trabajadoresPag = $this->trabajadorRepositorio->obtenerPaginado($criterios, $query);

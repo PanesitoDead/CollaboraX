@@ -225,14 +225,20 @@
         if (!respuesta.ok) throw new Error('No se recibieron datos del área');
         const data = await respuesta.json();
 
+        const nombres = [
+        data?.coordinador_nombres,
+        data?.coordinador_apellido_paterno,
+        data?.coordinador_apellido_materno
+      ].filter(Boolean).join(' ');
+
         // Rellenar valores en el formulario
         document.getElementById('inputNombreArea').value = data.nombre ?? '';
         document.getElementById('inputCodigoArea').value = data.codigo ?? '';
         document.getElementById('inputDescripcionArea').value = data.descripcion ?? '';
         document.getElementById('selectColorArea').value = data.color ?? '';
         document.getElementById('selectEstadoArea').value = data.activo? 1 : 0;
-        document.getElementById('inputMostrarCoordinador').value = data.coordinador_nombres ??''+ ' ' + data.coordinador_apellido_paterno ??''+ ' ' + data.coordinador_apellido_materno ??'';
-        document.getElementById('inputHiddenCoordinador').value = data.coordinador_id ?? '';
+        document.getElementById('inputMostrarCoordinador').value = nombres || 'Ningún colaborador seleccionado';
+        document.getElementById('inputHiddenCoordinador').value = data?.coordinador_id ?? '';
       } catch (error) {
         console.error(error);
         alert('Error al cargar los datos del área. Revisa la consola para más detalles.');
