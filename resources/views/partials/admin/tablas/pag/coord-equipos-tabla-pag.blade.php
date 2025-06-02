@@ -64,13 +64,13 @@
                         <!-- Acciones -->
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <button
-                                onclick="abrirModalDetallesColaborador({{ $c->id }})"
+                                onclick="abrirModalDetallesCoordinador({{ $c->id }})"
                                 class="inline-flex items-center px-3 py-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-colors">
                                 <i data-lucide="eye" class="w-4 h-4 mr-1"></i>
                                 Ver
                             </button>
                             <button
-                                onclick="abrirModalEditarColaborador({{ $c->id }})"
+                                onclick="abrirModalEditarCoordinador({{ $c->id }})"
                                 class="inline-flex items-center px-3 py-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-colors">
                                 <i data-lucide="edit" class="w-4 h-4 mr-1"></i>
                                 Editar
@@ -96,8 +96,8 @@
                 @empty
                     <tr>
                         <td colspan="7" class="px-6 py-12 text-center text-gray-500">
-                            <i data-lucide="users" class="mx-auto h-12 w-12 text-gray-400"></i>
-                            <h3 class="mt-2 text-sm font-medium text-gray-900">No hay colaboradores registrados.</h3>
+                            <i data-lucide="user-check"  class="mx-auto h-12 w-12 text-gray-400"></i>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">No hay coordinadores registrados.</h3>
                             <p class="mt-1 text-sm text-gray-500">Agrega nuevos coordinadores para comenzar.</p>
                         </td>
                     </tr>
@@ -115,11 +115,11 @@
 </div>
 
 <!-- Modal para ver detalles deel colaborador -->
-@include('partials.admin.modales.detalles.colaborador-modal-detalles')
+@include('partials.admin.modales.detalles.coord-equipo-modal-detalles')
 <!-- Modal para crear/editar empresa -->
-@include('partials.admin.modales.edicion.colaborador-modal-edicion')
+@include('partials.admin.modales.edicion.coord-equipo-modal-edicion')
 <!-- Modal para cambiar estado de la empresa -->
-@include('partials.admin.modales.confirmacion.colaborador-modal-confirmacion')
+@include('partials.admin.modales.confirmacion.coord-equipo-modal-confirmacion')
 
 <script>
     function confirmarCambioEstado(event, id, estadoActual) {

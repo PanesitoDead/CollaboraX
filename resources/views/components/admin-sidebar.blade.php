@@ -158,8 +158,8 @@
           ['route' => 'admin.dashboard', 'icon' => 'home', 'label' => 'Dashboard'],
           ['route' => 'admin.areas.index', 'icon' => 'layers', 'label' => 'Áreas'],
           ['route' => 'admin.colaboradores.index', 'icon' => 'users', 'label' => 'Colaboradores'],
-          ['route' => 'admin.coordinadores-equipos', 'icon' => 'user-check', 'label' => 'Coord. Equipo'],
-          ['route' => 'admin.coordinadores-generales', 'icon' => 'user-cog', 'label' => 'Coord. Generales'],
+          ['route' => 'admin.coordinadores-equipos.index', 'icon' => 'user-check', 'label' => 'Coord. Equipo'],
+          ['route' => 'admin.coordinadores-generales.index', 'icon' => 'user-cog', 'label' => 'Coord. Generales'],
           ['route' => 'admin.estadisticas', 'icon' => 'bar-chart-2', 'label' => 'Estadísticas'],
           ['route' => 'admin.configuracion', 'icon' => 'settings', 'label' => 'Configuración'],
         ];

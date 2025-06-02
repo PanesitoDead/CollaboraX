@@ -8,10 +8,10 @@
     <div class="flex justify-between items-center">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">Colaboradores</h1>
-            <p class="text-gray-600">Gestiona los colaboradores de la empresa.</p>
+            <p class="text-gray-600">Gestiona los colaboradores de la empresa <strong>{{ $empresa->nombre }}</strong>.</p>
         </div>
         <div class="flex gap-2">
-            <button onclick="openInviteModal()" 
+            <button onclick="abrirModalCrearColaborador('{{ strtolower($empresa->nombre) }}')" 
                     class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors cursor-pointer">
                 <i data-lucide="plus" class="h-4 w-4"></i>
                 Nuevo Colaborador
@@ -24,25 +24,20 @@
         <form method="GET" class="flex flex-wrap gap-4">
             <div class="relative flex-1 min-w-64">
                 <i data-lucide="search" class="absolute left-3 top-3 h-4 w-4 text-gray-400"></i>
-                <input 
-                    type="text" 
-                    name="search" 
-                    value="{{ request('search') }}"
-                    placeholder="Buscar por nombre o email..." 
-                    class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
+                <input type="text" name="searchTerm" value="{{ request('searchTerm') }}" placeholder="Buscar por nombre" onkeyup="setTimeout(() => {this.form.submit()}, 500)" class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
             </div>
             <div class="min-w-48 relative">
                 <select
-                    name="area"
+                    name="filters[area_id]"
                     onchange="this.form.submit()"
                     class="w-full pr-4 pl-3 py-2 border border-gray-300 rounded-lg
                         focus:ring-2 focus:ring-blue-500 focus:border-transparent
                         appearance-none"
                 >
                     <option value="">Todas las áreas</option>
+                    <option value="0" {{ request('filters.area_id')=='0'?'selected':'' }}>Sin área</option>
                     @foreach($areas as $area)
-                    <option value="{{ $area->id }}" {{ request('area') == $area->id ? 'selected' : '' }}>
+                    <option value="{{ $area->id }}" {{ request('filters.area_id') == $area->id ? 'selected' : '' }}>
                         {{ $area->nombre }}
                     </option>
                     @endforeach
@@ -52,16 +47,13 @@
                 </div>
             </div>
             <div class="min-w-48 relative">
-                <select
-                    name="estado"
-                    onchange="this.form.submit()"
-                    class="w-full pl-3 pr-4 py-2 border border-gray-300 rounded-lg
+                <select name="filters[estado]" onchange="this.form.submit()"
+                    class="w-full pr-4 pl-3 py-2 border border-gray-300 rounded-lg
                         focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                        appearance-none"
-                >
+                        appearance-none">
                     <option value="">Todos los estados</option>
-                    <option value="activo"   {{ request('estado') == 'activo'   ? 'selected' : '' }}>Activo</option>
-                    <option value="inactivo" {{ request('estado') == 'inactivo' ? 'selected' : '' }}>Inactivo</option>
+                    <option value="1" {{ request('filters.estado')=='1'?'selected':'' }}>Activo</option>
+                    <option value="0" {{ request('filters.estado')=='0'?'selected':'' }}>Inactivo</option>
                 </select>
                 <div class="pointer-events-none absolute inset-y-0 right-2 flex items-center">
                     <i data-lucide="chevron-down" class="h-5 w-5 text-gray-500"></i>
@@ -76,7 +68,9 @@
 
     {{-- Table --}}
     @include('partials.admin.tablas.pag.colaboradores-tabla-pag')
+
 </div>
+@include('partials.admin.modales.creacion.colaborador-modal-creacion')
 @endsection
 
 {{-- Scripts --}}

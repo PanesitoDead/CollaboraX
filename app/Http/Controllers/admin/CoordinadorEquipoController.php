@@ -3,119 +3,95 @@
 namespace App\Http\Controllers\admin;
 
 use App\Http\Controllers\Controller;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
+use App\Models\Empresa;
+use App\Repositories\AreaRepositorio;
+use App\Repositories\EmpresaRepositorio;
+use App\Repositories\TrabajadorRepositorio;
+use App\Repositories\UsuarioRepositorio;
 use Illuminate\Pagination\LengthAwarePaginator;
+use App\Traits\Http\Controllers\CriterioTrait;
+use Illuminate\Http\Request;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class CoordinadorEquipoController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    use CriterioTrait;
+
+    protected UsuarioRepositorio $usuarioRepositorio;
+    protected EmpresaRepositorio $empresaRepositorio;
+
+    protected TrabajadorRepositorio $trabajadorRepositorio;
+
+    protected AreaRepositorio $areaRepositorio;
+
+    public function __construct(UsuarioRepositorio $usuarioRepositorio, EmpresaRepositorio $empresaRepositorio, TrabajadorRepositorio $trabajadorRepositorio, AreaRepositorio $areaRepositorio)
     {
-        $coordinadoresData = collect([
-            (object)[
-                'id' => 1,
-                'name' => 'Ana López',
-                'email' => 'ana.lopez@example.com',
-                'area' => (object)['nombre' => 'Recursos Humanos'],
-                'equipo' => (object)['nombre' => 'Equipo A'],
-                'asignadoPor' => (object)['name' => 'Carlos Pérez'],
-                'estado' => 'activo',
-                'created_at' => Carbon::parse('2024-01-15'),
-            ],
-            (object)[
-                'id' => 2,
-                'name' => 'Luis Torres',
-                'email' => 'luis.torres@example.com',
-                'area' => null,
-                'equipo' => (object)['nombre' => 'Equipo A'],
-                'asignadoPor' => null,
-                'estado' => 'inactivo',
-                'created_at' => Carbon::parse('2024-03-22'),
-            ],
-            (object)[
-                'id' => 3,
-                'name' => 'María Díaz',
-                'email' => 'maria.diaz@example.com',
-                'area' => (object)['nombre' => 'Logística'],
-                'equipo' => (object)['nombre' => 'Equipo A'],
-                'asignadoPor' => (object)['name' => 'Ana López'],
-                'estado' => 'activo',
-                'created_at' => Carbon::parse('2024-04-10'),
-            ],
-            (object)[
-                'id' => 4,
-                'name' => 'Jorge Ramírez',
-                'email' => 'jorge.ramirez@example.com',
-                'area' => (object)['nombre' => 'Sistemas'],
-                'equipo' => (object)['nombre' => 'Equipo A'],
-                'asignadoPor' => (object)['name' => 'Luis Torres'],
-                'estado' => 'inactivo',
-                'created_at' => Carbon::parse('2024-05-01'),
-            ],
-            (object)[
-                'id' => 5,
-                'name' => 'Elena Vargas',
-                'email' => 'elena.vargas@example.com',
-                'area' => (object)['nombre' => 'Marketing'],
-                'equipo' => (object)['nombre' => 'Equipo A'],
-                'asignadoPor' => null,
-                'estado' => 'activo',
-                'created_at' => Carbon::parse('2024-05-20'),
-            ],
-        ]);
-
-
-        // Simular paginación (ej: 2 elementos por página, página actual = 1)
-        $page = request()->get('page', 1);
-        $perPage = 2;
-        $coordinadores = new LengthAwarePaginator(
-            $coordinadoresData->forPage($page, $perPage),
-            $coordinadoresData->count(),
-            $perPage,
-            $page,
-            ['path' => request()->url(), 'query' => request()->query()]
-        );
-
-        // Simulación de datos de coordinadores
-
-        $areas = [
-            (object)[ 'id' => 1, 'nombre' => 'Recursos Humanos' ],
-            (object)[ 'id' => 2, 'nombre' => 'Logística' ],
-            (object)[ 'id' => 3, 'nombre' => 'Sistemas' ],
-            (object)[ 'id' => 4, 'nombre' => 'Marketing' ],
-            (object)[ 'id' => 5, 'nombre' => 'Administración' ],
-        ];
-
-        return view('private.admin.coordinadores-equipos', compact('coordinadores', 'areas'));
+        $this->usuarioRepositorio = $usuarioRepositorio;
+        $this->empresaRepositorio = $empresaRepositorio;
+        $this->trabajadorRepositorio = $trabajadorRepositorio;
+        $this->areaRepositorio = $areaRepositorio;
     }
 
-    public function asignarEquipo(Request $request)
+    public function getEmpresa()
     {
-        $request->validate([
-            'coordinador_id' => 'required|numeric',
-            'equipo' => 'required|string',
-            'notificar' => 'boolean'
-        ]);
+        $usuario = Auth::user();
+        $empresa = $this->empresaRepositorio->findOneBy('usuario_id', $usuario->id);
+        if (!$empresa) {
+            return redirect()->route('admin.dashboard')->with('error', 'No se encontró la empresa asociada al usuario.');
+        }
+        return $empresa;
+    }
+    public function index(Request $request)
+    {
+        $empresa = $this->getEmpresa();
+        $areas = $this->areaRepositorio->findBy('empresa_id', $empresa->id);
 
-        // Lógica para asignar equipo
-        
-        return redirect()->route('coordinadores-equipo')
-            ->with('toast', [
-                'type' => 'success',
-                'title' => 'Equipo asignado',
-                'message' => 'Se ha asignado el equipo correctamente.'
-            ]);
+        $coordinadores = $this->getPaginado($request);
+        return view('private.admin.coordinadores-equipos', [
+            'criterios' => $this->obtenerCriterios($request),
+            'areas' => $areas,
+            'coordinadores' => $coordinadores,
+            'empresa' => $empresa,
+        ]);
+    }
+
+    public function getPaginado(Request $request)
+    {
+        $usuario = Auth::user();
+        $empresa = $this->empresaRepositorio->findOneBy('usuario_id', $usuario->id);
+
+        $criterios = $this->obtenerCriterios($request);
+        // Creamos el query builder para las áreas
+        $query = $this->trabajadorRepositorio->getModel()->newQuery();
+        // Unimos las tablas necesarias
+        $query->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
+            ->join('roles', 'usuarios.rol_id', '=', 'roles.id');
+        // Filtramos por la empresa del usuario autenticado
+        $query->where('trabajadores.empresa_id', $empresa->id);
+        // Filtramos por el rol de coordinador de equipo id=4
+        $query->where('usuarios.rol_id', 4);
+
+        // Aplicamos los criterios de búsqueda
+        $trabajadoresPag = $this->trabajadorRepositorio->obtenerPaginado($criterios, $query);
+        $trabajadoresParse = $trabajadoresPag->getCollection()->map(function ($trabajador) {
+            $trabajador->correo = $trabajador->usuario->correo ?? 'No disponible';
+            $trabajador->fecha_registro = Carbon::parse($trabajador->usuario->fecha_registro)->format('d/m/Y');
+            return $trabajador;
+        });
+        return $trabajadoresPag->setCollection($trabajadoresParse);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Cambiar de estado un colaborador.
      */
-    public function create()
+    public function cambiarEstado(Request $request, string $id)
     {
-        //
+        $success = $this->trabajadorRepositorio->cambiarEstado($id, $request->input('activo'));
+        if (!$success) {
+            return redirect()->route('admin.coordinadores-equipos.index')->with('error', 'Error al cambiar el estado del colaborador.');
+        }
+        return redirect()->route('admin.coordinadores-equipos.index')->with('success', 'Estado del colaborador actualizado correctamente.');
     }
 
     /**
@@ -123,7 +99,7 @@ class CoordinadorEquipoController extends Controller
      */
     public function store(Request $request)
     {
-        //
+       
     }
 
     /**
@@ -131,15 +107,20 @@ class CoordinadorEquipoController extends Controller
      */
     public function show(string $id)
     {
-        //
-    }
+        $trabajador = $this->trabajadorRepositorio->getById($id);
+        if (!$trabajador) {
+            return redirect()->route('admin.coordinadores-equipos.index')->with('error', 'Colaborador no encontrado.');
+        }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
+        // Agregamos el campo correo
+        $trabajador->correo = $trabajador->usuario->correo ?? 'No disponible';
+        // Formateamos la fecha de nacimiento
+        $trabajador->nro_metas = $trabajador->metas()->count();
+        $trabajador->nro_tareas = $trabajador->tareas()->count();
+        $trabajador->nro_reuniones = $trabajador->reuniones()->count();
+        $trabajador->fecha_nacimiento = Carbon::parse($trabajador->fecha_nacimiento)->format('d/m/Y');
+        $trabajador->fecha_registro = Carbon::parse($trabajador->usuario->fecha_registro)->format('d/m/Y');
+        return response()->json($trabajador);
     }
 
     /**
@@ -147,7 +128,29 @@ class CoordinadorEquipoController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $trabajador = $this->trabajadorRepositorio->getById($id);
+        if (!$trabajador) {
+            return redirect()->route('admin.coordinadores-equipos.index')->with('error', 'Colaborador no encontrado.');
+        }
+
+        // // Actualizar el usuario
+        // $usuario = $trabajador->usuario;
+        // $usuario->correo = $request->input('correo');
+        // if ($request->has('clave')) {
+        //     $usuario->clave = bcrypt($request->input('clave'));
+        // }
+        // $usuario->save();
+
+        // Actualizar el colaborador
+        $trabajador->nombres = $request->input('nombres');
+        $trabajador->apellido_paterno = $request->input('apellido_paterno');
+        $trabajador->apellido_materno = $request->input('apellido_materno');
+        $trabajador->telefono = $request->input('telefono');
+        $trabajador->doc_identidad = $request->input('doc_identidad');
+        $trabajador->fecha_nacimiento = $request->input('fecha_nacimiento');
+        $trabajador->save();
+
+        return redirect()->route('admin.coordinadores-equipos.index')->with('success', 'Colaborador actualizado correctamente.');
     }
 
     /**

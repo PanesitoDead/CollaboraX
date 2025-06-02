@@ -43,6 +43,7 @@ Route::post('/auth/register', [AuthController::class, 'register'])->name('regist
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+
 //     Super Admin
 Route::get('/super-admin/dashboard', function () {
     return view('super-admin.dashboard');
@@ -70,11 +71,23 @@ Route::delete('/admin/areas/{id}', [AreaController::class, 'destroy'])->name('ad
 
 Route::get('/admin/colaboradores/pag/', [ColaboradorController::class, 'getPaginado'])->name('admin.colaboradores.pag');
 Route::get('/admin/colaboradores', [ColaboradorController::class, 'index'])->name('admin.colaboradores.index');
+Route::post('/admin/colaboradores', [ColaboradorController::class, 'store'])->name('admin.colaboradores.store');
 Route::get('/admin/colaboradores/{id}', [ColaboradorController::class, 'show'])->name('admin.colaboradores.show');
+Route::put('/admin/colaboradores/{id}', [ColaboradorController::class, 'update'])->name('admin.colaboradores.update');
+Route::patch('/admin/colaboradores/{id}/cambiar-estado', [ColaboradorController::class, 'cambiarEstado'])->name('admin.colaboradores.cambiar-estado');
 
 
-Route::get('/admin/coordinadores-equipos', [CoordinadorEquipoController::class, 'index' ])->name('admin.coordinadores-equipos');
-Route::get('/admin/coordinadores-generales', [CoordinadorGeneralController::class, 'index'])->name('admin.coordinadores-generales');
+Route::get('/admin/coordinadores-equipos', [CoordinadorEquipoController::class, 'index' ])->name('admin.coordinadores-equipos.index');
+Route::get('/admin/coordinadores-equipos/{id}', [CoordinadorEquipoController::class, 'show'])->name('admin.coordinadores-equipos.show');
+Route::put('/admin/coordinadores-equipos/{id}', [CoordinadorEquipoController::class, 'update'])->name('admin.coordinadores-equipos.update');
+Route::patch('/admin/coordinadores-equipos/{id}/cambiar-estado', [CoordinadorEquipoController::class, 'cambiarEstado'])->name('admin.coordinadores-equipos.cambiar-estado');
+
+Route::get('/admin/coordinadores-generales', [CoordinadorGeneralController::class, 'index'])->name('admin.coordinadores-generales.index');
+Route::get('/admin/coordinadores-generales/{id}', [CoordinadorGeneralController::class, 'show'])->name('admin.coordinadores-generales.show');
+Route::put('/admin/coordinadores-generales/{id}', [CoordinadorGeneralController::class, 'update'])->name('admin.coordinadores-generales.update');
+Route::patch('/admin/coordinadores-generales/{id}/cambiar-estado', [CoordinadorGeneralController::class, 'cambiarEstado'])->name('admin.coordinadores-generales.cambiar-estado');
+
+
 Route::get('/admin/estadisticas', [EstadisticaController::class, 'index'])->name('admin.estadisticas');
 Route::get('/admin/configuracion', [ConfiguracionController::class, 'index'])->name('admin.configuracion');
 

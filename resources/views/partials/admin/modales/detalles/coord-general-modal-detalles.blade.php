@@ -1,12 +1,12 @@
-<!-- Modal Detalles del Colaborador -->
-<div id="detallesColaboradorModal" class="fixed inset-0 w-screen h-screen bg-black/50 hidden z-50 opacity-0 transition-opacity duration-300" role="dialog" aria-modal="true" aria-labelledby="tituloModalDetallesColaborador">
+<!-- Modal Detalles del Coordinador -->
+<div id="detallesCoordinadorModal" class="fixed inset-0 w-screen h-screen bg-black/50 hidden z-50 opacity-0 transition-opacity duration-300" role="dialog" aria-modal="true" aria-labelledby="tituloModalDetallesCoordinador">
   <div class="flex items-center justify-center min-h-screen p-4">
-    <div id="detallesColaboradorContent" class="bg-white rounded-2xl shadow-xl max-w-lg w-full transform scale-95 transition-transform duration-300">
+    <div id="detallesCoordinadorContent" class="bg-white rounded-2xl shadow-xl max-w-lg w-full transform scale-95 transition-transform duration-300">
       
       <!-- Cabecera -->
       <div class="px-6 py-4 flex justify-between items-center border-b border-gray-200 bg-gray-50 rounded-t-2xl">
-        <h3 id="tituloModalDetallesColaborador" class="text-lg font-semibold text-gray-900">Detalles del Colaborador</h3>
-        <button type="button" onclick="cerrarModalDetallesColaborador()" class="p-2 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Cerrar detalles del colaborador">
+        <h3 id="tituloModalDetallesCoordinador" class="text-lg font-semibold text-gray-900">Detalles del Coordinador</h3>
+        <button type="button" onclick="cerrarModalDetallesCoordinador()" class="p-2 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Cerrar detalles del colaborador">
           <i data-lucide="x" class="w-6 h-6 text-gray-500"></i>
         </button>
       </div>
@@ -16,12 +16,12 @@
         <!-- Encabezado con avatar -->
         <div class="flex items-center space-x-4 mb-4">
           <div class="w-18 h-18 rounded-full overflow-hidden border-4 border-gray-300 bg-gray-100 flex items-center justify-center relative">
-            <img id="avatarColaborador" src="" alt="Avatar del colaborador" class="w-full h-full object-cover absolute top-0 left-0 hidden rounded-full"/>
-            <span id="avatarInicialesColaborador" class="text-base font-semibold text-gray-700 z-10"></span>
+            <img id="avatarCoordinador" src="" alt="Avatar del colaborador" class="w-full h-full object-cover absolute top-0 left-0 hidden rounded-full"/>
+            <span id="avatarInicialesCoordinador" class="text-base font-semibold text-gray-700 z-10"></span>
           </div>
           <div>
-            <h4 id="nombreColaborador" class="text-lg font-medium text-gray-900"></h4>
-            <p id="emailColaborador" class="text-sm text-gray-500"></p>
+            <h4 id="nombreCoordinador" class="text-lg font-medium text-gray-900"></h4>
+            <p id="emailCoordinador" class="text-sm text-gray-500"></p>
           </div>
         </div>
 
@@ -29,27 +29,27 @@
         <div class="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p class="font-semibold text-gray-700 mb-1">Estado</p>
-            <span id="estadoColaborador" class="inline-block px-2 py-1 text-xs font-semibold rounded-full"></span>
+            <span id="estadoCoordinador" class="inline-block px-2 py-1 text-xs font-semibold rounded-full"></span>
           </div>
           <div>
             <p class="font-semibold text-gray-700 mb-1">Área</p>
-            <p id="areaColaborador" class="text-gray-900"></p>
+            <p id="areaCoordinador" class="text-gray-900"></p>
           </div>
           <div>
             <p class="font-semibold text-gray-700 mb-1">Fecha de Registro</p>
-            <p id="fechaRegistroColaborador" class="text-gray-900"></p>
+            <p id="fechaRegistroCoordinador" class="text-gray-900"></p>
           </div>
           <div>
             <p class="font-semibold text-gray-700 mb-1">Equipo Asignado</p>
-            <p id="equipoColaborador" class="text-gray-900"></p>
+            <p id="equipoCoordinador" class="text-gray-900"></p>
           </div>
           <div>
             <p class="font-semibold text-gray-700 mb-1">Teléfono</p>
-            <p id="telefonoColaborador" class="text-gray-900">—</p>
+            <p id="telefonoCoordinador" class="text-gray-900">—</p>
           </div>
           <div>
             <p class="font-semibold text-gray-700 mb-1">Doc. Identidad</p>
-            <p id="docIdentidadColaborador" class="text-gray-900">—</p>
+            <p id="docIdentidadCoordinador" class="text-gray-900">—</p>
           </div>
           <div class="col-span-2">
             <p class="font-semibold text-gray-700 mb-1">Estadísticas</p>
@@ -82,9 +82,9 @@
 <script>
   let colaboradorActualId = null;
 
-  async function abrirModalDetallesColaborador(id) {
+  async function abrirModalDetallesCoordinador(id) {
     colaboradorActualId = id;
-    const url = `/admin/colaboradores/${id}`; // Ajusta la ruta según tu backend real
+    const url = `/admin/coordinadores-generales/${id}`; // Ajusta la ruta según tu backend real
 
     try {
       const respuesta = await fetch(url);
@@ -92,16 +92,16 @@
       const data = await respuesta.json();
 
       // Elementos del DOM
-      const img = document.getElementById('avatarColaborador');
-      const initialsEl = document.getElementById('avatarInicialesColaborador');
-      const nombreEl = document.getElementById('nombreColaborador');
-      const emailEl = document.getElementById('emailColaborador');
-      const estadoEl = document.getElementById('estadoColaborador');
-      const areaEl = document.getElementById('areaColaborador');
-      const fechaEl = document.getElementById('fechaRegistroColaborador');
-      const equipoEl = document.getElementById('equipoColaborador');
-      const telefonoEl = document.getElementById('telefonoColaborador');
-      const docIdentidadEl = document.getElementById('docIdentidadColaborador');
+      const img = document.getElementById('avatarCoordinador');
+      const initialsEl = document.getElementById('avatarInicialesCoordinador');
+      const nombreEl = document.getElementById('nombreCoordinador');
+      const emailEl = document.getElementById('emailCoordinador');
+      const estadoEl = document.getElementById('estadoCoordinador');
+      const areaEl = document.getElementById('areaCoordinador');
+      const fechaEl = document.getElementById('fechaRegistroCoordinador');
+      const equipoEl = document.getElementById('equipoCoordinador');
+      const telefonoEl = document.getElementById('telefonoCoordinador');
+      const docIdentidadEl = document.getElementById('docIdentidadCoordinador');
       const contadorMetaEl = document.getElementById('contadorMeta');
       const contadorTarEl = document.getElementById('contadorTareas');
       const contadorReuEl = document.getElementById('contadorReuniones');
@@ -165,8 +165,8 @@
       contadorReuEl.textContent = data.nro_reuniones != null ? data.nro_reuniones : '0';
 
       // Mostrar modal con animación
-      const modal = document.getElementById('detallesColaboradorModal');
-      const contenido = document.getElementById('detallesColaboradorContent');
+      const modal = document.getElementById('detallesCoordinadorModal');
+      const contenido = document.getElementById('detallesCoordinadorContent');
       modal.classList.remove('hidden');
       setTimeout(() => {
         modal.classList.remove('opacity-0');
@@ -180,9 +180,9 @@
     }
   }
 
-  function cerrarModalDetallesColaborador() {
-    const modal = document.getElementById('detallesColaboradorModal');
-    const contenido = document.getElementById('detallesColaboradorContent');
+  function cerrarModalDetallesCoordinador() {
+    const modal = document.getElementById('detallesCoordinadorModal');
+    const contenido = document.getElementById('detallesCoordinadorContent');
     modal.classList.add('opacity-0');
     contenido.classList.add('scale-95');
     setTimeout(() => {
@@ -193,17 +193,17 @@
   }
 
   // Cerrar al hacer clic fuera del contenido
-  document.getElementById('detallesColaboradorModal')
+  document.getElementById('detallesCoordinadorModal')
     .addEventListener('click', e => {
       if (e.target === e.currentTarget) {
-        cerrarModalDetallesColaborador();
+        cerrarModalDetallesCoordinador();
       }
     });
 
   // Cerrar con la tecla Escape
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && colaboradorActualId !== null) {
-      cerrarModalDetallesColaborador();
+      cerrarModalDetallesCoordinador();
     }
   });
 </script>
