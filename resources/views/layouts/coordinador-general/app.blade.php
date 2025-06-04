@@ -103,6 +103,7 @@
                         </a>
                     </li>
                     <li>
+                        
                         <a href="{{ route('coordinador-general.configuracion') }}" class="flex items-center space-x-3 p-3 rounded-lg {{ request()->routeIs('coordinador-general.configuracion') ? 'bg-blue-800' : 'hover:bg-blue-800' }} tab-transition hover-scale">
                             <i data-lucide="settings" class="w-5 h-5"></i>
                             <span>Configuración</span>
@@ -124,13 +125,17 @@
                         </div>
                     </div>
                     <!-- Botón de cerrar sesión -->
-                    <button 
-                        onclick="cerrarSesion()" 
+                     <form method="POST" action="{{ route('logout') }}"  >
+                        @csrf
+                        <button 
+                        
                         class="p-2 rounded-lg hover:bg-blue-800 transition-colors group" 
                         title="Cerrar sesión"
                     >
                         <i data-lucide="log-out" class="w-5 h-5 text-blue-300 group-hover:text-white"></i>
                     </button>
+                    </form>
+                    
                 </div>
             </div>
         </div>
@@ -141,9 +146,7 @@
         </div>
     </div>
     <!-- Formulario oculto para logout -->
-    <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
-        @csrf
-    </form>
+   
     <script>
         // Initialize Lucide icons
         lucide.createIcons();
@@ -158,10 +161,7 @@
         });
 
         // Función para cerrar sesión
-        function cerrarSesion() {
-            // Confirmación antes de cerrar sesión
-             document.getElementById('logout-form').submit();
-        }
+       
     </script>
 </body>
 </html>

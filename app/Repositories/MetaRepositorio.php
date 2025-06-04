@@ -325,6 +325,7 @@ class MetaRepositorio extends RepositorioBase
                 'descripcion' => $data['descripcion'] ?? $meta->descripcion,
                 'fecha_entrega' => $data['fecha_entrega'] ?? $meta->fecha_entrega
             ];
+            Log::info('Datos para actualizar:', $updateData);
 
             return $meta->update($updateData);
 

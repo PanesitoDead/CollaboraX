@@ -214,7 +214,7 @@ route::post('/coordinador-general/metas', [MetasController::class, 'store'])->na
 Route::get('/coordinador-general/metas/{id}', [MetasController::class, 'show'])->name('coordinador-general.metas.show');
 Route::put('/coordinador-general/metas/{id}', [MetasController::class, 'update'])->name('coordinador-general.metas.update');
 Route::delete('/coordinador-general/metas/{id}', [MetasController::class, 'destroy'])->name('coordinador-general.metas.destroy');
-
+route::get('/coordinador-general/metas/equipos', [MetasController::class, 'getEquipos'])->name('coordinador-general.metas.equipos');
 // Rutas de mensajes para coordinador general
 Route::get('/coordinador-general/mensajes', [MensajesController::class, 'index'])->name('coordinador-general.mensajes');
 Route::get('/coordinador-general/mensajes/{contactId}/messages', [MensajesController::class, 'getMessages'])->name('mensajes.get-messages');
