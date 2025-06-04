@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Repositories\TareaRepositorio;
 use App\Repositories\EquipoRepositorio;
 use App\Repositories\MetaRepositorio;
+use App\Repositories\EstadoRepositorio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -16,15 +17,18 @@ class ActividadesController extends Controller
     protected $tareaRepositorio;
     protected $equipoRepositorio;
     protected $metaRepositorio;
+    protected $estadoRepositorio;
 
     public function __construct(
         TareaRepositorio $tareaRepositorio,
         EquipoRepositorio $equipoRepositorio,
-        MetaRepositorio $metaRepositorio
+        MetaRepositorio $metaRepositorio,
+        EstadoRepositorio $estadoRepositorio
     ) {
         $this->tareaRepositorio = $tareaRepositorio;
         $this->equipoRepositorio = $equipoRepositorio;
         $this->metaRepositorio = $metaRepositorio;
+        $this->estadoRepositorio = $estadoRepositorio;
     }
 
     public function index()
@@ -201,6 +205,9 @@ class ActividadesController extends Controller
             // Cargar relaciones para la respuesta
             $tarea->load(['meta.equipo', 'estado']);
 
+            // Actualizar el estado de la meta basado en sus tareas
+            $this->actualizarEstadoMeta($request->meta_id);
+
             Log::info('Tarea creada exitosamente', [
                 'tarea_id' => $tarea->id,
                 'meta_id' => $request->meta_id,
@@ -302,6 +309,10 @@ class ActividadesController extends Controller
                 return response()->json(['error' => 'La meta seleccionada no es válida o no tiene equipo con coordinador válido'], 400);
             }
 
+            // Obtener la tarea actual para saber si cambió la meta
+            $tareaActual = $this->tareaRepositorio->getById($id);
+            $metaAnteriorId = $tareaActual ? $tareaActual->meta_id : null;
+
             $actualizado = $this->tareaRepositorio->update($id, [
                 'nombre' => $request->nombre,
                 'descripcion' => $request->descripcion,
@@ -312,6 +323,14 @@ class ActividadesController extends Controller
 
             if (!$actualizado) {
                 return response()->json(['error' => 'Actividad no encontrada'], 404);
+            }
+
+            // Actualizar el estado de la meta actual
+            $this->actualizarEstadoMeta($request->meta_id);
+
+            // Si cambió la meta, actualizar también el estado de la meta anterior
+            if ($metaAnteriorId && $metaAnteriorId != $request->meta_id) {
+                $this->actualizarEstadoMeta($metaAnteriorId);
             }
 
             return response()->json([
@@ -346,6 +365,14 @@ class ActividadesController extends Controller
                 return response()->json(['error' => 'No tienes permisos para modificar esta actividad'], 403);
             }
 
+            // Obtener la tarea para conocer su meta_id
+            $tarea = $this->tareaRepositorio->getById($request->id);
+            if (!$tarea) {
+                return response()->json(['error' => 'Actividad no encontrada'], 404);
+            }
+
+            $metaId = $tarea->meta_id;
+
             $actualizado = $this->tareaRepositorio->update($request->id, [
                 'estado_id' => $request->estado_id
             ]);
@@ -354,9 +381,14 @@ class ActividadesController extends Controller
                 return response()->json(['error' => 'Actividad no encontrada'], 404);
             }
 
+            // Actualizar el estado de la meta asociada
+            $resultadoMeta = $this->actualizarEstadoMeta($metaId);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Estado de actividad actualizado exitosamente'
+                'message' => 'Estado de actividad actualizado exitosamente',
+                'meta_actualizada' => $resultadoMeta['actualizado'],
+                'meta_estado' => $resultadoMeta['estado']
             ]);
 
         } catch (\Exception $e) {
@@ -382,17 +414,121 @@ class ActividadesController extends Controller
                 return response()->json(['error' => 'No tienes permisos para eliminar esta actividad'], 403);
             }
 
+            // Obtener la tarea para conocer su meta_id antes de eliminarla
+            $tarea = $this->tareaRepositorio->getById($id);
+            if (!$tarea) {
+                return response()->json(['error' => 'Actividad no encontrada'], 404);
+            }
+
+            $metaId = $tarea->meta_id;
+
             $eliminado = $this->tareaRepositorio->delete($id);
 
             if (!$eliminado) {
                 return response()->json(['error' => 'Actividad no encontrada'], 404);
             }
 
+            // Actualizar el estado de la meta después de eliminar la tarea
+            $this->actualizarEstadoMeta($metaId);
+
             return response()->json(['success' => true, 'message' => 'Actividad eliminada exitosamente']);
 
         } catch (\Exception $e) {
             Log::error('Error en destroy actividad', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString(), 'id' => $id]);
             return response()->json(['error' => 'Error al eliminar la actividad: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Actualiza automáticamente el estado de una meta basado en el estado de sus tareas
+     * 
+     * @param int $metaId ID de la meta a actualizar
+     * @return array Resultado de la actualización
+     */
+    private function actualizarEstadoMeta(int $metaId): array
+    {
+        try {
+            // Obtener la meta con sus tareas
+            $meta = $this->metaRepositorio->getById($metaId);
+            
+            if (!$meta) {
+                Log::warning('Meta no encontrada para actualizar estado', ['meta_id' => $metaId]);
+                return [
+                    'actualizado' => false,
+                    'estado' => null,
+                    'error' => 'Meta no encontrada'
+                ];
+            }
+            
+            // Guardar el estado anterior para saber si cambió
+            $estadoAnterior = $meta->estado ? $meta->estado->nombre : null;
+            
+            // Verificar si todas las tareas están completadas
+            $todasCompletadas = $this->tareaRepositorio->todasLasTareasCompletadas($metaId);
+            
+            // Determinar el nuevo estado
+            $estadoNombre = $todasCompletadas ? 'Completo' : 'En proceso';
+            $estado = $this->estadoRepositorio->findOneBy('nombre', $estadoNombre);
+            
+            if (!$estado) {
+                Log::error('Estado no encontrado para actualizar meta', [
+                    'meta_id' => $metaId,
+                    'estado_nombre' => $estadoNombre
+                ]);
+                return [
+                    'actualizado' => false,
+                    'estado' => $estadoAnterior,
+                    'error' => 'Estado no encontrado: ' . $estadoNombre
+                ];
+            }
+            
+            // Solo actualizar si el estado es diferente
+            $actualizado = false;
+            $estadoActualizado = false;
+            
+            if ($meta->estado_id != $estado->id) {
+                $actualizado = $this->metaRepositorio->update($metaId, ['estado_id' => $estado->id]);
+                $estadoActualizado = true;
+                
+                Log::info('Estado de meta actualizado automáticamente', [
+                    'meta_id' => $metaId,
+                    'meta_nombre' => $meta->nombre,
+                    'estado_anterior' => $estadoAnterior,
+                    'nuevo_estado' => $estadoNombre,
+                    'todas_tareas_completadas' => $todasCompletadas
+                ]);
+            } else {
+                // No hubo cambio de estado, pero consideramos exitosa la operación
+                $actualizado = true;
+                
+                Log::info('Estado de meta verificado (sin cambios)', [
+                    'meta_id' => $metaId,
+                    'meta_nombre' => $meta->nombre,
+                    'estado' => $estadoNombre,
+                    'todas_tareas_completadas' => $todasCompletadas
+                ]);
+            }
+            
+            return [
+                'actualizado' => $actualizado,
+                'estado_actualizado' => $estadoActualizado,
+                'estado' => $estadoNombre,
+                'estado_anterior' => $estadoAnterior,
+                'meta_nombre' => $meta->nombre
+            ];
+            
+        } catch (\Exception $e) {
+            Log::error('Error al actualizar estado de meta automáticamente', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'meta_id' => $metaId
+            ]);
+            
+            return [
+                'actualizado' => false,
+                'estado' => null,
+                'error' => 'Error: ' . $e->getMessage()
+            ];
         }
     }
 }
