@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Repositories\MensajeRepositorio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class MensajesController extends Controller
@@ -23,15 +24,25 @@ class MensajesController extends Controller
     public function index()
     {
         try {
-            // Obtener el coordinador autenticado (por ahora usaremos ID 8 que es Lucía con rol Coord. Equipo)
-            $coordinadorId = 8; // En producción: auth()->user()->trabajador->id
-        
-            // Obtener la empresa del coordinador
-            $empresaId = $this->mensajeRepositorio->getEmpresaByTrabajador($coordinadorId);
-        
-            if (!$empresaId) {
-                throw new \Exception('No se pudo determinar la empresa del coordinador');
+            // Obtener el coordinador autenticado
+            $user = Auth::user();
+            $trabajador = $user->trabajador;
+            
+            if (!$trabajador) {
+                return back()->with('error', 'No se encontró información del trabajador');
             }
+
+            $coordinadorId = $trabajador->id;
+            $empresaId = $trabajador->empresa_id;
+
+            if (!$empresaId) {
+                return back()->with('error', 'No se encontró la empresa asociada al trabajador');
+            }
+
+            Log::info('Cargando mensajes para coordinador', [
+                'coordinador_id' => $coordinadorId,
+                'empresa_id' => $empresaId
+            ]);
 
             // Obtener conversaciones del coordinador
             $conversaciones = $this->mensajeRepositorio->getConversacionesByCoordinador($coordinadorId, $empresaId);
@@ -41,6 +52,12 @@ class MensajesController extends Controller
         
             // Obtener estadísticas
             $estadisticas = $this->mensajeRepositorio->getEstadisticas($coordinadorId, $empresaId);
+
+            Log::info('Datos obtenidos para mensajería', [
+                'conversaciones_count' => $conversaciones->count(),
+                'trabajadores_disponibles' => $todosTrabajadores->count(),
+                'mensajes_no_leidos' => $estadisticas['mensajes_no_leidos']
+            ]);
 
             // Transformar conversaciones para la vista manteniendo el formato original
             $contacts = $conversaciones->map(function($conversacion) {
@@ -83,7 +100,7 @@ class MensajesController extends Controller
                         'id' => $trabajador->id,
                         'name' => $trabajador->nombres . ' ' . $trabajador->apellido_paterno . ' ' . $trabajador->apellido_materno,
                         'avatar' => '/placeholder.svg?height=40&width=40',
-                        'online' => false,
+                        'online' => $trabajador->usuario && $trabajador->usuario->en_linea,
                         'lastMessage' => 'Inicia una conversación',
                         'time' => '',
                         'unreadCount' => 0,
@@ -114,7 +131,10 @@ class MensajesController extends Controller
             return view('coordinador-general.mensajes.index', compact('contacts', 'allContacts', 'messages', 'stats'));
 
         } catch (\Exception $e) {
-            Log::error('Error en mensajes index', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            Log::error('Error en mensajes index', [
+                'error' => $e->getMessage(), 
+                'trace' => $e->getTraceAsString()
+            ]);
         
             // En caso de error, mostrar vista con datos vacíos
             return view('coordinador-general.mensajes.index', [
@@ -125,36 +145,63 @@ class MensajesController extends Controller
                     'unread' => 0,
                     'important' => 0
                 ]
-            ])->with('error', 'Error al cargar los mensajes');
+            ])->with('error', 'Error al cargar los mensajes: ' . $e->getMessage());
         }
     }
 
     public function searchWorkers(Request $request)
     {
-        $request->validate([
-            'query' => 'nullable|string'
-        ]);
-
         try {
             // Obtener el coordinador autenticado
-            $coordinadorId = 8; // En producción: auth()->user()->trabajador->id
-        
-            // Obtener la empresa del coordinador
-            $empresaId = $this->mensajeRepositorio->getEmpresaByTrabajador($coordinadorId);
+            $user = Auth::user();
+            
+            if (!$user) {
+                Log::error('Usuario no autenticado en searchWorkers');
+                return response()->json(['error' => 'Usuario no autenticado'], 401);
+            }
+            
+            $trabajador = $user->trabajador;
+            
+            if (!$trabajador) {
+                Log::error('Trabajador no encontrado para usuario', ['user_id' => $user->id]);
+                return response()->json(['error' => 'No se encontró información del trabajador'], 404);
+            }
+
+            $coordinadorId = $trabajador->id;
+            $empresaId = $trabajador->empresa_id;
         
             if (!$empresaId) {
-                return response()->json(['error' => 'No se pudo determinar la empresa'], 500);
+                Log::error('Empresa no encontrada para trabajador', ['trabajador_id' => $coordinadorId]);
+                return response()->json(['error' => 'No se pudo determinar la empresa'], 404);
             }
         
-            $query = $request->input('query', '');
-        
-            // Si no hay query o está vacío, mostrar todos los trabajadores disponibles
-            if (empty(trim($query))) {
-                $trabajadores = $this->mensajeRepositorio->getTrabajadoresDisponiblesParaChat($empresaId, $coordinadorId);
-            } else {
-                // Buscar trabajadores con roles específicos
-                $trabajadores = $this->mensajeRepositorio->buscarTrabajadoresConRoles($query, $empresaId);
+            // Obtener query de forma segura
+            $query = '';
+            if ($request->has('query')) {
+                $query = $request->input('query');
             }
+            
+            Log::info('Búsqueda de trabajadores iniciada', [
+                'coordinador_id' => $coordinadorId,
+                'empresa_id' => $empresaId,
+                'query' => $query
+            ]);
+
+            // Obtener trabajadores disponibles directamente
+            $trabajadores = $this->mensajeRepositorio->getTrabajadoresDisponiblesParaChat($empresaId, $coordinadorId);
+            
+            // Si hay query, filtrar los resultados
+            if (!empty($query)) {
+                $trabajadores = $trabajadores->filter(function($trabajador) use ($query) {
+                    $nombreCompleto = strtolower($trabajador->nombres . ' ' . $trabajador->apellido_paterno . ' ' . $trabajador->apellido_materno);
+                    return str_contains($nombreCompleto, strtolower($query));
+                });
+            }
+
+            Log::info('Búsqueda de trabajadores completada', [
+                'trabajadores_encontrados' => $trabajadores->count(),
+                'query' => $query
+            ]);
 
             // Transformar resultados
             $resultados = $trabajadores->map(function($trabajador) {
@@ -165,27 +212,31 @@ class MensajesController extends Controller
                     'avatar' => '/placeholder.svg?height=40&width=40',
                     'online' => $trabajador->usuario && $trabajador->usuario->en_linea
                 ];
-            });
+            })->values(); // Asegurar que sea un array indexado
 
             return response()->json([
                 'success' => true,
-                'workers' => $resultados
+                'workers' => $resultados,
+                'total' => $resultados->count()
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error en búsqueda de trabajadores', [
                 'error' => $e->getMessage(),
-                'query' => $request->input('query')
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all()
             ]);
-            return response()->json(['error' => 'Error en la búsqueda'], 500);
+            return response()->json(['error' => 'Error en la búsqueda: ' . $e->getMessage()], 500);
         }
     }
 
     public function getMessages($contactId)
     {
         try {
-            $coordinadorId = 8; // En producción: auth()->user()->trabajador->id
-            $empresaId = $this->mensajeRepositorio->getEmpresaByTrabajador($coordinadorId);
+            $user = Auth::user();
+            $trabajador = $user->trabajador;
+            $coordinadorId = $trabajador->id;
+            $empresaId = $trabajador->empresa_id;
 
             // Verificar que el contacto pertenece a la empresa
             if (!$this->mensajeRepositorio->trabajadorPerteneceAEmpresa($contactId, $empresaId)) {
@@ -250,8 +301,10 @@ class MensajesController extends Controller
         ]);
 
         try {
-            $coordinadorId = 8; // En producción: auth()->user()->trabajador->id
-            $empresaId = $this->mensajeRepositorio->getEmpresaByTrabajador($coordinadorId);
+            $user = Auth::user();
+            $trabajador = $user->trabajador;
+            $coordinadorId = $trabajador->id;
+            $empresaId = $trabajador->empresa_id;
 
             // Verificar que el contacto pertenece a la empresa
             if (!$this->mensajeRepositorio->trabajadorPerteneceAEmpresa($request->contact_id, $empresaId)) {
@@ -354,8 +407,10 @@ class MensajesController extends Controller
         ]);
 
         try {
-            $coordinadorId = 8; // En producción: auth()->user()->trabajador->id
-            $empresaId = $this->mensajeRepositorio->getEmpresaByTrabajador($coordinadorId);
+            $user = Auth::user();
+            $trabajador = $user->trabajador;
+            $coordinadorId = $trabajador->id;
+            $empresaId = $trabajador->empresa_id;
 
             // Verificar que el contacto pertenece a la empresa
             if (!$this->mensajeRepositorio->trabajadorPerteneceAEmpresa($request->contact_id, $empresaId)) {
@@ -395,7 +450,9 @@ class MensajesController extends Controller
         ]);
 
         try {
-            $empresaId = 1;
+            $user = Auth::user();
+            $trabajador = $user->trabajador;
+            $empresaId = $trabajador->empresa_id;
             
             // Buscar trabajadores
             $trabajadores = $this->mensajeRepositorio->buscarTrabajadores($request->input('query'), $empresaId);
@@ -436,8 +493,10 @@ class MensajesController extends Controller
         ]);
 
         try {
-            $coordinadorId = 8; // En producción: auth()->user()->trabajador->id
-            $empresaId = $this->mensajeRepositorio->getEmpresaByTrabajador($coordinadorId);
+            $user = Auth::user();
+            $trabajador = $user->trabajador;
+            $coordinadorId = $trabajador->id;
+            $empresaId = $trabajador->empresa_id;
 
             // Verificar que el contacto pertenece a la empresa
             if (!$this->mensajeRepositorio->trabajadorPerteneceAEmpresa($request->contact_id, $empresaId)) {

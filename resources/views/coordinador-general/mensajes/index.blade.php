@@ -266,23 +266,49 @@ const selectedWorker = document.getElementById('selected-worker');
 // Funciones de búsqueda de trabajadores
 function searchWorkers(query) {
     clearTimeout(searchTimeout);
+    
+    // Mostrar indicador de carga
+    workerResults.innerHTML = '<div class="p-3 text-sm text-gray-500">Cargando trabajadores...</div>';
+    workerResults.classList.remove('hidden');
+    
     searchTimeout = setTimeout(() => {
+        console.log('Iniciando búsqueda de trabajadores:', { query: query || '(vacío)' });
+        
         fetch('{{ route("coordinador-general.mensajes.search-workers") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json'
             },
             body: JSON.stringify({ query: query || '' })
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Respuesta recibida:', response.status, response.statusText);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            return response.json();
+        })
         .then(data => {
+            console.log('Datos recibidos:', data);
+            
             if (data.success) {
                 displayWorkerResults(data.workers);
+            } else {
+                console.error('Error en búsqueda:', data.error);
+                workerResults.innerHTML = `<div class="p-3 text-sm text-red-500">Error: ${data.error}</div>`;
+                workerResults.classList.remove('hidden');
             }
         })
-        .catch(error => console.error('Error:', error));
-    }, query && query.length > 0 ? 300 : 0);
+        .catch(error => {
+            console.error('Error completo:', error);
+            workerResults.innerHTML = `<div class="p-3 text-sm text-red-500">Error de conexión: ${error.message}</div>`;
+            workerResults.classList.remove('hidden');
+        });
+    }, query && query.length > 0 ? 300 : 100); // Reducir delay para búsquedas vacías
 }
 
 function displayWorkerResults(workers) {
@@ -796,6 +822,11 @@ function searchContacts(query) {
 function openNewChatModal() {
     newChatModal.classList.remove('hidden');
     newChatModal.classList.add('flex');
+    
+    // Cargar automáticamente todos los trabajadores al abrir el modal
+    setTimeout(() => {
+        searchWorkers('');
+    }, 100);
 }
 
 // Cerrar modal de nuevo chat
@@ -844,9 +875,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Mostrar todos los trabajadores al hacer clic en el input
     workerSearch.addEventListener('focus', function() {
-        if (this.value.trim() === '') {
-            searchWorkers('');
-        }
+        searchWorkers(this.value); // Siempre buscar, incluso si está vacío
+    });
+
+    // También agregar evento click para asegurar que se muestren los trabajadores
+    workerSearch.addEventListener('click', function() {
+        searchWorkers(this.value);
     });
     
     // Ocultar resultados al hacer clic fuera

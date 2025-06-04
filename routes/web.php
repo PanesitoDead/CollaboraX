@@ -216,17 +216,21 @@ Route::put('/coordinador-general/metas/{id}', [MetasController::class, 'update']
 Route::delete('/coordinador-general/metas/{id}', [MetasController::class, 'destroy'])->name('coordinador-general.metas.destroy');
 route::get('/coordinador-general/metas/equipos', [MetasController::class, 'getEquipos'])->name('coordinador-general.metas.equipos');
 Route::post('/coordinador-general/actividades/actualizar-estado', [ActividadesController::class, 'updateEstado'])->name('coordinador-general.actividades.actualizar-estado');
-Route::get('/coordinador-general/mensajes', [MensajesController::class, 'index'])->name('coordinador-general.mensajes');
-Route::get('/coordinador-general/mensajes/{contactId}/messages', [MensajesController::class, 'getMessages'])->name('mensajes.get-messages');
-Route::post('/coordinador-general/mensajes/send', [MensajesController::class, 'send'])->name('coordinador-general.mensajes.send');
-Route::post('/coordinador-general/mensajes/new-chat', [MensajesController::class, 'newChat'])->name('coordinador-general.mensajes.new-chat');
-Route::get('/coordinador-general/mensajes/search', [MensajesController::class, 'search'])->name('coordinador-general.mensajes.search');
-Route::post('/coordinador-general/mensajes/search-workers', [MensajesController::class, 'searchWorkers'])->name('coordinador-general.mensajes.search-workers');
-Route::get('/coordinador-general/mensajes/get-messages/{contactId}', [MensajesController::class, 'getMessages'])->name('coordinador-general.mensajes.get-messages');
-Route::post('/coordinador-general/mensajes/mark-as-read', [MensajesController::class, 'markAsRead'])->name('coordinador-general.mensajes.mark-as-read');
+
 
 Route::get('/coordinador-general/configuracion', [ConfigurationController::class, 'index'])->name('coordinador-general.configuracion');
 Route::post('/coordinador-general/configuracion/profile', [ConfigurationController::class, 'updateProfile'])->name('coordinador-general.configuracion.update-profile');
 Route::post('/coordinador-general/configuracion/photo', [ConfigurationController::class, 'uploadPhoto'])->name('coordinador-general.configuracion.upload-photo');
 Route::post('/coordinador-general/configuracion/notifications', [ConfigurationController::class, 'updateNotifications'])->name('coordinador-general.configuracion.update-notifications');
 Route::post('/coordinador-general/configuracion/security', [ConfigurationController::class, 'updateSecurity'])->name('coordinador-general.configuracion.update-security');
+
+
+
+// Mensajes - RUTAS COMPLETAS
+    Route::get('/coordinador-general/mensajes', [MensajesController::class, 'index'])->name('coordinador-general.mensajes');
+    Route::post('/coordinador-general/mensajes/search-workers', [MensajesController::class, 'searchWorkers'])->name('coordinador-general.mensajes.search-workers');
+    Route::get('/coordinador-general/mensajes/get-messages/{contactId}', [MensajesController::class, 'getMessages'])->name('coordinador-general.mensajes.get-messages');
+    Route::post('/coordinador-general/mensajes/send', [MensajesController::class, 'send'])->name('coordinador-general.mensajes.send');
+    Route::post('/coordinador-general/mensajes/new-chat', [MensajesController::class, 'newChat'])->name('coordinador-general.mensajes.new-chat');
+    Route::post('/coordinador-general/mensajes/mark-as-read', [MensajesController::class, 'markAsRead'])->name('coordinador-general.mensajes.mark-as-read');
+    Route::post('/coordinador-general/mensajes/search', [MensajesController::class, 'search'])->name('coordinador-general.mensajes.search');

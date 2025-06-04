@@ -45,9 +45,16 @@ class MensajeRepositorio
 
     /**
      * Buscar trabajadores con roles específicos
+     * Mejorado para manejar búsquedas vacías y filtrado por empresa
      */
-    public function buscarTrabajadoresConRoles(string $query, int $empresaId): Collection
+    public function buscarTrabajadoresConRoles(string $query = '', int $empresaId, int $coordinadorId = null): Collection
     {
+        Log::info('Iniciando búsqueda de trabajadores', [
+            'query' => $query,
+            'empresa_id' => $empresaId,
+            'coordinador_id' => $coordinadorId
+        ]);
+
         $queryBuilder = Trabajador::select('trabajadores.*')
             ->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
             ->join('roles', 'usuarios.rol_id', '=', 'roles.id')
@@ -58,8 +65,12 @@ class MensajeRepositorio
             ->whereNull('trabajadores.deleted_at')
             ->whereNull('usuarios.deleted_at')
             ->with(['usuario.rol'])
-            ->distinct()
-            ->orderBy('trabajadores.nombres');
+            ->distinct();
+
+        // Excluir al coordinador actual si se proporciona
+        if ($coordinadorId) {
+            $queryBuilder->where('trabajadores.id', '!=', $coordinadorId);
+        }
 
         // Si hay query de búsqueda, filtrar por nombre
         if (!empty(trim($query))) {
@@ -71,7 +82,17 @@ class MensajeRepositorio
             });
         }
 
-        return $queryBuilder->limit(10)->get();
+        $resultados = $queryBuilder->orderBy('trabajadores.nombres')->limit(50)->get();
+
+        Log::info('Resultados de búsqueda de trabajadores', [
+            'query' => $query,
+            'empresa_id' => $empresaId,
+            'coordinador_id' => $coordinadorId,
+            'resultados_count' => $resultados->count(),
+            'trabajadores_ids' => $resultados->pluck('id')->toArray()
+        ]);
+
+        return $resultados;
     }
 
     /**
@@ -79,7 +100,12 @@ class MensajeRepositorio
      */
     public function getTrabajadoresDisponiblesParaChat(int $empresaId, int $coordinadorId): Collection
     {
-        return Trabajador::select('trabajadores.*')
+        Log::info('Obteniendo trabajadores disponibles para chat', [
+            'empresa_id' => $empresaId,
+            'coordinador_id' => $coordinadorId
+        ]);
+
+        $trabajadores = Trabajador::select('trabajadores.*')
             ->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
             ->join('roles', 'usuarios.rol_id', '=', 'roles.id')
             ->where('trabajadores.empresa_id', $empresaId)
@@ -93,6 +119,15 @@ class MensajeRepositorio
             ->distinct()
             ->orderBy('trabajadores.nombres')
             ->get();
+
+        Log::info('Trabajadores disponibles obtenidos', [
+            'empresa_id' => $empresaId,
+            'coordinador_id' => $coordinadorId,
+            'trabajadores_count' => $trabajadores->count(),
+            'trabajadores_ids' => $trabajadores->pluck('id')->toArray()
+        ]);
+
+        return $trabajadores;
     }
 
     /**
@@ -217,10 +252,7 @@ class MensajeRepositorio
         // Crear registro en base de datos
         return Archivo::create([
             'nombre' => $file->getClientOriginalName(),
-            'ruta' => $ruta,
-            'tipo' => $file->getMimeType(),
-            'tamaño' => $file->getSize(),
-            'fecha_subida' => $ahora->toDateTimeString()
+            'ruta' => $ruta
         ]);
     }
 
