@@ -39,7 +39,7 @@ class ConfigurationController extends Controller
             // Buscar foto de perfil si existe
             $fotoPerfil = null;
             if ($user->foto) {
-                $fotoPerfil = DB::table('archivos')->where('archivo_id', $user->foto)->first();
+                $fotoPerfil = Archivo::find($user->foto);
                 Log::info('Foto de perfil', [
                     'foto_id' => $user->foto,
                     'archivo_encontrado' => $fotoPerfil ? 'Si' : 'No'
@@ -158,233 +158,247 @@ class ConfigurationController extends Controller
      */
     public function uploadPhoto(Request $request)
     {
-    try {
-        Log::info('=== INICIO uploadPhoto ===', [
-            'usuario_autenticado' => Auth::check(),
-            'tiene_archivo' => $request->hasFile('photo'),
-            'metodo_request' => $request->method(),
-            'headers' => $request->headers->all()
-        ]);
-
-        // Validación inicial
-        $request->validate([
-            'photo' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120' // 5MB max
-        ]);
-
-        Log::info('Validación pasada correctamente');
-
-        // Obtener el usuario autenticado
-        $user = Auth::user();
-        
-        if (!$user) {
-            Log::error('Usuario no autenticado en uploadPhoto');
-            return response()->json(['error' => 'Usuario no encontrado'], 404);
-        }
-
-        Log::info('Usuario autenticado obtenido', [
-            'user_id' => $user->id,
-            'correo' => $user->correo
-        ]);
-
-        $file = $request->file('photo');
-        
-        if (!$file) {
-            Log::error('No se pudo obtener el archivo del request');
-            return response()->json(['error' => 'No se pudo procesar el archivo'], 400);
-        }
-
-        Log::info('Archivo obtenido del request', [
-            'nombre_original' => $file->getClientOriginalName(),
-            'tamaño' => $file->getSize(),
-            'tipo_mime' => $file->getMimeType(),
-            'extension' => $file->getClientOriginalExtension(),
-            'es_valido' => $file->isValid()
-        ]);
-
-        if (!$file->isValid()) {
-            Log::error('Archivo no es válido', [
-                'error' => $file->getError(),
-                'error_message' => $file->getErrorMessage()
-            ]);
-            return response()->json(['error' => 'El archivo no es válido'], 400);
-        }
-
-        // Verificar que GD está disponible
-        if (!extension_loaded('gd')) {
-            Log::error('Extensión GD no está disponible');
-            return response()->json(['error' => 'El servidor no puede procesar imágenes'], 500);
-        }
-
-        Log::info('Extensión GD disponible');
-
-        // Generar nombre único para la foto
-        $extension = strtolower($file->getClientOriginalExtension());
-        $nombreArchivo = 'perfil_' . $user->id . '_' . time() . '.' . $extension;
-        
-        Log::info('Nombre de archivo generado', [
-            'nombre_archivo' => $nombreArchivo,
-            'extension' => $extension
-        ]);
-
-        // Crear directorio si no existe
-        $directorio = 'perfiles';
-        $directorioCompleto = storage_path('app/public/' . $directorio);
-        
-        Log::info('Verificando directorio', [
-            'directorio_completo' => $directorioCompleto,
-            'existe' => file_exists($directorioCompleto),
-            'es_escribible' => is_writable(dirname($directorioCompleto))
-        ]);
-
-        if (!file_exists($directorioCompleto)) {
-            Log::info('Creando directorio...');
-            if (!mkdir($directorioCompleto, 0755, true)) {
-                Log::error('No se pudo crear el directorio', [
-                    'directorio' => $directorioCompleto,
-                    'permisos_padre' => substr(sprintf('%o', fileperms(dirname($directorioCompleto))), -4)
-                ]);
-                return response()->json(['error' => 'Error al crear directorio de almacenamiento'], 500);
-            }
-            Log::info('Directorio creado exitosamente');
-        }
-
-        // Usar el método store de Laravel en lugar de procesamiento manual
         try {
-            Log::info('Intentando guardar archivo usando Laravel Storage...');
+            Log::info('=== INICIO uploadPhoto ===', [
+                'usuario_autenticado' => Auth::check(),
+                'tiene_archivo' => $request->hasFile('photo'),
+                'metodo_request' => $request->method()
+            ]);
+
+            // Validación inicial
+            $request->validate([
+                'photo' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120' // 5MB max
+            ]);
+
+            Log::info('Validación pasada correctamente');
+
+            // Obtener el usuario autenticado
+            $user = Auth::user();
             
-            // Guardar el archivo usando Laravel Storage
-            $rutaArchivo = $file->store($directorio, 'public');
-            
-            if (!$rutaArchivo) {
-                Log::error('Laravel Storage no pudo guardar el archivo');
-                return response()->json(['error' => 'Error al guardar el archivo'], 500);
+            if (!$user) {
+                Log::error('Usuario no autenticado en uploadPhoto');
+                return response()->json(['error' => 'Usuario no encontrado'], 404);
             }
 
-            Log::info('Archivo guardado exitosamente con Laravel Storage', [
-                'ruta' => $rutaArchivo,
-                'ruta_completa' => storage_path('app/public/' . $rutaArchivo)
+            Log::info('Usuario autenticado obtenido', [
+                'user_id' => $user->id,
+                'correo' => $user->correo
             ]);
+
+            $file = $request->file('photo');
+            
+            if (!$file) {
+                Log::error('No se pudo obtener el archivo del request');
+                return response()->json(['error' => 'No se pudo procesar el archivo'], 400);
+            }
+
+            Log::info('Archivo obtenido del request', [
+                'nombre_original' => $file->getClientOriginalName(),
+                'tamaño' => $file->getSize(),
+                'tipo_mime' => $file->getMimeType(),
+                'extension' => $file->getClientOriginalExtension()
+            ]);
+
+            if (!$file->isValid()) {
+                Log::error('Archivo no es válido', [
+                    'error' => $file->getError()
+                ]);
+                return response()->json(['error' => 'El archivo no es válido'], 400);
+            }
+
+            // Crear directorio si no existe
+            $directorio = 'perfiles';
+            $directorioCompleto = storage_path('app/public/' . $directorio);
+            
+            if (!file_exists($directorioCompleto)) {
+                Log::info('Creando directorio de perfiles', ['ruta' => $directorioCompleto]);
+                if (!mkdir($directorioCompleto, 0755, true)) {
+                    Log::error('No se pudo crear el directorio de perfiles', ['ruta' => $directorioCompleto]);
+                    return response()->json(['error' => 'Error al crear directorio de almacenamiento'], 500);
+                }
+            }
+            
+            // Generar nombre único para la foto
+            $extension = strtolower($file->getClientOriginalExtension());
+            $nombreArchivo = 'perfil_' . $user->id . '_' . time() . '.' . $extension;
+            $rutaRelativa = $directorio . '/' . $nombreArchivo;
+            $rutaCompleta = storage_path('app/public/' . $rutaRelativa);
+            
+            Log::info('Nombre de archivo generado', [
+                'nombre_archivo' => $nombreArchivo,
+                'ruta_relativa' => $rutaRelativa,
+                'ruta_completa' => $rutaCompleta
+            ]);
+
+            // Intentar guardar el archivo directamente
+            try {
+                // Primero intentamos con el método move
+                if (!$file->move(storage_path('app/public/' . $directorio), $nombreArchivo)) {
+                    // Si falla, intentamos con store
+                    $rutaRelativa = $file->store($directorio, 'public');
+                    if (!$rutaRelativa) {
+                        throw new \Exception('No se pudo guardar el archivo');
+                    }
+                    $rutaCompleta = storage_path('app/public/' . $rutaRelativa);
+                } else {
+                    $rutaRelativa = $directorio . '/' . $nombreArchivo;
+                }
+                
+                Log::info('Archivo guardado exitosamente', [
+                    'ruta' => $rutaRelativa,
+                    'ruta_completa' => $rutaCompleta
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Error al guardar el archivo', [
+                    'error' => $e->getMessage(),
+                    'ruta_destino' => storage_path('app/public/' . $directorio)
+                ]);
+                return response()->json(['error' => 'Error al guardar la imagen: ' . $e->getMessage()], 500);
+            }
 
             // Verificar que el archivo existe
-            $rutaCompleta = storage_path('app/public/' . $rutaArchivo);
             if (!file_exists($rutaCompleta)) {
                 Log::error('El archivo no existe después de guardarlo', ['ruta' => $rutaCompleta]);
                 return response()->json(['error' => 'Error al verificar la imagen guardada'], 500);
             }
 
-            $tamañoArchivo = filesize($rutaCompleta);
-            Log::info('Archivo verificado', [
-                'existe' => true,
-                'tamaño' => $tamañoArchivo
-            ]);
-
-            // Eliminar foto anterior si existe
-            if ($user->foto) {
-                try {
-                    Log::info('Eliminando foto anterior...', ['foto_id' => $user->foto]);
+            // Iniciar una transacción de base de datos
+            DB::beginTransaction();
+            
+            try {
+                // Eliminar foto anterior si existe
+                if ($user->foto) {
+                    Log::info('Buscando foto anterior...', ['foto_id' => $user->foto]);
                     
-                    $fotoAnterior = DB::table('archivos')->where('archivo_id', $user->foto)->first();
-                    if ($fotoAnterior && $fotoAnterior->ruta) {
+                    $fotoAnterior = Archivo::find($user->foto);
+                    
+                    if ($fotoAnterior) {
+                        Log::info('Foto anterior encontrada', ['id' => $fotoAnterior->id, 'ruta' => $fotoAnterior->ruta]);
+                        
+                        // Eliminar archivo físico si existe
                         $rutaAnterior = storage_path('app/public/' . $fotoAnterior->ruta);
                         if (file_exists($rutaAnterior)) {
-                            unlink($rutaAnterior);
-                            Log::info('Archivo físico anterior eliminado', ['ruta' => $fotoAnterior->ruta]);
+                            try {
+                                unlink($rutaAnterior);
+                                Log::info('Archivo físico anterior eliminado', ['ruta' => $rutaAnterior]);
+                            } catch (\Exception $e) {
+                                Log::warning('No se pudo eliminar el archivo físico anterior', [
+                                    'ruta' => $rutaAnterior,
+                                    'error' => $e->getMessage()
+                                ]);
+                                // Continuamos aunque no se pueda eliminar el archivo anterior
+                            }
                         }
-                        DB::table('archivos')->where('archivo_id', $fotoAnterior->archivo_id)->delete();
+                        
+                        // Eliminar registro en base de datos
+                        $fotoAnterior->delete();
                         Log::info('Registro anterior eliminado de BD');
+                    } else {
+                        Log::warning('No se encontró la foto anterior en la BD', ['foto_id' => $user->foto]);
                     }
-                } catch (\Exception $e) {
-                    Log::error('Error al eliminar foto anterior', [
-                        'error' => $e->getMessage(),
-                        'usuario_id' => $user->id
-                    ]);
-                    // No fallar por esto, continuar con el proceso
                 }
+
+                // Crear nuevo registro de archivo
+                Log::info('Creando registro en tabla archivos...');
+                
+                $archivo = new Archivo();
+                $archivo->nombre = 'Foto de perfil - ' . $user->correo;
+                $archivo->ruta = $rutaRelativa;
+                $archivo->save();
+                
+                if (!$archivo->id) {
+                    Log::error('No se pudo insertar el archivo en la base de datos');
+                    throw new \Exception('Error al registrar la imagen en la base de datos');
+                }
+                
+                Log::info('Archivo registrado en BD', [
+                    'archivo_id' => $archivo->id,
+                    'ruta' => $rutaRelativa
+                ]);
+
+                // Actualizar usuario con nueva foto
+                Log::info('Actualizando usuario con nueva foto...');
+                
+                // Usar update directo en lugar de save para evitar problemas con modelos
+                $updated = DB::table('usuarios')->where('id', $user->id)->update([
+                    'foto' => $archivo->id
+                ]);
+                
+                if (!$updated) {
+                    Log::error('No se pudo actualizar el usuario con la nueva foto');
+                    throw new \Exception('Error al actualizar el perfil del usuario');
+                }
+                
+                Log::info('Usuario actualizado exitosamente', [
+                    'usuario_id' => $user->id,
+                    'archivo_id' => $archivo->id
+                ]);
+                
+                // Si todo está bien, confirmar la transacción
+                DB::commit();
+
+                $photoUrl = asset('storage/' . $rutaRelativa);
+                
+                Log::info('=== FIN uploadPhoto EXITOSO ===', [
+                    'photo_url' => $photoUrl
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Foto de perfil actualizada correctamente',
+                    'photo_url' => $photoUrl
+                ]);
+                
+            } catch (\Exception $e) {
+                // Si algo sale mal, revertir la transacción
+                DB::rollBack();
+                
+                // Intentar eliminar el archivo que acabamos de subir
+                if (file_exists($rutaCompleta)) {
+                    try {
+                        unlink($rutaCompleta);
+                        Log::info('Archivo revertido (eliminado) debido a error', ['ruta' => $rutaCompleta]);
+                    } catch (\Exception $ex) {
+                        Log::warning('No se pudo eliminar el archivo durante rollback', [
+                            'ruta' => $rutaCompleta,
+                            'error' => $ex->getMessage()
+                        ]);
+                    }
+                }
+                
+                Log::error('Error en transacción de BD', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                
+                return response()->json(['error' => 'Error al procesar la imagen: ' . $e->getMessage()], 500);
             }
 
-            // Crear nuevo registro de archivo
-            Log::info('Creando registro en tabla archivos...');
-            
-            $archivoId = DB::table('archivos')->insertGetId([
-                'descripcion' => 'Foto de perfil - ' . $user->correo,
-                'ruta' => $rutaArchivo
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Error de validación en uploadPhoto', [
+                'errors' => $e->errors()
             ]);
-            
-            if (!$archivoId) {
-                Log::error('No se pudo insertar el archivo en la base de datos');
-                return response()->json(['error' => 'Error al registrar la imagen en la base de datos'], 500);
-            }
-            
-            Log::info('Archivo registrado en BD', [
-                'archivo_id' => $archivoId,
-                'ruta' => $rutaArchivo
-            ]);
-
-            // Actualizar usuario con nueva foto
-            Log::info('Actualizando usuario con nueva foto...');
-            
-            $updated = DB::table('usuarios')->where('id', $user->id)->update([
-                'foto' => $archivoId
-            ]);
-            
-            if (!$updated) {
-                Log::error('No se pudo actualizar el usuario con la nueva foto');
-                return response()->json(['error' => 'Error al actualizar el perfil del usuario'], 500);
-            }
-            
-            Log::info('Usuario actualizado exitosamente', [
-                'usuario_id' => $user->id,
-                'archivo_id' => $archivoId
-            ]);
-
-            $photoUrl = asset('storage/' . $rutaArchivo);
-            
-            Log::info('=== FIN uploadPhoto EXITOSO ===', [
-                'photo_url' => $photoUrl
-            ]);
-
             return response()->json([
-                'success' => true,
-                'message' => 'Foto de perfil actualizada correctamente',
-                'photo_url' => $photoUrl
-            ]);
-
+                'error' => 'Error de validación: ' . implode(', ', collect($e->errors())->flatten()->toArray())
+            ], 422);
+            
         } catch (\Exception $e) {
-            Log::error('Error en el procesamiento del archivo', [
+            Log::error('=== ERROR GENERAL EN uploadPhoto ===', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'linea' => $e->getLine(),
-                'archivo' => $e->getFile()
+                'archivo' => $e->getFile(),
+                'request_data' => [
+                    'method' => $request->method(),
+                    'has_file' => $request->hasFile('photo')
+                ]
             ]);
-            return response()->json(['error' => 'Error al procesar el archivo: ' . $e->getMessage()], 500);
+            
+            return response()->json([
+                'error' => 'Error al procesar la imagen: ' . $e->getMessage()
+            ], 500);
         }
-
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        Log::error('Error de validación en uploadPhoto', [
-            'errors' => $e->errors()
-        ]);
-        return response()->json([
-            'error' => 'Error de validación: ' . implode(', ', collect($e->errors())->flatten()->toArray())
-        ], 422);
-        
-    } catch (\Exception $e) {
-        Log::error('=== ERROR GENERAL EN uploadPhoto ===', [
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-            'linea' => $e->getLine(),
-            'archivo' => $e->getFile(),
-            'request_data' => [
-                'method' => $request->method(),
-                'has_file' => $request->hasFile('photo'),
-                'content_type' => $request->header('Content-Type')
-            ]
-        ]);
-        
-        return response()->json([
-            'error' => 'Error interno del servidor. Revisa los logs para más detalles.'
-        ], 500);
     }
-}
 
     /**
      * Update security settings (change password).
