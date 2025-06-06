@@ -21,7 +21,6 @@ class EquiposController extends Controller
     public function index()
     {
         try {
-            // Obtener la empresa del coordinador general autenticado
             $user = Auth::user();
             $trabajador = $user->trabajador;
             
@@ -29,7 +28,6 @@ class EquiposController extends Controller
                 return back()->with('error', 'No se encontró información del trabajador');
             }
 
-            // Obtener la empresa del trabajador directamente por ID
             $empresaId = $trabajador->empresa_id;
             if (!$empresaId) {
                 return back()->with('error', 'No se encontró la empresa asociada al trabajador');
@@ -40,40 +38,23 @@ class EquiposController extends Controller
                 return back()->with('error', 'No se encontró la empresa en la base de datos');
             }
             
-            // Obtener las áreas asignadas al coordinador general
             $areasCoordinador = $this->equipoRepositorio->getAreasCoordinadorGeneral($trabajador->id);
             
             if ($areasCoordinador->isEmpty()) {
                 return back()->with('error', 'No tienes áreas asignadas como coordinador general');
             }
 
-            // Obtener equipos solo de las áreas del coordinador (SOLO con coordinadores de equipo válidos)
             $equipos = $this->equipoRepositorio->getEquiposByAreas($areasCoordinador->pluck('id')->toArray());
-            
-            // Obtener colaboradores disponibles para convertir en coordinadores de equipo
             $colaboradores = $this->equipoRepositorio->getColaboradoresParaCoordinacion($empresaId);
-            
             $estadisticas = $this->equipoRepositorio->getEstadisticasPorAreas($areasCoordinador->pluck('id')->toArray());
 
-            // Debug: Ver qué se está obteniendo
-            Log::info('Datos obtenidos para coordinador general', [
-                'empresa_id' => $empresaId,
-                'trabajador_id' => $trabajador->id,
-                'areas_count' => $areasCoordinador->count(),
-                'equipos_count' => $equipos->count(),
-                'colaboradores_count' => $colaboradores->count()
-            ]);
-
-            // Transformar datos para la vista
             $equiposTransformados = $equipos->map(function($equipo) {
-                // Verificar que el equipo tenga coordinadores de equipo válidos
                 $coordinadoresEquipo = $equipo->miembros->where('activo', true)->filter(function($miembro) {
                     return $miembro->trabajador->usuario && 
                            $miembro->trabajador->usuario->rol && 
                            $miembro->trabajador->usuario->rol->nombre === 'Coord. Equipo';
                 });
 
-                // Solo mostrar equipos que tengan al menos un coordinador de equipo
                 if ($coordinadoresEquipo->isEmpty()) {
                     return null;
                 }
@@ -84,6 +65,9 @@ class EquiposController extends Controller
                            in_array($miembro->trabajador->usuario->rol->nombre, ['Colaborador', 'Coord. Equipo']);
                 });
 
+                // Obtener el coordinador principal para su avatar
+                $coordinador = $equipo->miembros->firstWhere('trabajador_id', $equipo->coordinador_id);
+                
                 return [
                     'id' => $equipo->id,
                     'nombre' => $equipo->nombre,
@@ -93,17 +77,26 @@ class EquiposController extends Controller
                     'estado' => $equipo->estado,
                     'coordinador' => $equipo->coordinador_nombre_completo,
                     'coordinador_id' => $equipo->coordinador_id,
+                    // Añadimos el avatar del coordinador
+                    'coordinador_avatar' => optional(optional(optional($coordinador)->trabajador)->usuario)->fotoPerfil
+                        ? asset('storage/' . $coordinador->trabajador->usuario->fotoPerfil->ruta)
+                        : '/placeholder.svg?height=40&width=40',
                     'miembros_count' => $colaboradoresMiembros->count(),
                     'metas_activas' => $equipo->metas_activas_count,
                     'progreso' => $equipo->progreso_promedio,
+                    // Modificamos 'miembros' para que sea un array de objetos con nombre y avatar
                     'miembros' => $colaboradoresMiembros->map(function($miembro) {
-                        return $miembro->trabajador->nombre_completo;
+                        return [
+                            'nombre' => $miembro->trabajador->nombre_completo,
+                            'avatar' => optional($miembro->trabajador->usuario)->fotoPerfil
+                                ? asset('storage/' . $miembro->trabajador->usuario->fotoPerfil->ruta)
+                                : '/placeholder.svg?height=40&width=40'
+                        ];
                     })->toArray(),
                     'fecha_creacion' => $equipo->fecha_creacion ? \Carbon\Carbon::parse($equipo->fecha_creacion)->format('Y-m-d') : null
                 ];
-            })->filter(); // Filtrar elementos null
+            })->filter();
 
-            // Transformar colaboradores para la vista
             $colaboradoresTransformados = $colaboradores->map(function($colaborador) {
                 return [
                     'id' => $colaborador->id,
@@ -282,9 +275,7 @@ class EquiposController extends Controller
 
     public function buscarColaboradores(Request $request)
     {
-        $request->validate([
-            'q' => 'required|string|min:1'
-        ]);
+        $request->validate(['q' => 'required|string|min:1']);
 
         try {
             $user = Auth::user();
@@ -299,7 +290,10 @@ class EquiposController extends Controller
                     'nombre' => $colaborador->nombre_completo,
                     'email' => $colaborador->usuario ? $colaborador->usuario->correo : '',
                     'rol' => $colaborador->usuario && $colaborador->usuario->rol ? $colaborador->usuario->rol->nombre : '',
-                    'area_actual' => $colaborador->area_actual ?? 'Sin área'
+                    'area_actual' => $colaborador->area_actual ?? 'Sin área',
+                    'avatar' => optional($colaborador->usuario)->fotoPerfil
+                        ? asset('storage/' . $colaborador->usuario->fotoPerfil->ruta)
+                        : '/placeholder.svg?height=40&width=40'
                 ];
             });
 
@@ -314,7 +308,6 @@ class EquiposController extends Controller
     public function getMiembros($id)
     {
         try {
-            // Verificar permisos
             $user = Auth::user();
             $trabajador = $user->trabajador;
             
@@ -333,6 +326,9 @@ class EquiposController extends Controller
                     'id' => $miembro->trabajador->id,
                     'nombre' => $miembro->trabajador->nombre_completo,
                     'email' => $miembro->trabajador->usuario ? $miembro->trabajador->usuario->correo : '',
+                    'avatar' => optional($miembro->trabajador->usuario)->fotoPerfil
+                        ? asset('storage/' . $miembro->trabajador->usuario->fotoPerfil->ruta)
+                        : '/placeholder.svg?height=40&width=40',
                     'rol' => $miembro->trabajador->usuario && $miembro->trabajador->usuario->rol ? $miembro->trabajador->usuario->rol->nombre : '',
                     'fecha_union' => $miembro->fecha_union instanceof \Carbon\Carbon 
                         ? $miembro->fecha_union->format('Y-m-d') 

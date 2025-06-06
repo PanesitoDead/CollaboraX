@@ -1,10 +1,8 @@
 @extends('layouts.coordinador-general.app')
 
 @section('content')
-<!-- Header -->
 <div class="bg-white border-b border-gray-200 px-6 py-4 slide-in">
     <div class="flex items-center justify-between">
-        <!-- Modificar la línea que muestra el nombre de la empresa -->
         <div>
             <h1 class="text-2xl font-bold text-gray-900">Gestión de Equipos</h1>
             <p class="text-gray-600 mt-1">Administra y supervisa todos los equipos de trabajo{{ isset($empresa) ? ' de ' . $empresa->nombre : '' }}</p>
@@ -16,7 +14,6 @@
     </div>
 </div>
 
-<!-- Filters and Search -->
 <div class="bg-white border-b border-gray-200 px-6 py-4 slide-in">
     <div class="flex flex-col sm:flex-row gap-4">
         <div class="flex-1">
@@ -48,7 +45,6 @@
     </div>
 </div>
 
-<!-- Teams Grid -->
 <div class="flex-1 overflow-auto p-6">
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="teamsGrid">
         @foreach($equipos as $equipo)
@@ -57,7 +53,6 @@
              data-status="{{ $equipo['estado'] }}" 
              data-area="{{ strtolower($equipo['area']) }}">
             
-            <!-- Team Header -->
             <div class="flex items-start justify-between mb-4">
                 <div class="flex-1">
                     <h3 class="text-lg font-semibold text-gray-900 mb-1">{{ $equipo['nombre'] }}</h3>
@@ -75,7 +70,6 @@
                 </div>
             </div>
 
-            <!-- Status Badge -->
             <div class="mb-4">
                 @if($equipo['estado'] === 'activo')
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -95,7 +89,6 @@
                 @endif
             </div>
 
-            <!-- Team Stats -->
             <div class="grid grid-cols-2 gap-4 mb-4">
                 <div class="text-center">
                     <div class="text-2xl font-bold text-blue-600">{{ $equipo['miembros_count'] }}</div>
@@ -107,36 +100,32 @@
                 </div>
             </div>
 
-            <!-- Progress Bar -->
             <div class="mb-4">
                 <div class="flex justify-between text-sm text-gray-600 mb-1">
                     <span>Progreso general</span>
-                    <span>{{ $equipo['progreso'] }}%</span>
+                    <span>{{ round($equipo['progreso']) }}%</span>
                 </div>
                 <div class="w-full bg-gray-200 rounded-full h-2">
                     <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: {{ $equipo['progreso'] }}%"></div>
                 </div>
             </div>
 
-            <!-- Team Members -->
             <div class="mb-4">
                 <div class="text-sm text-gray-600 mb-2">Coordinador</div>
                 <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span class="text-sm font-medium text-blue-600">{{ substr($equipo['coordinador'], 0, 1) }}</span>
-                    </div>
+                    <img src="{{ $equipo['coordinador_avatar'] }}" alt="{{ $equipo['coordinador'] }}" class="w-8 h-8 rounded-full object-cover">
                     <span class="text-sm font-medium text-gray-900">{{ $equipo['coordinador'] }}</span>
                 </div>
             </div>
 
-            <!-- Team Members Avatars -->
             <div class="mb-4">
                 <div class="text-sm text-gray-600 mb-2">Miembros del equipo</div>
                 <div class="flex -space-x-2">
-                    @foreach(array_slice($equipo['miembros'], 0, 4) as $index => $miembro)
-                    <div class="w-8 h-8 bg-gray-100 rounded-full border-2 border-white flex items-center justify-center">
-                        <span class="text-xs font-medium text-gray-600">{{ substr($miembro, 0, 1) }}</span>
-                    </div>
+                    @foreach(array_slice($equipo['miembros'], 0, 4) as $miembro)
+                    <img src="{{ $miembro['avatar'] }}" 
+                         alt="{{ $miembro['nombre'] }}" 
+                         title="{{ $miembro['nombre'] }}"
+                         class="w-8 h-8 rounded-full border-2 border-white object-cover">
                     @endforeach
                     @if(count($equipo['miembros']) > 4)
                     <div class="w-8 h-8 bg-gray-200 rounded-full border-2 border-white flex items-center justify-center">
@@ -146,7 +135,6 @@
                 </div>
             </div>
 
-            <!-- Action Buttons -->
             <div class="flex space-x-2">
                 <a href="{{ route('coordinador-general.equipos.show', $equipo['id']) }}" class="flex-1 bg-blue-50 text-blue-600 py-2 px-3 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors text-center">
                     Ver equipo
@@ -156,7 +144,6 @@
         @endforeach
     </div>
 
-    <!-- Empty State -->
     <div id="emptyState" class="hidden text-center py-12">
         <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <i data-lucide="users" class="w-12 h-12 text-gray-400"></i>
@@ -169,7 +156,6 @@
     </div>
 </div>
 
-<!-- Create Team Modal -->
 <div id="createTeamModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4 form-transition">
         <div class="flex justify-between items-center mb-4">
@@ -211,11 +197,9 @@
                         >
                         <input type="hidden" id="teamCoordinator" name="coordinador_id" required>
                         
-                        <!-- Dropdown de resultados -->
                         <div id="coordinatorDropdown" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                             <div id="coordinatorResults" class="py-1">
-                                <!-- Los resultados se cargarán aquí -->
-                            </div>
+                                </div>
                         </div>
                     </div>
                     <p class="text-xs text-gray-500 mt-1">Busca y selecciona un colaborador para convertirlo en coordinador del equipo</p>
@@ -239,7 +223,6 @@
     </div>
 </div>
 
-<!-- Confirmation Modal -->
 <div id="confirmDeleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4 form-transition">
         <div class="text-center mb-6">
@@ -265,7 +248,6 @@
     </div>
 </div>
 
-<!-- Toast Notification -->
 <div id="toast" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full opacity-0 transition-all duration-300 z-50">
     <div class="flex items-center">
         <i data-lucide="check-circle" class="w-5 h-5 mr-2"></i>
@@ -330,13 +312,12 @@ function mostrarResultadosColaboradores(colaboradores) {
     if (colaboradores.length === 0) {
         resultsContainer.innerHTML = '<div class="px-4 py-2 text-gray-500 text-sm">No se encontraron colaboradores</div>';
     } else {
+        // CORRECCIÓN 3: Mostrar foto de los colaboradores en el modal de búsqueda
         resultsContainer.innerHTML = colaboradores.map(colaborador => `
             <div class="px-4 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0" 
                  onclick="seleccionarColaborador(${colaborador.id}, '${colaborador.nombre}', '${colaborador.email}')">
                 <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span class="text-xs font-medium text-blue-600">${colaborador.nombre.charAt(0)}</span>
-                    </div>
+                    <img src="${colaborador.avatar}" alt="${colaborador.nombre}" class="w-8 h-8 rounded-full object-cover">
                     <div>
                         <div class="text-sm font-medium text-gray-900">${colaborador.nombre}</div>
                         <div class="text-xs text-gray-500">${colaborador.email}</div>
@@ -535,6 +516,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 #coordinatorDropdown .cursor-pointer:hover {
     background-color: #f8fafc;
+}
+
+/* Para asegurar que las fotos de perfil cubran el espacio */
+.object-cover {
+    object-fit: cover;
 }
 </style>
 @endsection
