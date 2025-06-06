@@ -155,13 +155,13 @@
     <nav class="space-y-2 nav-links">
         @php
         $items = [
-          ['route' => 'admin.dashboard', 'icon' => 'home', 'label' => 'Dashboard'],
+          ['route' => 'admin.dashboard.index', 'icon' => 'home', 'label' => 'Dashboard'],
           ['route' => 'admin.areas.index', 'icon' => 'layers', 'label' => 'Áreas'],
           ['route' => 'admin.colaboradores.index', 'icon' => 'users', 'label' => 'Colaboradores'],
           ['route' => 'admin.coordinadores-equipos.index', 'icon' => 'user-check', 'label' => 'Coord. Equipo'],
           ['route' => 'admin.coordinadores-generales.index', 'icon' => 'user-cog', 'label' => 'Coord. Generales'],
           ['route' => 'admin.estadisticas', 'icon' => 'bar-chart-2', 'label' => 'Estadísticas'],
-          ['route' => 'admin.configuracion', 'icon' => 'settings', 'label' => 'Configuración'],
+          ['route' => 'admin.configuracion.index', 'icon' => 'settings', 'label' => 'Configuración'],
         ];
       @endphp
       @foreach ($items as $item)
@@ -190,7 +190,7 @@
         </button>
         
         <div id="user-menu" class="hidden absolute bottom-full left-0 mb-2 w-full bg-gradient-to-b from-blue-900 to-blue-800 text-white rounded-lg border border-white/10">
-            <a href="{{ route('admin.configuracion') }}" class="user-menu-item">
+            <a href="{{ route('admin.configuracion.index') }}" class="user-menu-item">
                 <i data-lucide="user" class="h-5 w-5"></i>
                 <span>Perfil</span>
             </a>

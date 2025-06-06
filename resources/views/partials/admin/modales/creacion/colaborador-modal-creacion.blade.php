@@ -1,6 +1,3 @@
-<!-- =========================
-     Modal para crear Colaborador
-   ========================= -->
 <div
   id="modalColaborador"
   class="fixed inset-0 w-screen h-screen bg-black/50 hidden z-50 opacity-0 transition-opacity duration-300"
@@ -61,41 +58,57 @@
               class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-
-          <!-- Apellido Paterno -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Apellido Paterno -->
+            <div>
+              <label
+                for="inputApellidoPaternoColaborador"
+                class="block mb-1 text-sm font-medium text-gray-700"
+              >
+                Apellido Paterno
+              </label>
+              <input
+                type="text"
+                name="apellido_paterno"
+                id="inputApellidoPaternoColaborador"
+                required
+                class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <!-- Apellido Materno -->
+            <div>
+              <label
+                for="inputApellidoMaternoColaborador"
+                class="block mb-1 text-sm font-medium text-gray-700"
+              >
+                Apellido Materno
+              </label>
+              <input
+                type="text"
+                name="apellido_materno"
+                id="inputApellidoMaternoColaborador"
+                required
+                class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div> 
+          <!-- Correo personal -->
           <div>
             <label
-              for="inputApellidoPaternoColaborador"
+              for="inputCorreoColaborador"
               class="block mb-1 text-sm font-medium text-gray-700"
             >
-              Apellido Paterno
+              Correo Personal
             </label>
             <input
-              type="text"
-              name="apellido_paterno"
-              id="inputApellidoPaternoColaborador"
+              type="email"
+              name="correo_personal"
+              id="inputCorreoPersonal"
               required
               class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="micorreo@ejemplo.com"
             />
           </div>
-
-          <!-- Apellido Materno -->
-          <div>
-            <label
-              for="inputApellidoMaternoColaborador"
-              class="block mb-1 text-sm font-medium text-gray-700"
-            >
-              Apellido Materno
-            </label>
-            <input
-              type="text"
-              name="apellido_materno"
-              id="inputApellidoMaternoColaborador"
-              required
-              class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
           <!-- Correo generado -->
           <div>
             <label
@@ -142,7 +155,7 @@
               <button
                 type="button"
                 onclick="regenerarClave()"
-                class="mt-1 p-2 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition"
+                class="mt-1 p-2.5 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition"
                 title="Regenerar contraseña"
               >
                 <i data-lucide="refresh-ccw" class="w-5 h-5 text-gray-600"></i>
@@ -151,7 +164,7 @@
               <button
                 type="button"
                 onclick="copiarClave()"
-                class="mt-1 p-2 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition"
+                class="mt-1 p-2.5 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition"
                 title="Copiar contraseña"
               >
                 <i data-lucide="clipboard" class="w-5 h-5 text-gray-600"></i>
@@ -195,6 +208,7 @@
     document.getElementById('inputNombresColaborador').value = "";
     document.getElementById('inputApellidoPaternoColaborador').value = "";
     document.getElementById('inputApellidoMaternoColaborador').value = "";
+    document.getElementById('inputCorreoPersonal').value = "";
     document.getElementById('inputCorreoColaborador').value = "";
     document.getElementById('inputClaveColaborador').value = "";
 

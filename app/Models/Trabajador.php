@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Carbon\Carbon;
 
 class Trabajador extends Model
 {
@@ -143,6 +144,14 @@ class Trabajador extends Model
         return $this->belongsToMany(Equipo::class, 'miembros_equipo');
     }
 
+    public function getCorreoAttribute()
+    {
+        if ($this->usuario) {
+            return $this->usuario->correo;
+        }
+        return null;
+    }
+
     // Accessor para iniciales
     public function getInicialesAttribute()
     {
@@ -164,6 +173,38 @@ class Trabajador extends Model
         }
         return null;
     }
+
+    // Método para obtener la ultima conexión
+    public function getUltimaConexionAttribute()
+    {
+        // Si no hay usuario o no hay registro de última conexión, devolvemos 'Nunca'
+        if (! $this->usuario || ! $this->usuario->ultima_conexion) {
+            return 'Nunca';
+        }
+
+        // Convertimos la cadena a Carbon
+        $fechaConexion = Carbon::parse($this->usuario->ultima_conexion);
+
+        // Forzamos Carbon a usar español
+        Carbon::setLocale('es');
+
+        $ahora = Carbon::now();
+        $diasDiferencia = $fechaConexion->diffInDays($ahora);
+
+        if ($diasDiferencia < 1) {
+            // Menos de 24h → muestra minutos u horas (“hace X”)
+            return $fechaConexion->diffForHumans();
+        }
+
+        if ($diasDiferencia < 7) {
+            // Entre 1 y 6 días → “hace X días”
+            return $fechaConexion->diffForHumans();
+        }
+
+        // 7 días o más → muestra la fecha completa
+        return $fechaConexion->format('d/m/Y H:i');
+    }
+
 
     
 }

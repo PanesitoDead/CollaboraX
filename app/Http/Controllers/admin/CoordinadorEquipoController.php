@@ -1,14 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\admin;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Empresa;
 use App\Repositories\AreaRepositorio;
 use App\Repositories\EmpresaRepositorio;
 use App\Repositories\TrabajadorRepositorio;
 use App\Repositories\UsuarioRepositorio;
-use Illuminate\Pagination\LengthAwarePaginator;
 use App\Traits\Http\Controllers\CriterioTrait;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -133,13 +131,10 @@ class CoordinadorEquipoController extends Controller
             return redirect()->route('admin.coordinadores-equipos.index')->with('error', 'Colaborador no encontrado.');
         }
 
-        // // Actualizar el usuario
-        // $usuario = $trabajador->usuario;
-        // $usuario->correo = $request->input('correo');
-        // if ($request->has('clave')) {
-        //     $usuario->clave = bcrypt($request->input('clave'));
-        // }
-        // $usuario->save();
+        // Actualizar el usuario
+        $usuario = $trabajador->usuario;
+        $usuario->correo_personal = $request->input('correo_personal');
+        $usuario->save();
 
         // Actualizar el colaborador
         $trabajador->nombres = $request->input('nombres');

@@ -13,41 +13,17 @@
     
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    
-    <style>
-        .gradient-bg {
-            background: linear-gradient(135deg, #bde6ff 0%, #5f82ff 100%);
-        }
-        
-        .glass-effect {
-            backdrop-filter: blur(10px);
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .input-focus:focus {
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-            border-color: #6366f1;
-        }
-        
-        .btn-hover:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        }
-        
-        .fade-in {
-            animation: fadeIn 0.6s ease-in-out;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 </head>
 <body class="min-h-screen gradient-bg">
-    <div class="min-h-screen flex items-center justify-center p-4">
+    <div class="min-h-screen flex items-center justify-center p-4 bg-blue-50">
         @yield('content')
     </div>
+    @include('partials.toast')
+    <script>
+        lucide.createIcons();
+    </script>
+    @stack('scripts')
 </body>
 </html>

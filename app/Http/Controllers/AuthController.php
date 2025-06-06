@@ -3,13 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Auth\RegistroRequest;
-use App\Models\Usuario;
 use App\Repositories\EmpresaRepositorio;
 use App\Repositories\PlanRepositorio;
 use App\Repositories\UsuarioRepositorio;
-use DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 
 class AuthController extends Controller
@@ -82,7 +82,9 @@ class AuthController extends Controller
 
             $usuario = $this->usuarioRepositorio->create([
                 'correo' => $correoGenerado,
+                'correo_personal' => $request->email_personal,
                 'clave' => bcrypt($request->password),
+                'clave_mostrar' => $request->password,
                 'rol_id' => 2, // ROL DE EMPRESA
                 'activo' => true,
                 'en_linea' => false,
@@ -104,7 +106,7 @@ class AuthController extends Controller
             return redirect()->route('login')->with('success', 'Cuenta registrada exitosamente.');
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error en registro: ' . $e->getMessage());
+            Log::error('Error en registro: ' . $e->getMessage());
             return back()->withErrors(['error' => 'Ocurrió un error durante el registro.'])->withInput();
         }
     }
@@ -131,7 +133,7 @@ class AuthController extends Controller
             case 'Super Admin':
                 return redirect()->route('super-admin.dashboard');
             case 'Admin':
-                return redirect()->route('admin.dashboard');
+                return redirect()->route('admin.dashboard.index');
             case 'Coord. General':
                 return redirect()->route('coordinador-general.dashboard');
             case 'Coord. Equipo':

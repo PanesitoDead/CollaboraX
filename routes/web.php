@@ -60,7 +60,7 @@ Route::put('/super-admin/configuracion/planes/{id}', [SuperAdminConfiguracionCon
 
 
 //     Admin
-Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
 
 Route::get('/admin/areas', [AreaController::class, 'index'])->name('admin.areas.index');
 Route::get('/admin/areas/{id}', [AreaController::class, 'show'])->name('admin.areas.show');
@@ -88,11 +88,12 @@ Route::patch('/admin/coordinadores-generales/{id}/cambiar-estado', [CoordinadorG
 
 
 Route::get('/admin/estadisticas', [EstadisticaController::class, 'index'])->name('admin.estadisticas');
-Route::get('/admin/configuracion', [ConfiguracionController::class, 'index'])->name('admin.configuracion');
+Route::get('/admin/configuracion', [ConfiguracionController::class, 'index'])->name('admin.configuracion.index');
 
+// Rutas para el colaborador
 Route::get('/colaborador/actividades', [ActividadController::class, 'index'])->name('colaborador.actividades');
 Route::get('/colaborador/mi-equipo', [\App\Http\Controllers\colaborador\MiEquipoController::class, 'index'])->name('colaborador.mi-equipo');
-
+Route::get('/colaborador/invitaciones', [\App\Http\Controllers\colaborador\InvitacionController::class, 'index'])->name('colaborador.invitaciones.index');
 
 // Rutas para los mensajes del colaborador
 Route::get('/colaborador/mensajes', [MensajeController::class, 'index'])->name('colaborador.mensajes');
@@ -111,7 +112,7 @@ Route::get('/colaborador/invitaciones', [\App\Http\Controllers\colaborador\Invit
 
 // Rutas para la configuración del colaborador
 
-Route::get('/colaborador/configuracion', [ColaboradorConfiguracionController::class, 'index'])->name('colaborador.configuracion');
+Route::get('/colaborador/configuracion', [ColaboradorConfiguracionController::class, 'index'])->name('colaborador.configuracion.index');
 Route::post('/colaborador/configuracion/profile', [ColaboradorConfiguracionController::class, 'updateProfile'])->name('colaborador.configuracion.update-profile');
 Route::post('/colaborador/configuracion/photo', [ColaboradorConfiguracionController::class, 'uploadPhoto'])->name('colaborador.configuracion.upload-photo');
 Route::post('/colaborador/configuracion/notifications', [ColaboradorConfiguracionController::class, 'updateNotifications'])->name('colaborador.configuracion.update-notifications');

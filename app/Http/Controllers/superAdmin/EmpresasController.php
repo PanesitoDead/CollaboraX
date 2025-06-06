@@ -1,13 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\superAdmin;
+namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Repositories\EmpresaRepositorio;
 use App\Traits\Http\Controllers\CriterioTrait;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 class EmpresasController extends Controller
 {

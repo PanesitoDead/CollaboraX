@@ -76,7 +76,7 @@
                             type="email"
                             name="email"
                             id="email"
-                            value="{{ old('email', $empresa->email ?? '') }}"
+                            value="{{ old('email', $empresa->usuario->correo ?? '') }}"
                             required
                             class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
@@ -91,7 +91,7 @@
                             required
                             class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
-                    </div> 
+                    </div>
                 </div>
                 <div>
                     <label for="logo" class="block mb-1 text-sm font-medium text-gray-700">Logo</label>

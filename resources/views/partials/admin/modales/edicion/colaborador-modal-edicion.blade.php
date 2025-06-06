@@ -1,6 +1,3 @@
-<!-- ==============================
-     Modal para editar Colaborador
-   ============================== -->
 <div
   id="modalEditarColaborador"
   class="fixed inset-0 w-screen h-screen bg-black/50 hidden z-50 opacity-0 transition-opacity duration-300"
@@ -63,43 +60,57 @@
               required
               class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+          </div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Apellido Paterno -->
+            <div>
+              <label
+                for="inputApellidoPaternoEditar"
+                class="block mb-1 text-sm font-medium text-gray-700"
+              >
+                Apellido Paterno
+              </label>
+              <input
+                type="text"
+                name="apellido_paterno"
+                id="inputApellidoPaternoEditar"
+                required
+                class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <!-- Apellido Materno -->
+            <div>
+              <label
+                for="inputApellidoMaternoEditar"
+                class="block mb-1 text-sm font-medium text-gray-700"
+              >
+                Apellido Materno
+              </label>
+              <input
+                type="text"
+                name="apellido_materno"
+                id="inputApellidoMaternoEditar"
+                required
+                class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          <div>
           </div>
-
-          <!-- Apellido Paterno -->
+          <!-- Correo Personal -->
           <div>
             <label
-              for="inputApellidoPaternoEditar"
+              for="inputCorreoPersonalEditar"
               class="block mb-1 text-sm font-medium text-gray-700"
             >
-              Apellido Paterno
+              Correo Personal
             </label>
             <input
-              type="text"
-              name="apellido_paterno"
-              id="inputApellidoPaternoEditar"
-              required
-              class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              type="email"
+              name="correo_personal"
+              id="inputCorreoPersonalEditar"
+              class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-
-          <!-- Apellido Materno -->
-          <div>
-            <label
-              for="inputApellidoMaternoEditar"
-              class="block mb-1 text-sm font-medium text-gray-700"
-            >
-              Apellido Materno
-            </label>
-            <input
-              type="text"
-              name="apellido_materno"
-              id="inputApellidoMaternoEditar"
-              required
-              class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          <!-- Correo (readonly) -->
+          <!-- Correo Corporativo (readonly) -->
           <div>
             <label
               for="inputCorreoEditar"
@@ -117,21 +128,32 @@
           </div>
 
           <!-- Contraseña (readonly) -->
-          {{-- <div>
+          <div>
             <label
               for="inputPasswordEditar"
               class="block mb-1 text-sm font-medium text-gray-700"
             >
-              Contraseña (solo lectura)
+              Contraseña
             </label>
-            <input
-              type="text"
-              name="password"
-              id="inputPasswordEditar"
-              readonly
-              class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div> --}}
+            <div class="flex items-center space-x-2">
+              <input
+                type="text"
+                name="clave"
+                id="inputPasswordEditar"
+                readonly
+                class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <!-- Botón copiar -->
+              <button
+                type="button"
+                onclick="copiarClaveMostrar()"
+                class="mt-1 p-2.5 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition"
+                title="Copiar contraseña"
+              >
+                <i data-lucide="clipboard" class="w-5 h-5 text-gray-600"></i>
+              </button>
+            </div>
+          </div>
 
           <!-- Documento de Identidad -->
           <div>
@@ -148,23 +170,6 @@
               class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-
-          <!-- Fecha de Nacimiento -->
-          <div>
-            <label
-              for="inputNacimientoEditar"
-              class="block mb-1 text-sm font-medium text-gray-700"
-            >
-              Fecha de Nacimiento
-            </label>
-            <input
-              type="date"
-              name="fecha_nacimiento"
-              id="inputNacimientoEditar"
-              class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
           <!-- Teléfono -->
           <div>
             <label
@@ -180,7 +185,21 @@
               class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-
+          <!-- Fecha de Nacimiento -->
+          <div>
+            <label
+              for="inputNacimientoEditar"
+              class="block mb-1 text-sm font-medium text-gray-700"
+            >
+              Fecha de Nacimiento
+            </label>
+            <input
+              type="date"
+              name="fecha_nacimiento"
+              id="inputNacimientoEditar"
+              class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
           <!-- Foto de Perfil con vista previa -->
           <div>
             <label
@@ -258,8 +277,9 @@
       document.getElementById('inputNombresEditar').value = data.nombres ?? '';
       document.getElementById('inputApellidoPaternoEditar').value = data.apellido_paterno ?? '';
       document.getElementById('inputApellidoMaternoEditar').value = data.apellido_materno ?? '';
+      document.getElementById('inputCorreoPersonalEditar').value = data.correo_personal ?? '';
       document.getElementById('inputCorreoEditar').value = data.correo ?? '';
-    //   document.getElementById('inputPasswordEditar').value = data.password_mostrar ?? ''; 
+      document.getElementById('inputPasswordEditar').value = data.clave_mostrar ?? ''; 
         // “password_mostrar” sería la contraseña que guardas para mostrar, si existe
       document.getElementById('inputDocumentoEditar').value = data.doc_identidad ?? '';
       document.getElementById('inputNacimientoEditar').value = data.fecha_nacimiento ?? '';
@@ -288,6 +308,15 @@
       console.error(error);
       alert('Error al cargar los datos del colaborador. Revisa la consola para más detalles.');
     }
+  }
+
+  function copiarClaveMostrar() {
+    const inputPass = document.getElementById('inputPasswordEditar');
+    inputPass.select();
+    inputPass.setSelectionRange(0, 99999); // Para móviles
+    document.execCommand('copy');
+    // Opcional: mostrar un breve tooltip o mensaje
+    alert('Contraseña copiada al portapapeles.');
   }
 
   /**

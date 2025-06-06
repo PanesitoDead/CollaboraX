@@ -29,6 +29,49 @@ class Empresa extends Model
     {
         return $this->hasMany(Area::class);
     }
+    public function trabajadores()
+    {
+        return $this->hasMany(Trabajador::class);
+    }
+    
+    public function totalMetasActivas(): int
+    {
+        // 1) Cargamos en memoria (eager loading) las áreas con sus metasActivas
+        $this->loadMissing('areas.metasActivas');
+
+        // 2) Sumamos la cantidad de metas activas en cada área
+        $total = 0;
+        foreach ($this->areas as $area) {
+            $total += $area->metasActivas->count();
+        }
+
+        return $total;
+    }
+
+    public function progresoTotalPorPromedioAreas(): float
+    {
+        // 1. Cargamos las áreas en memoria (eager load)
+        $this->loadMissing('areas');
+
+        // Si no hay áreas, devolvemos 0
+        if ($this->areas->isEmpty()) {
+            return 0.0;
+        }
+
+        // 2. Sumamos el atributo porcentajeProgreso de cada área
+        //    Laravel invocará automáticamente el getPorcentajeProgresoAttribute()
+        $sumaPorcentajes = $this->areas->sum(function(Area $area) {
+            return $area->porcentajeProgreso;
+        });
+
+        // 3. Calculamos el promedio dividiendo por la cantidad de áreas
+        $cantidadAreas = $this->areas->count();
+        $promedio = $sumaPorcentajes / $cantidadAreas;
+
+        // 4. Redondeamos a 2 decimales
+        return round($promedio, 2);
+    }
+
 
     public function nro_usuarios()
     {

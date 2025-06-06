@@ -134,7 +134,7 @@
       }
 
       // Estado
-      const activo = data.estado === 'activo';
+      const activo = data.estado;
       estadoEl.textContent = activo ? 'Activo' : 'Inactivo';
       estadoEl.className = `
         inline-block px-2 py-1 text-xs font-semibold rounded-full

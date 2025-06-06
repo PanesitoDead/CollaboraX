@@ -1,8 +1,8 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -27,6 +27,21 @@ class Area extends Model
         return $this->hasMany(Equipo::class);
     }
 
+     public function trabajadores(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Trabajador::class,      // Modelo final
+            'miembros_equipo',      // Tabla pivote
+            'equipo_id',            // Foreign key del pivote que apunta a equipos.id
+            'trabajador_id'         // Foreign key del pivote que apunta a trabajadores.id
+        )
+        // Hacemos join con equipos para obligar que el equipo pertenezca a esta área:
+        ->join('equipos', 'miembros_equipo.equipo_id', '=', 'equipos.id')
+        ->where('equipos.area_id', $this->id)
+        // Para que Eloquent retorne sólo columnas de la tabla trabajadores:
+        ->select('trabajadores.*');
+    }
+
     public function coordinadores()
     {
         return $this->hasMany(AreaCoordinador::class);
@@ -35,6 +50,21 @@ class Area extends Model
     public function coordinador()
     {
         return $this->hasOne(AreaCoordinador::class)->latestOfMany();
+    }
+
+    public function getNombreCompletoCoordinadorAttribute(): ?string
+    {
+        $coordinador = $this->coordinador()->first();
+        if (!$coordinador) {
+            return null;
+        }
+
+        $trabajador = $coordinador->trabajador;
+        if (!$trabajador) {
+            return 'Sin coordinador asignado';
+        }
+
+        return trim("{$trabajador->nombres} {$trabajador->apellido_paterno} {$trabajador->apellido_materno}");
     }
 
     public function metas(): HasManyThrough
@@ -55,7 +85,7 @@ class Area extends Model
                     ->whereIn('estado_id', [1, 2]);
     }
 
-    public function porcentajeProgreso(): float
+    public function getPorcentajeProgresoAttribute(): float
     {
         $metasConContadores = $this->metas()
             ->withCount([

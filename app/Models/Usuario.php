@@ -14,7 +14,7 @@ class Usuario extends Authenticatable
     protected $table = 'usuarios';
     public $timestamps = false;
 
-    protected $fillable = ['correo', 'clave', 'rol_id', 'activo', 'en_linea', 'ultima_conexion', 'foto'];
+    protected $fillable = ['correo', 'correo_personal', 'clave', 'clave_mostrar', 'rol_id', 'activo', 'en_linea', 'ultima_conexion', 'cambio_clave','foto'];
 
     protected $casts = [
         'activo' => 'boolean',

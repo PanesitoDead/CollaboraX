@@ -12,9 +12,22 @@ class EmpresaRepositorio extends RepositorioBase
         parent::__construct($model);
     }
 
-    /*
-      Sobreescribe el método update para incluir la actualización del usuario asociado a la empresa.
-    */
+    
+    public function getCoordinadoresGenerales(int $empresaId)
+    {
+        $empresa = $this->model->find($empresaId);
+        if (!$empresa) {
+            return collect(); // Retorna una colección vacía si no se encuentra la empresa
+        }
+
+        return $empresa->trabajadores()
+            ->join('usuarios', 'trabajadores.usuario_id', '=', 'usuarios.id')
+            ->join('roles',    'usuarios.rol_id',       '=', 'roles.id')
+            ->where('roles.id', 3)                 // rol coordinador general
+            ->select('trabajadores.*')
+            ->get();
+    }
+
     
     public function update(int $id, array $data): bool
     {
@@ -34,8 +47,6 @@ class EmpresaRepositorio extends RepositorioBase
         // se actualiza la empresa
         return parent::update($id, $data);
     }
-
-    
 
     public function cambiarEstado(int $id, bool $estado): bool
     {

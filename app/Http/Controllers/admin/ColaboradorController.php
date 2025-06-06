@@ -1,14 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\admin;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Empresa;
 use App\Repositories\AreaRepositorio;
 use App\Repositories\EmpresaRepositorio;
 use App\Repositories\TrabajadorRepositorio;
 use App\Repositories\UsuarioRepositorio;
-use Illuminate\Pagination\LengthAwarePaginator;
 use App\Traits\Http\Controllers\CriterioTrait;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -33,15 +31,6 @@ class ColaboradorController extends Controller
         $this->areaRepositorio = $areaRepositorio;
     }
 
-    public function getEmpresa()
-    {
-        $usuario = Auth::user();
-        $empresa = $this->empresaRepositorio->findOneBy('usuario_id', $usuario->id);
-        if (!$empresa) {
-            return redirect()->route('admin.dashboard')->with('error', 'No se encontró la empresa asociada al usuario.');
-        }
-        return $empresa;
-    }
     public function index(Request $request)
     {
         $empresa = $this->getEmpresa();
@@ -108,7 +97,9 @@ class ColaboradorController extends Controller
         // Creamos el usuario primero
         $usuario = $this->usuarioRepositorio->create([
             'correo' => $request->input('correo'),
+            'correo_personal' => $request->input('correo_personal'),
             'clave' => bcrypt($request->input('clave')),
+            'clave_mostrar' => $request->input('clave'),
             'rol_id' => 5, // Rol de colaborador
             'activo' => true,
             'en_linea' => false,
@@ -123,9 +114,6 @@ class ColaboradorController extends Controller
             'nombres' => $request->input('nombres'),
             'apellido_paterno' => $request->input('apellido_paterno'),
             'apellido_materno' => $request->input('apellido_materno'),
-            'doc_identidad' => 00000000,
-            'telefono' => 000000000,
-            'fecha_nacimiento' => null,
             'usuario_id' => $usuario->id,
             'empresa_id' => $empresa->id,
         ]);
@@ -149,7 +137,9 @@ class ColaboradorController extends Controller
 
         // Agregamos el campo correo
         $trabajador->correo = $trabajador->usuario->correo ?? 'No disponible';
-        // Formateamos la fecha de nacimiento
+        $trabajador->correo_personal = $trabajador->usuario->correo_personal ?? 'No disponible';
+        $trabajador->clave_mostrar = $trabajador->usuario->clave_mostrar ?? 'No disponible';
+        $trabajador->estado = $trabajador->usuario->activo;
         $trabajador->nro_metas = $trabajador->metas()->count();
         $trabajador->nro_tareas = $trabajador->tareas()->count();
         $trabajador->nro_reuniones = $trabajador->reuniones()->count();
@@ -168,13 +158,10 @@ class ColaboradorController extends Controller
             return redirect()->route('admin.colaboradores.index')->with('error', 'Colaborador no encontrado.');
         }
 
-        // // Actualizar el usuario
-        // $usuario = $trabajador->usuario;
-        // $usuario->correo = $request->input('correo');
-        // if ($request->has('clave')) {
-        //     $usuario->clave = bcrypt($request->input('clave'));
-        // }
-        // $usuario->save();
+        // Actualizar el usuario
+        $usuario = $trabajador->usuario;
+        $usuario->correo_personal = $request->input('correo_personal');
+        $usuario->save();
 
         // Actualizar el colaborador
         $trabajador->nombres = $request->input('nombres');
@@ -194,5 +181,15 @@ class ColaboradorController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    public function getEmpresa()
+    {
+        $usuario = Auth::user();
+        $empresa = $this->empresaRepositorio->findOneBy('usuario_id', $usuario->id);
+        if (!$empresa) {
+            return redirect()->route('admin.dashboard')->with('error', 'No se encontró la empresa asociada al usuario.');
+        }
+        return $empresa;
     }
 }

@@ -7,7 +7,6 @@ use App\Models\AreaCoordinador;
 use App\Models\Trabajador;
 use App\Models\Usuario;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 
 class AreaRepositorio extends RepositorioBase
 {

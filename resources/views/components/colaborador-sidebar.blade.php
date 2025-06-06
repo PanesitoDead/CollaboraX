@@ -161,7 +161,7 @@
             ['route' => 'colaborador.reuniones', 'icon' => 'calendar-clock', 'label' => 'Reuniones'], 
             ['route' => 'colaborador.invitaciones.index', 'icon' => 'mail-plus', 'label' => 'Invitaciones'], 
             ['route' => 'colaborador.mi-equipo', 'icon' => 'users', 'label' => 'Mi Equipo'],
-            ['route' => 'colaborador.configuracion', 'icon' => 'settings', 'label' => 'Configuración'],
+            ['route' => 'colaborador.configuracion.index', 'icon' => 'settings', 'label' => 'Configuración'],
         ];
       @endphp
       @foreach ($items as $item)
@@ -190,7 +190,7 @@
         </button>
         
         <div id="user-menu" class="hidden absolute bottom-full left-0 mb-2 w-full bg-gradient-to-b from-blue-900 to-blue-800 text-white rounded-lg border border-white/10">
-            <a href="{{ route('admin.configuracion') }}" class="user-menu-item">
+            <a href="{{ route('colaborador.configuracion.index') }}" class="user-menu-item">
                 <i data-lucide="user" class="h-5 w-5"></i>
                 <span>Perfil</span>
             </a>

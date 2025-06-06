@@ -9,15 +9,15 @@
     <div class="flex justify-between items-center">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">Panel de Administrador</h1>
-            <p class="text-gray-600">Gestión de la empresa TechSolutions S.A.</p>
+            <p class="text-gray-600">Gestión de la empresa <strong>{{ $empresa->nombre }}</strong></p>
         </div>
     </div>    {{-- Stats Cards --}}
     <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         @foreach([
-            ['label' => 'Áreas', 'value' => $stats['areas'], 'icon' => 'layers','text' => 'Marketing, Ventas, Operaciones, Finanzas, TI'],
-            ['label' => 'Usuarios Totales', 'value' => $stats['usuarios_totales'], 'icon' => 'users', 'text' => "+{$stats['usuarios_nuevos']} desde la semana pasada"],
-            ['label' => 'Metas Activas', 'value' => $stats['metas_activas'], 'icon' => 'target', 'text' => "{$stats['metas_progreso']} en progreso, {$stats['metas_pendientes']} pendientes"],
-            ['label' => 'Cumplimiento', 'value' => "{$stats['cumplimiento']}%", 'icon' => 'check-square', 'text' => null],
+            ['label' => 'Áreas', 'value' => $stats['areas'], 'icon' => 'layers'],
+            ['label' => 'Usuarios Totales', 'value' => $stats['usuarios_totales'], 'icon' => 'users'],
+            ['label' => 'Metas Activas', 'value' => $stats['metas_activas'], 'icon' => 'target'],
+            ['label' => 'Cumplimiento', 'value' => "{$stats['cumplimiento']}%", 'icon' => 'check-square'],
         ] as $card)
             <div 
             class="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow duration-200"
@@ -37,11 +37,11 @@
                 @endif
             </div>
 
-            @if($card['text'])
+            {{-- @if($card['text'])
             <footer class="mt-4 text-xs text-gray-500">
                 {{ $card['text'] }}
             </footer>
-            @endif
+            @endif --}}
             </div>
         @endforeach
     </div>
@@ -50,113 +50,115 @@
     <div class="bg-white rounded-lg border border-gray-300">
         <nav class="border-b border-gray-200">
             <div class="flex space-x-8 px-6">
-            <button
-                type="button"
-                data-tab="coordinadores"
-                class="tab-button inline-flex items-center whitespace-nowrap border-b-2 border-blue-500 py-4 px-1 font-medium text-sm text-blue-600 transition"
-                onclick="showTab('coordinadores')"
-            >
-                <i data-lucide="users" class="w-4 h-4 mr-1"></i>
-                Coordinadores
-            </button>
+                <button
+                    type="button"
+                    data-tab="coordinadores"
+                    class="tab-button inline-flex items-center whitespace-nowrap border-b-2 border-blue-500 py-4 px-1 font-medium text-sm text-blue-600 transition"
+                    onclick="showTab('coordinadores')"
+                >
+                    <i data-lucide="users" class="w-4 h-4 mr-1"></i>
+                    Coordinadores
+                </button>
 
-            <button
-                type="button"
-                data-tab="areas"
-                class="tab-button inline-flex items-center whitespace-nowrap border-b-2 border-transparent py-4 px-1 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 transition"
-                onclick="showTab('areas')"
-            >
-                <i data-lucide="layers" class="w-4 h-4 mr-1"></i>
-                Áreas
-            </button>
+                <button
+                    type="button"
+                    data-tab="areas"
+                    class="tab-button inline-flex items-center whitespace-nowrap border-b-2 border-transparent py-4 px-1 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 transition"
+                    onclick="showTab('areas')"
+                >
+                    <i data-lucide="layers" class="w-4 h-4 mr-1"></i>
+                    Áreas
+                </button>
 
-            <button
-                type="button"
-                data-tab="rendimiento"
-                class="tab-button inline-flex items-center whitespace-nowrap border-b-2 border-transparent py-4 px-1 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 transition"
-                onclick="showTab('rendimiento')"
-            >
-                <i data-lucide="bar-chart-2" class="w-4 h-4 mr-1"></i>
-                Rendimiento
-            </button>
+                {{-- <button
+                    type="button"
+                    data-tab="rendimiento"
+                    class="tab-button inline-flex items-center whitespace-nowrap border-b-2 border-transparent py-4 px-1 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 transition"
+                    onclick="showTab('rendimiento')"
+                >
+                    <i data-lucide="bar-chart-2" class="w-4 h-4 mr-1"></i>
+                    Rendimiento
+                </button> --}}
             </div>
         </nav>
 
         {{-- Coordinadores --}}
-        <div id="tab-coordinadores" class="tab-content p-6 ">
+        <div id="tab-coordinadores" class="tab-content p-6">
             <h3 class="text-lg font-medium mb-1">Coordinadores Generales</h3>
             <p class="text-gray-600 mb-6">Responsables de las áreas de la empresa</p>
-
             <div class="space-y-4">
-            @foreach($coordinadores as $c)
-            <div class="flex items-center justify-between rounded-lg border border-gray-300 p-4">
-                <div class="flex items-center gap-4">
-                <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                    <span class="text-sm font-medium">{{ $c['initials'] }}</span>
-                </div>
-                <div>
-                    <p class="font-medium">{{ $c['name'] }}</p>
-                    <p class="text-sm text-gray-500">{{ $c['email'] }}</p>
-                </div>
-                </div>
-                <div class="flex items-center gap-4">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                    {{ $c['area'] }}
-                </span>
-                <div class="text-sm text-gray-500">{{ $c['last_active'] }}</div>
-                <div class="flex gap-2">
-                    <button class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
-                    Ver Perfil
-                    </button>
-                    <button class="px-3 py-1 text-sm border border-red-300 text-red-600 rounded-md hover:bg-red-50">
-                    Desactivar
-                    </button>
-                </div>
-                </div>
+                @foreach($coordinadores as $c)
+                    <div class="flex items-center justify-between rounded-lg border border-gray-300 p-4">
+                        <div class="flex items-center gap-4">
+                            <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                <span class="text-sm font-medium">{{ $c->iniciales }}</span>
+                            </div>
+                            <div>
+                                <p class="font-medium">{{ $c->nombreCompleto }}</p>
+                                <p class="text-sm text-gray-500">{{ $c->correo }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                {{ $c->area->nombre }}
+                            </span>
+                            <div class="text-sm text-gray-500">{{ $c->ultimaConexion }}</div>
+                            <div class="flex gap-2">
+                                <button class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
+                                    Ver Perfil
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
             </div>
-            @endforeach
-            </div>
+            @if(count($coordinadores) > 4)
+                <div class="mt-4 text-center">
+                    <a href="{{ route('admin.coordinadores-generales.index') }}" class="text-sm text-blue-600 hover:underline">
+                        Ir a ver todos los coordinadores
+                    </a>
+                </div>
+            @endif
         </div>
 
         {{-- Áreas --}}
         <div id="tab-areas" class="tab-content p-6 hidden">
             <h3 class="text-lg font-medium mb-1">Áreas de la Empresa</h3>
-            <p class="text-gray-600 mb-6">Estructura organizativa de TechSolutions S.A.</p>
-
+            <p class="text-gray-600 mb-6">Estructura organizativa de la empresa</p>
             <div class="space-y-4">
-            @foreach($areas as $a)
-            <div class="flex items-center justify-between rounded-lg border border-gray-300 p-4">
-                <div>
-                <p class="font-medium">{{ $a['name'] }}</p>
-                <div class="flex items-center gap-2 text-sm text-gray-500">
-                    <span>Coordinador: {{ $a['coordinator'] }}</span>
-                    <span>•</span>
-                    <span>{{ $a['groups'] }} grupos</span>
-                    <span>•</span>
-                    <span>{{ $a['users'] }} usuarios</span>
-                </div>
-                </div>
-                <div class="flex items-center gap-4">
-                <div class="flex flex-col items-end">
-                    <span class="text-sm">Cumplimiento</span>
-                    <div class="flex items-center gap-2">
-                    <div class="w-24 bg-gray-200 rounded-full h-2 overflow-hidden">
-                        <div class="h-2 rounded-full bg-blue-600" style="width: {{ $a['progress'] }}%"></div>
+                @foreach($areas as $a)
+                    <div class="flex items-center justify-between rounded-lg border border-gray-300 p-4">
+                        <div>
+                        <p class="font-medium">{{ $a->nombre }}</p>
+                        <div class="flex items-center gap-2 text-sm text-gray-500">
+                            <span>Coordinador: {{ $a->nombreCompletoCoordinador }}</span>
+                            <span>•</span>
+                            <span>{{ $a->equipos->count() }} grupos</span>
+                            <span>•</span>
+                            <span>{{ $a->trabajadores->count() }} usuarios</span>
+                        </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                        <div class="flex flex-col items-end">
+                            <span class="text-sm">Cumplimiento</span>
+                            <div class="flex items-center gap-2">
+                            <div class="w-24 bg-gray-200 rounded-full h-2 overflow-hidden">
+                                <div class="h-2 rounded-full bg-blue-600" style="width: {{ $a->porcentajeProgreso }}%"></div>
+                            </div>
+                            <span class="text-xs">{{ $a->porcentajeProgreso }}%</span>
+                            </div>
+                        </div>
+                        <button class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
+                            Gestionar
+                        </button>
+                        </div>
                     </div>
-                    <span class="text-xs">{{ $a['progress'] }}%</span>
-                    </div>
-                </div>
-                <button class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
-                    Gestionar
-                </button>
-                </div>
-            </div>
-            @endforeach
+                @endforeach
             </div>
         </div>
 
         {{-- Rendimiento --}}
-        <div id="tab-rendimiento" class="tab-content p-6">
+        {{-- <div id="tab-rendimiento" class="tab-content p-6">
             <div class="bg-white rounded-lg border border-gray-300 p-6 shadow-sm">
                 <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-medium flex items-center">
@@ -173,7 +175,7 @@
                 <canvas id="rendimientoChart"></canvas>
                 </div>
             </div>
-        </div>
+        </div> --}}
     </div>
 </div>
 @endsection

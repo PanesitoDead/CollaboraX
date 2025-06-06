@@ -1,29 +1,28 @@
 <?php
 
-namespace App\Http\Controllers\admin;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Repositories\EmpresaRepositorio;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ConfiguracionController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    protected EmpresaRepositorio $empresaRepositorio;
+    public function __construct(EmpresaRepositorio $empresaRepositorio)
+    {
+        $this->empresaRepositorio = $empresaRepositorio;
+    }
+
     public function index()
     {
-    // empresa y logo dentro
-        // Simulación de datos de la empresa
-        $empresa = new \stdClass();
-        $empresa->nombre = 'Mi Empresa S.A.C.';
-        $empresa->ruc = '12345678901';
-        $empresa->email = 'contacto@miempresa.com';
-        $empresa->logo = null; // o puedes usar una imagen ficticia: 'logos/demo.png'
-
-        // Simulación de configuración general
-        $config = new \stdClass();
-        $config->registro_abierto = true;
-        return view('private.admin.configuracion', compact('empresa'));
+        $empresa = $this->getEmpresa();
+        return view('private.admin.configuracion', 
+            [
+                'empresa' => $empresa,
+            ]
+        );
     }
 
     /**
@@ -51,14 +50,6 @@ class ConfiguracionController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, string $id)
@@ -72,5 +63,15 @@ class ConfiguracionController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    public function getEmpresa()
+    {
+        $usuario = Auth::user();
+        $empresa = $this->empresaRepositorio->findOneBy('usuario_id', $usuario->id);
+        if (!$empresa) {
+            return redirect()->route('admin.dashboard.index')->with('error', 'No se encontró la empresa asociada al usuario.');
+        }
+        return $empresa;
     }
 }

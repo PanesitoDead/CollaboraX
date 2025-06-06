@@ -1,11 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\admin;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Repositories\AreaRepositorio;
 use App\Repositories\EmpresaRepositorio;
-use App\Repositories\TrabajadorRepositorio;
 use App\Traits\Http\Controllers\CriterioTrait;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -50,7 +49,7 @@ class AreaController extends Controller
             $area->nro_colaboradores = $area->equipos->sum(function ($equipo) {
                 return $equipo->miembros->count();
             });
-            $area->progreso = $area->porcentajeProgreso();
+            $area->progreso = $area->porcentajeProgreso;
             $area->nro_metas_activas = $area->metasActivas->count();
             $area->fecha_creacion = $area->fecha_creacion
                 ? Carbon::parse($area->fecha_creacion)->format('d/m/Y')
@@ -88,14 +87,11 @@ class AreaController extends Controller
                 'activo'        => $request->activo,
                 'fecha_creacion'=> now(),
             ]);
-            
-            
 
             // Asignar el coordinador si se proporciona
             if ($request->coordinador_id !== null) {
                 $this->areaRepositorio->actualizarCoordinador($areaCreada->id, $request->coordinador_id);
             }
-
             
             return redirect()->route('admin.areas.index')
                 ->with('success', 'Área creada correctamente.');
@@ -177,17 +173,5 @@ class AreaController extends Controller
             ? Carbon::parse($area->fecha_creacion)->format('d/m/Y')
             : 'No disponible';
         return response()->json($area);
-    }
-
-    public function manage($id)
-    {
-        // Vista de gestión del área
-        return view('admin.areas.manage', compact('id'));
-    }
-
-    public function assignCoordinator($id)
-    {
-        // Vista para asignar coordinador
-        return view('admin.areas.assign-coordinator', compact('id'));
     }
 }
