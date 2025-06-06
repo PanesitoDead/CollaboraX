@@ -17,13 +17,12 @@ use App\Http\Controllers\coordEquipo\MetasCoordinadorController;
 use App\Http\Controllers\coordEquipo\ReunionesCoordinadorController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
-
-
-
+use App\Http\Controllers\colaborador\ConfiguracionController as ColaboradorConfiguracionController;
+use App\Http\Controllers\colaborador\MensajeController;
 use App\Http\Controllers\CoordinadorGeneral\ActividadesController;
 use App\Http\Controllers\CoordinadorGeneral\DashboarController;
 use App\Http\Controllers\CoordinadorGeneral\MetasController;
-use App\Http\Controllers\CoordinadorGeneral\ConfigurationController;
+use App\Http\Controllers\CoordinadorGeneral\ConfigurationController  as CoordinadorConfigurationController;
 use App\Http\Controllers\CoordinadorGeneral\EquiposController;
 use App\Http\Controllers\CoordinadorGeneral\ReunionesController;
 use App\Http\Controllers\CoordinadorGeneral\MensajesController;
@@ -93,10 +92,32 @@ Route::get('/admin/configuracion', [ConfiguracionController::class, 'index'])->n
 
 Route::get('/colaborador/actividades', [ActividadController::class, 'index'])->name('colaborador.actividades');
 Route::get('/colaborador/mi-equipo', [\App\Http\Controllers\colaborador\MiEquipoController::class, 'index'])->name('colaborador.mi-equipo');
-Route::get('/colaborador/mensajes', [\App\Http\Controllers\colaborador\MensajeController::class, 'index'])->name('colaborador.mensajes');
+
+
+// Rutas para los mensajes del colaborador
+Route::get('/colaborador/mensajes', [MensajeController::class, 'index'])->name('colaborador.mensajes');
+    Route::post('/colaborador/search-workers', [MensajeController::class, 'searchWorkers'])->name('colaborador.mensajes.search-workers');
+    Route::get('/colaborador/get-messages/{contactId}', [MensajeController::class, 'getMessages'])->name('colaborador.mensajes.get-messages');
+    Route::post('/colaborador/mensajes/send', [MensajeController::class, 'send'])->name('colaborador.mensajes.send');
+    Route::post('/colaborador/mensajes/new-chat', [MensajeController::class, 'newChat'])->name('colaborador.mensajes.new-chat');
+    Route::post('/colaborador/mensajes/mark-as-read', [MensajeController::class, 'markAsRead'])->name('colaborador.mensajes.mark-as-read');
+    Route::post('/colaborador/mensajes/search', [MensajeController::class, 'search'])->name('colaborador.mensajes.search');
+
+
+
 Route::get('/colaborador/reuniones', [\App\Http\Controllers\colaborador\ReunionController::class, 'index'])->name('colaborador.reuniones');
 Route::get('/colaborador/invitaciones', [\App\Http\Controllers\colaborador\InvitacionController::class, 'index'])->name('colaborador.invitaciones.index');
-Route::get('/colaborador/configuracion', [\App\Http\Controllers\colaborador\ConfiguracionController::class, 'index'])->name('colaborador.configuracion');
+
+
+// Rutas para la configuración del colaborador
+
+Route::get('/colaborador/configuracion', [ColaboradorConfiguracionController::class, 'index'])->name('colaborador.configuracion');
+Route::post('/colaborador/configuracion/profile', [ColaboradorConfiguracionController::class, 'updateProfile'])->name('colaborador.configuracion.update-profile');
+Route::post('/colaborador/configuracion/photo', [ColaboradorConfiguracionController::class, 'uploadPhoto'])->name('colaborador.configuracion.upload-photo');
+Route::post('/colaborador/configuracion/notifications', [ColaboradorConfiguracionController::class, 'updateNotifications'])->name('colaborador.configuracion.update-notifications');
+Route::post('/colaborador/configuracion/security', [ColaboradorConfiguracionController::class, 'updateSecurity'])->name('colaborador.configuracion.update-security');
+
+
 
 //  Coordinador de Equipo
     Route::get('/coord-equipo/dashboard', [CoordEquipoController::class, 'dashboard'])->name('coord-equipo.dashboard');
@@ -218,11 +239,11 @@ route::get('/coordinador-general/metas/equipos', [MetasController::class, 'getEq
 Route::post('/coordinador-general/actividades/actualizar-estado', [ActividadesController::class, 'updateEstado'])->name('coordinador-general.actividades.actualizar-estado');
 
 
-Route::get('/coordinador-general/configuracion', [ConfigurationController::class, 'index'])->name('coordinador-general.configuracion');
-Route::post('/coordinador-general/configuracion/profile', [ConfigurationController::class, 'updateProfile'])->name('coordinador-general.configuracion.update-profile');
-Route::post('/coordinador-general/configuracion/photo', [ConfigurationController::class, 'uploadPhoto'])->name('coordinador-general.configuracion.upload-photo');
-Route::post('/coordinador-general/configuracion/notifications', [ConfigurationController::class, 'updateNotifications'])->name('coordinador-general.configuracion.update-notifications');
-Route::post('/coordinador-general/configuracion/security', [ConfigurationController::class, 'updateSecurity'])->name('coordinador-general.configuracion.update-security');
+Route::get('/coordinador-general/configuracion', [CoordinadorConfigurationController::class, 'index'])->name('coordinador-general.configuracion');
+Route::post('/coordinador-general/configuracion/profile', [CoordinadorConfigurationController::class, 'updateProfile'])->name('coordinador-general.configuracion.update-profile');
+Route::post('/coordinador-general/configuracion/photo', [CoordinadorConfigurationController::class, 'uploadPhoto'])->name('coordinador-general.configuracion.upload-photo');
+Route::post('/coordinador-general/configuracion/notifications', [CoordinadorConfigurationController::class, 'updateNotifications'])->name('coordinador-general.configuracion.update-notifications');
+Route::post('/coordinador-general/configuracion/security', [CoordinadorConfigurationController::class, 'updateSecurity'])->name('coordinador-general.configuracion.update-security');
 
 
 
