@@ -83,7 +83,8 @@ class MensajesController extends Controller
                 return [
                     'id' => $trabajador->id,
                     'name' => $trabajador->nombres . ' ' . $trabajador->apellido_paterno . ' ' . $trabajador->apellido_materno,
-                    'avatar' => '/placeholder.svg?height=40&width=40',
+                    // --- CORRECCIÓN AQUÍ ---
+                    'avatar' => optional(optional($trabajador->usuario)->fotoPerfil)->ruta ? asset('storage/' . $trabajador->usuario->fotoPerfil->ruta) : '/placeholder.svg?height=40&width=40',
                     'online' => $enLinea,
                     'lastMessage' => $ultimoMensaje ? $ultimoMensaje->contenido : 'Sin mensajes',
                     'time' => $tiempo,
@@ -92,23 +93,6 @@ class MensajesController extends Controller
                     'group' => false
                 ];
             });
-
-            // Si no hay conversaciones, mostrar algunos trabajadores disponibles
-            if ($contacts->isEmpty()) {
-                $contacts = $todosTrabajadores->take(5)->map(function($trabajador) {
-                    return [
-                        'id' => $trabajador->id,
-                        'name' => $trabajador->nombres . ' ' . $trabajador->apellido_paterno . ' ' . $trabajador->apellido_materno,
-                        'avatar' => '/placeholder.svg?height=40&width=40',
-                        'online' => $trabajador->usuario && $trabajador->usuario->en_linea,
-                        'lastMessage' => 'Inicia una conversación',
-                        'time' => '',
-                        'unreadCount' => 0,
-                        'important' => false,
-                        'group' => false
-                    ];
-                });
-            }
 
             // Transformar todos los trabajadores para nuevos chats
             $allContacts = $todosTrabajadores->map(function($trabajador) {
@@ -209,7 +193,8 @@ class MensajesController extends Controller
                     'id' => $trabajador->id,
                     'name' => $trabajador->nombres . ' ' . $trabajador->apellido_paterno . ' ' . $trabajador->apellido_materno,
                     'role' => $trabajador->usuario && $trabajador->usuario->rol ? $trabajador->usuario->rol->nombre : 'Sin rol',
-                    'avatar' => '/placeholder.svg?height=40&width=40',
+                    // --- CORRECCIÓN AQUÍ ---
+                    'avatar' => optional(optional($trabajador->usuario)->fotoPerfil)->ruta ? asset('storage/' . $trabajador->usuario->fotoPerfil->ruta) : '/placeholder.svg?height=40&width=40',
                     'online' => $trabajador->usuario && $trabajador->usuario->en_linea
                 ];
             })->values(); // Asegurar que sea un array indexado
@@ -462,7 +447,8 @@ class MensajesController extends Controller
                 return [
                     'id' => $trabajador->id,
                     'name' => $trabajador->nombre_completo,
-                    'avatar' => '/placeholder.svg?height=40&width=40',
+                    // --- CORRECCIÓN AQUÍ ---
+                    'avatar' => optional(optional($trabajador->usuario)->fotoPerfil)->ruta ? asset('storage/' . $trabajador->usuario->fotoPerfil->ruta) : '/placeholder.svg?height=40&width=40',
                     'online' => $trabajador->usuario && $trabajador->usuario->en_linea,
                     'lastMessage' => 'Resultado de búsqueda',
                     'time' => '',
