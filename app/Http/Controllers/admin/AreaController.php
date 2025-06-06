@@ -111,10 +111,10 @@ class AreaController extends Controller
             }
 
             // Actualizar el área con los datos validados
-            $area = $this->areaRepositorio->update($id, $request->all());
+            $this->areaRepositorio->update($id, $request->all());
             // Actualizar el coordinador si se proporciona
-            if ($request->has('coordinador_id')) {
-                $this->areaRepositorio->actualizarCoordinador($id, $request->coordinador_id);
+            if ($request->coordinador_id !== null) {
+                $this->areaRepositorio->actualizarCoordinador($area->id, $request->coordinador_id);
             }
 
             return redirect()->route('admin.areas.index')

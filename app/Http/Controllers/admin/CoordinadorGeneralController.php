@@ -113,6 +113,9 @@ class CoordinadorGeneralController extends Controller
 
         // Agregamos el campo correo
         $trabajador->correo = $trabajador->usuario->correo ?? 'No disponible';
+        $trabajador->correo_personal = $trabajador->usuario->correo_personal ?? 'No disponible';
+        $trabajador->clave_mostrar = $trabajador->usuario->clave_mostrar ?? 'No disponible';
+        $trabajador->estado = $trabajador->usuario->activo;
         // Formateamos la fecha de nacimiento
         $trabajador->nro_metas = $trabajador->metas()->count();
         $trabajador->nro_tareas = $trabajador->tareas()->count();

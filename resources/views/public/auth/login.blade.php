@@ -114,7 +114,7 @@
             <!-- Texto descriptivo arriba -->
             <div class="flex flex-col items-center text-center py-8">
                 <h2 class="text-xl font-semibold text-gray-700 mb-2">Nos alegra verte aquí</h2>
-                <p class="text-gray-600 mb-4">CollaboraX LTS es la plataforma ideal para gestionar tus tareas, reuniones, equipos, metas y más.</p>
+                <p class="text-gray-600 mb-4">CollaboraX es la plataforma ideal para gestionar tus tareas, reuniones, equipos, metas y más.</p>
                 <p class="text-gray-500 text-sm">Inicia sesión para continuar colaborando con tu equipo.</p>
             </div>
             <!-- Imagen abajo (esconde en pantallas pequeñas) -->

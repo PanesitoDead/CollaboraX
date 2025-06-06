@@ -34,15 +34,15 @@
                         
                         <!-- Área -->
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $c->area ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' }}">
-                                {{ $c->area->nombre ?? 'Sin área' }}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $c->areaFromCoordEquipo ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' }}">
+                                {{ $c->areaFromCoordEquipo->nombre ?? 'Sin área' }}
                             </span>
                         </td>
 
                         <!-- Equipo -->
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            @if($c->equipo)
-                                {{ $c->equipo->nombre }}
+                            @if($c->equipoFromCoordEquipo)
+                                {{ $c->equipoFromCoordEquipo->nombre }}
                             @else
                                 <span class="text-gray-400">Sin equipo</span>
                             @endif

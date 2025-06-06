@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class Trabajador extends Model
 {
@@ -30,7 +31,7 @@ class Trabajador extends Model
         return $this->hasMany(MiembroEquipo::class);
     }
 
-    public function getEquipoAttribute()
+    public function getEquipoFromColabAttribute()
     {
         // 1) Primero obtenemos el primer “MiembroEquipo” de este trabajador
         $miembro = $this->miembrosEquipo()->first();
@@ -40,19 +41,34 @@ class Trabajador extends Model
         }
 
         // 2) A partir de ese MiembroEquipo, obtenemos el Equipo
-        //    (asumimos que MiembroEquipo tiene relación belongsTo hacia Equipo,
-        //     o que podemos buscarlo así:)
         $equipo = Equipo::find($miembro->equipo_id);
-
-        if (! $equipo) {
-            // Por si hubiera algún dato inconsistente
-            return null;
-        }
         // 3) Finalmente, devolvemos el equipo asociado a ese MiembroEquipo
-        return $equipo; // puede ser null si somehow el equipo no tuviera area_id
+        return $equipo?: null;
     }
 
-    public function getAreaAttribute(): ?Area
+    public function getEquipoFromCoordEquipoAttribute(): ?Equipo
+    {
+        // Buscamos en 'equipos' aquel cuyo coordinador_id coincide con este trabajador
+        $equipo = Equipo::where('coordinador_id', $this->id)->first();
+
+        return $equipo ?: null;
+    }
+
+    public function getEquipoFromCoordGeneralAttribute(): ?Equipo
+    {
+        // 1) Sacamos el primer registro en miembros_equipo para este trabajador
+        $miembro = $this->miembrosEquipo()->first();
+        if (! $miembro) {
+            return null;
+        }
+
+        // 2) A partir de miembro_equipo obtenemos el equipo
+        $equipo = Equipo::find($miembro->equipo_id);
+
+        return $equipo ?: null;
+    }
+
+    public function getAreaFromColabAttribute(): ?Area
     {
         // 1) Primero obtenemos el primer “MiembroEquipo” de este trabajador
         $miembro = $this->miembrosEquipo()->first();
@@ -62,8 +78,6 @@ class Trabajador extends Model
         }
 
         // 2) A partir de ese MiembroEquipo, obtenemos el Equipo
-        //    (asumimos que MiembroEquipo tiene relación belongsTo hacia Equipo,
-        //     o que podemos buscarlo así:)
         $equipo = Equipo::find($miembro->equipo_id);
 
         if (! $equipo) {
@@ -74,6 +88,35 @@ class Trabajador extends Model
         // 3) Finalmente, devolvemos el área asociada a ese Equipo
         return $equipo->area; // puede ser null si somehow el equipo no tuviera area_id
     }
+
+    public function getAreaFromCoordEquipoAttribute(): ?Area
+    {
+        $equipo = $this->equipo_from_coord_equipo; // llama a getEquipoFromCoordinadorEquipoAttribute()
+
+        if (! $equipo) {
+            return null;
+        }
+
+        return $equipo->area ?: null;
+    }
+
+    public function getAreaFromCoordGeneralAttribute(): ?Area
+    {
+        // 1) Buscamos en 'areas_coordinador' (tabla intermedia) el registro para este trabajador
+        $registro = DB::table('areas_coordinador')
+            ->where('trabajador_id', $this->id)
+            ->first();
+
+        if (! $registro || ! isset($registro->area_id)) {
+            return null;
+        }
+
+        // 2) Devolvemos el Área correspondiente
+        $area = Area::find($registro->area_id);
+
+        return $area ?: null;
+    }
+
     public function metas()
     {
         return $this->hasManyThrough(
