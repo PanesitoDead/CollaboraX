@@ -107,7 +107,7 @@
               type="email"
               name="correo_personal"
               id="inputCorreoPersonalEditar"
-              class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           <!-- Correo Corporativo (readonly) -->

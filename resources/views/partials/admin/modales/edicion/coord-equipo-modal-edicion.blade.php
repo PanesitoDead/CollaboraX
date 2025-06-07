@@ -1,6 +1,3 @@
-<!-- ==============================
-     Modal para editar Coordinador
-   ============================== -->
 <div
   id="modalEditarCoordinador"
   class="fixed inset-0 w-screen h-screen bg-black/50 hidden z-50 opacity-0 transition-opacity duration-300"
@@ -98,7 +95,21 @@
               class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-
+          <!-- Correo Personal -->
+          <div>
+            <label
+              for="inputCorreoPersonalEditar"
+              class="block mb-1 text-sm font-medium text-gray-700"
+            >
+              Correo Personal
+            </label>
+            <input
+              type="email"
+              name="correo_personal"
+              id="inputCorreoPersonalEditar"
+              class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
           <!-- Correo (readonly) -->
           <div>
             <label
@@ -117,21 +128,32 @@
           </div>
 
           <!-- Contraseña (readonly) -->
-          {{-- <div>
+          <div>
             <label
               for="inputPasswordEditar"
               class="block mb-1 text-sm font-medium text-gray-700"
             >
-              Contraseña (solo lectura)
+              Contraseña
             </label>
-            <input
-              type="text"
-              name="password"
-              id="inputPasswordEditar"
-              readonly
-              class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div> --}}
+            <div class="flex items-center space-x-2">
+              <input
+                type="text"
+                name="clave"
+                id="inputPasswordEditar"
+                readonly
+                class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <!-- Botón copiar -->
+              <button
+                type="button"
+                onclick="copiarClaveMostrar()"
+                class="mt-1 p-2.5 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition"
+                title="Copiar contraseña"
+              >
+                <i data-lucide="clipboard" class="w-5 h-5 text-gray-600"></i>
+              </button>
+            </div>
+          </div>
 
           <!-- Documento de Identidad -->
           <div>
@@ -258,8 +280,9 @@
       document.getElementById('inputNombresEditar').value = data.nombres ?? '';
       document.getElementById('inputApellidoPaternoEditar').value = data.apellido_paterno ?? '';
       document.getElementById('inputApellidoMaternoEditar').value = data.apellido_materno ?? '';
+      document.getElementById('inputCorreoPersonalEditar').value = data.correo_personal ?? '';
       document.getElementById('inputCorreoEditar').value = data.correo ?? '';
-    //   document.getElementById('inputPasswordEditar').value = data.password_mostrar ?? ''; 
+      document.getElementById('inputPasswordEditar').value = data.clave_mostrar ?? ''; 
         // “password_mostrar” sería la contraseña que guardas para mostrar, si existe
       document.getElementById('inputDocumentoEditar').value = data.doc_identidad ?? '';
       document.getElementById('inputNacimientoEditar').value = data.fecha_nacimiento ?? '';
@@ -288,6 +311,15 @@
       console.error(error);
       alert('Error al cargar los datos del colaborador. Revisa la consola para más detalles.');
     }
+  }
+
+  function copiarClaveMostrar() {
+    const inputPass = document.getElementById('inputPasswordEditar');
+    inputPass.select();
+    inputPass.setSelectionRange(0, 99999); // Para móviles
+    document.execCommand('copy');
+    // Opcional: mostrar un breve tooltip o mensaje
+    alert('Contraseña copiada al portapapeles.');
   }
 
   /**
