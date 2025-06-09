@@ -313,6 +313,15 @@
     }
   }
 
+  function copiarClaveMostrar() {
+    const inputPass = document.getElementById('inputPasswordEditar');
+    inputPass.select();
+    inputPass.setSelectionRange(0, 99999); // Para móviles
+    document.execCommand('copy');
+    // Opcional: mostrar un breve tooltip o mensaje
+    alert('Contraseña copiada al portapapeles.');
+  }
+
   /**
    * Cierra el modal de edición del colaborador con animación inversa.
    */

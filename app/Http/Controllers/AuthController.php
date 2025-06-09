@@ -116,6 +116,7 @@ class AuthController extends Controller
         if (Auth::check()) {
             $usuario = Auth::user();
             $usuario->en_linea = false;
+            $usuario->ultima_conexion = now();
             $usuario->save();
         }
 

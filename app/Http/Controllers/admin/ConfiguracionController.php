@@ -68,6 +68,9 @@ class ConfiguracionController extends Controller
     public function getEmpresa()
     {
         $usuario = Auth::user();
+        if (!$usuario) {
+            return redirect()->route('admin.dashboard')->with('error', 'Usuario no autenticado.');
+        }
         $empresa = $this->empresaRepositorio->findOneBy('usuario_id', $usuario->id);
         if (!$empresa) {
             return redirect()->route('admin.dashboard.index')->with('error', 'No se encontró la empresa asociada al usuario.');

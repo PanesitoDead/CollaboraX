@@ -24,7 +24,10 @@ class Tarea extends Model
         return $this->belongsTo(Estado::class);
     }
 
-
+    public function equipo()
+    {
+        return $this->belongsTo(Equipo::class);
+    }
 
    // Accessor para verificar si está vencida
     public function getEstaVencidaAttribute()

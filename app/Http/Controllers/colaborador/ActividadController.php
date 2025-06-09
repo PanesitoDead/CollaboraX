@@ -3,89 +3,55 @@
 namespace App\Http\Controllers\colaborador;
 
 use App\Http\Controllers\Controller;
+use App\Repositories\TareaRepositorio;
+use App\Repositories\TrabajadorRepositorio;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+use function Laravel\Prompts\error;
 
 class ActividadController extends Controller
 {
+    protected TrabajadorRepositorio $trabajadorRepositorio;
+
+    protected TareaRepositorio $tareaRepositorio;
+
+    public function __construct(TrabajadorRepositorio $trabajadorRepositorio, TareaRepositorio $tareaRepositorio)
+    {
+        $this->tareaRepositorio = $tareaRepositorio;
+        $this->trabajadorRepositorio = $trabajadorRepositorio;
+    }
     public function index(Request $request)
     {
+        $trabajador = $this->getTrabajador();
+        $equipo = $trabajador->equipoFromColab;
+        $actividades = $equipo ? $this->tareaRepositorio->getTareasPorEquipo($equipo->id) : collect();
+
         $searchQuery = $request->get('search', '');
-        
-        // Datos de ejemplo - en producción vendrían de la base de datos
-        $actividades = collect([
-            [
-                'id' => 1,
-                'title' => 'Diseñar mockups para la nueva landing page',
-                'description' => 'Crear mockups de alta fidelidad para la nueva landing page del producto X. Incluir versiones para móvil y escritorio con todos los elementos visuales y de navegación necesarios.',
-                'due_date' => '2023-06-20',
-                'status' => 'en-proceso',
-                'priority' => 'alta',
-                'team' => 'Diseño Gráfico',
-                'goal' => 'Lanzar nueva página de producto',
-                'goal_id' => 'goal-002',
-                'team_id' => 'team-002',
-                'assigned_by' => 'María González',
-            ],
-            [
-                'id' => 2,
-                'title' => 'Optimizar imágenes para el blog',
-                'description' => 'Optimizar todas las imágenes del blog para mejorar el tiempo de carga. Usar formato WebP y comprimir sin pérdida de calidad visible. Incluir alt text para SEO.',
-                'due_date' => '2023-06-15',
-                'status' => 'incompleta',
-                'priority' => 'media',
-                'team' => 'Diseño Gráfico',
-                'goal' => 'Aumentar tráfico web en un 25%',
-                'goal_id' => 'goal-001',
-                'team_id' => 'team-001',
-                'assigned_by' => 'Carlos Méndez',
-            ],
-            [
-                'id' => 3,
-                'title' => 'Crear contenido para redes sociales',
-                'description' => 'Desarrollar 10 piezas de contenido para Instagram y Facebook sobre el lanzamiento del nuevo producto. Incluir copy, hashtags y programación de publicaciones.',
-                'due_date' => '2023-06-10',
-                'status' => 'suspendida',
-                'priority' => 'alta',
-                'team' => 'Marketing Digital',
-                'goal' => 'Lanzar campaña en redes sociales',
-                'goal_id' => 'goal-003',
-                'team_id' => 'team-001',
-                'assigned_by' => 'Carlos Méndez',
-            ],
-            [
-                'id' => 4,
-                'title' => 'Actualizar documentación técnica',
-                'description' => 'Actualizar la documentación técnica del API con los nuevos endpoints y parámetros. Incluir ejemplos de uso y casos de error.',
-                'due_date' => '2023-06-25',
-                'status' => 'completa',
-                'priority' => 'media',
-                'team' => 'Desarrollo Web',
-                'goal' => 'Mejorar experiencia de desarrolladores',
-                'goal_id' => 'goal-004',
-                'team_id' => 'team-003',
-                'assigned_by' => 'Ana López',
-            ],
-            [
-                'id' => 5,
-                'title' => 'Preparar reporte mensual de métricas',
-                'description' => 'Compilar y analizar las métricas de marketing del mes anterior. Preparar presentación para la reunión del equipo con insights y recomendaciones.',
-                'due_date' => '2023-06-15',
-                'status' => 'completa',
-                'priority' => 'alta',
-                'team' => 'Marketing Digital',
-                'goal' => 'Aumentar tráfico web en un 25%',
-                'goal_id' => 'goal-001',
-                'team_id' => 'team-001',
-                'assigned_by' => 'Carlos Méndez',
-            ],
-        ]);
+
+        $actividades = $actividades->map(function ($actividad) {
+            return [
+                'id' => $actividad->id,
+                'nombre' => $actividad->nombre,
+                'descripcion' => $actividad->descripcion,
+                'fecha_entrega' => $actividad->fecha_entrega?? 'Sin fecha de entrega',
+                'estado_id' => $actividad->estado->id ?? null,
+                'estado' => $actividad->estado ? $actividad->estado->nombre : 'Desconocido',
+                // 'prioridad' => $actividad->prioridad,
+                'equipo' => $actividad->meta->equipo ? $actividad->meta->equipo->nombre : 'Sin equipo',
+                'equipo_id' => $actividad->meta->equipo ? $actividad->meta->equipo->id : null,
+                'meta' => $actividad->meta ? $actividad->meta->nombre : 'Sin meta',
+                'meta_id' => $actividad->meta ? $actividad->meta->id : null,
+                'asignado_por' => $actividad->meta->equipo ? $actividad->meta->equipo->coordinador->nombreCompleto : 'Sin asignar',
+            ];
+        });
 
         // Filtrar actividades por búsqueda
         if ($searchQuery) {
             $actividades = $actividades->filter(function ($actividad) use ($searchQuery) {
-                return str_contains(strtolower($actividad['title']), strtolower($searchQuery)) ||
-                       str_contains(strtolower($actividad['description']), strtolower($searchQuery)) ||
-                       str_contains(strtolower($actividad['team']), strtolower($searchQuery));
+                return str_contains(strtolower($actividad['nombre']), strtolower($searchQuery)) ||
+                       str_contains(strtolower($actividad['descripcion']), strtolower($searchQuery)) ||
+                       str_contains(strtolower($actividad['equipo']), strtolower($searchQuery));
             });
         }
 
@@ -93,48 +59,37 @@ class ActividadController extends Controller
         $kanbanColumns = [
             [
                 'id' => '',
-                'title' => 'Incompletas',
-                'status' => 'incompleta',
-                'color' => 'text-yellow-600',
-                'items' => $actividades->where('status', 'incompleta')->values(),
+                'titulo' => 'Incompletas',
+                'estado_id' => '1',
+                'color' => 'yellow',
+                'items' => $actividades->where('estado_id', '1')->values(),
             ],
             [
                 'id' => 'en-proceso',
-                'title' => 'En Proceso',
-                'status' => 'en-proceso',
-                'color' => 'text-blue-600',
-                'items' => $actividades->where('status', 'en-proceso')->values(),
+                'titulo' => 'En Proceso',
+                'estado_id' => '2',
+                'color' => 'blue',
+                'items' => $actividades->where('estado_id', '2')->values(),
             ],
             [
                 'id' => 'completas',
-                'title' => 'Completas',
-                'status' => 'completa',
-                'color' => 'text-green-600',
-                'items' => $actividades->where('status', 'completa')->values(),
+                'titulo' => 'Completas',
+                'estado_id' => '3',
+                'color' => 'green',
+                'items' => $actividades->where('estado_id', '3')->values(),
             ],
             [
                 'id' => 'suspendidas',
-                'title' => 'Suspendidas',
-                'status' => 'suspendida',
-                'color' => 'text-red-600',
-                'items' => $actividades->where('status', 'suspendida')->values(),
+                'titulo' => 'Suspendidas',
+                'estado_id' => '4',
+                'color' => 'red',
+                'items' => $actividades->where('estado_id', '4')->values(),
             ],
         ];
 
         return view('private.colaborador.actividades', compact('kanbanColumns', 'searchQuery', 'actividades'));
     }
 
-    public function updateStatus(Request $request, $id)
-    {
-        $request->validate([
-            'status' => 'required|in:incompleta,en-proceso,completa,suspendida'
-        ]);
-
-        // En producción, actualizar en la base de datos
-        // Activity::where('id', $id)->update(['status' => $request->status]);
-
-        return response()->json(['success' => true, 'message' => 'Estado actualizado correctamente']);
-    }
 
     /**
      * Show the form for creating a new resource.
@@ -154,54 +109,39 @@ class ActividadController extends Controller
 
     public function show($id)
     {
-        // En producción, buscar en la base de datos
-        $actividades = collect([
-            [
-                'id' => 'act-001',
-                'title' => 'Diseñar mockups para la nueva landing page',
-                'description' => 'Crear mockups de alta fidelidad para la nueva landing page del producto X. Incluir versiones para móvil y escritorio con todos los elementos visuales y de navegación necesarios.',
-                'due_date' => '2023-06-20',
-                'status' => 'en-proceso',
-                'priority' => 'alta',
-                'team' => 'Diseño Gráfico',
-                'goal' => 'Lanzar nueva página de producto',
-                'goal_id' => 'goal-002',
-                'team_id' => 'team-002',
-                'assigned_by' => 'María González',
-            ],
-            // ... otros datos
-        ]);
-
-        $actividad = $actividades->firstWhere('id', $id);
-
+        $actividad = $this->tareaRepositorio->getById($id);
         if (!$actividad) {
-            abort(404);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Actividad no encontrada.'
+            ]);
         }
-
-        return response()->json($actividad);
+        return response()->json([
+            'id' => $actividad->id,
+            'nombre' => $actividad->nombre,
+            'descripcion' => $actividad->descripcion,
+            'fecha_entrega' => $actividad->fecha_entrega?? 'Sin fecha de entrega',
+            'estado_id' => $actividad->estado->id ?? null,
+            'estado' => $actividad->estado ? $actividad->estado->nombre : 'Desconocido',
+            // 'prioridad' => $actividad->prioridad,
+            'equipo' => $actividad->meta->equipo ? $actividad->meta->equipo->nombre : 'Sin equipo',
+            'equipo_id' => $actividad->meta->equipo ? $actividad->meta->equipo->id : null,
+            'meta' => $actividad->meta ? $actividad->meta->nombre : 'Sin meta',
+            'meta_id' => $actividad->meta ? $actividad->meta->id : null,
+            'asignado_por' => $actividad->meta->equipo ? $actividad->meta->equipo->coordinador->nombreCompleto : 'Sin asignar',
+        ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function getTrabajador()
     {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        $usuario = Auth::user();
+        if (!$usuario) {
+            return redirect()->route('colaborador.actividades')->with('error', 'Usuario no autenticado.');
+        }
+        $trabajador = $this->trabajadorRepositorio->findOneBy('usuario_id', $usuario->id);
+        if (!$trabajador) {
+            return redirect()->route('colaborador.actividades')->with('error', 'Trabajador no encontrado.');
+        }
+        return $trabajador;
     }
 }

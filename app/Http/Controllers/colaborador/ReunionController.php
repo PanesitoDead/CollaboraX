@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Colaborador;
 
 use App\Http\Controllers\Controller;
 use Carbon\Carbon;
-use Faker\Factory as Faker;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Faker\Factory as Faker;
 
 class ReunionController extends Controller
 {

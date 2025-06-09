@@ -3,18 +3,43 @@
  namespace App\Repositories;
 
 use App\Models\Invitacion;
+use App\Models\MiembroEquipo;
 use Illuminate\Database\Eloquent\Builder;
 
 class InvitacionRepositorio extends RepositorioBase
 {
-    public function __construct(Invitacion $model)
+    protected MiembroEquipo $miembroEquipoModel;
+    public function __construct(Invitacion $model, MiembroEquipo $miembroEquipoModel)
     {
         parent::__construct($model);
+        $this->miembroEquipoModel = $miembroEquipoModel;
     }
 
     public function getInvitacionesPorEquipo($equipo)
     {
         return $this->model->where('equipo_id', $equipo)->get();
+    }
+
+    public function aceptarInvitacion(int $id): bool
+    {
+        $invitacion = $this->getById($id);
+        if (!$invitacion) {
+            return false;
+        }
+        
+        $invitacion->estado = 'ACEPTADA';
+        $invitacion->fecha_respuesta = now();
+        $invitacion->save();
+
+        // Aquí podrías agregar lógica adicional para manejar la aceptación de la invitación, como asignar el usuario al equipo.
+        $miembroEquipo = new MiembroEquipo();
+        $miembroEquipo->trabajador_id = $invitacion->trabajador_id;
+        $miembroEquipo->equipo_id = $invitacion->equipo_id;
+        $miembroEquipo->fecha_union = now();
+        $miembroEquipo->activo = true; // Asumimos que el miembro está activo al aceptar la invitación
+        $miembroEquipo->save();
+
+        return true;
     }
 
     public function cancelarInivitacion(int $id): bool

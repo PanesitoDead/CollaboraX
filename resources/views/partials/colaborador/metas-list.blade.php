@@ -4,11 +4,11 @@
             <div class="px-6 py-4">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
                     <div>
-                        <h4 class="text-sm font-medium text-gray-900">{{ $meta['titulo'] }}</h4>
+                        <h4 class="text-sm font-medium text-gray-900">{{ $meta['nombre'] }}</h4>
                         <p class="text-sm text-gray-500">{{ $meta['descripcion'] }}</p>
                     </div>
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        Vence: {{ $meta['fecha_vencimiento'] }}
+                        Vence: {{ $meta['fecha_entrega'] }}
                     </span>
                 </div>
                 <div class="space-y-2">
@@ -20,7 +20,7 @@
                         <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: {{ $meta['progreso'] }}%"></div>
                     </div>
                     <p class="text-xs text-gray-500">
-                        {{ $meta['actividades_completadas'] }} de {{ $meta['actividades_totales'] }} actividades completadas
+                        {{ $meta['tareas_completadas'] }} de {{ $meta['total_tareas'] }} actividades completadas
                     </p>
                 </div>
             </div>

@@ -1,14 +1,15 @@
 <?php
 
-use App\Http\Controllers\admin\AreaController;
-use App\Http\Controllers\admin\ColaboradorController;
-use App\Http\Controllers\admin\ConfiguracionController;
-use App\Http\Controllers\admin\CoordinadorEquipoController;
-use App\Http\Controllers\admin\CoordinadorGeneralController;
-use App\Http\Controllers\admin\DashboardController;
-use App\Http\Controllers\admin\EstadisticaController;
+use App\Http\Controllers\Admin\AreaController;
+use App\Http\Controllers\Admin\ColaboradorController;
+use App\Http\Controllers\Admin\ConfiguracionController;
+use App\Http\Controllers\Admin\CoordinadorEquipoController;
+use App\Http\Controllers\Admin\CoordinadorGeneralController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\EstadisticaController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\colaborador\ActividadController;
+use App\Http\Controllers\colaborador\InvitacionController;
 use App\Http\Controllers\coordEquipo\ActividadesCoordinadorController;
 use App\Http\Controllers\coordEquipo\ConfiguracionCoordinadorController;
 use App\Http\Controllers\coordEquipo\CoordEquipoController;
@@ -26,9 +27,9 @@ use App\Http\Controllers\CoordinadorGeneral\ConfigurationController  as Coordina
 use App\Http\Controllers\CoordinadorGeneral\EquiposController;
 use App\Http\Controllers\CoordinadorGeneral\ReunionesController;
 use App\Http\Controllers\CoordinadorGeneral\MensajesController;
-use App\Http\Controllers\superAdmin\EmpresasController;
-use App\Http\Controllers\superAdmin\EstadisticaController as SuperAdminEstadisticaController;
-use App\Http\Controllers\superAdmin\ConfiguracionController as SuperAdminConfiguracionController;
+use App\Http\Controllers\SuperAdmin\EmpresasController;
+use App\Http\Controllers\SuperAdmin\EstadisticaController as SuperAdminEstadisticaController;
+use App\Http\Controllers\SuperAdmin\ConfiguracionController as SuperAdminConfiguracionController;
 
 Route::get('/', function () {
     return view('public.home.home');
@@ -92,8 +93,12 @@ Route::get('/admin/configuracion', [ConfiguracionController::class, 'index'])->n
 
 // Rutas para el colaborador
 Route::get('/colaborador/actividades', [ActividadController::class, 'index'])->name('colaborador.actividades');
+Route::get('/colaborador/actividades/{id}', [ActividadController::class, 'show'])->name('colaborador.actividades.show');
 Route::get('/colaborador/mi-equipo', [\App\Http\Controllers\colaborador\MiEquipoController::class, 'index'])->name('colaborador.mi-equipo');
-Route::get('/colaborador/invitaciones', [\App\Http\Controllers\colaborador\InvitacionController::class, 'index'])->name('colaborador.invitaciones.index');
+
+Route::get('/colaborador/invitaciones/{estado?}', [InvitacionController::class, 'index'])->name('colaborador.invitaciones.index')->where('estado', 'pendiente|historial')->defaults('estado', 'pendiente');
+Route::patch('/colaborador/invitaciones/{id}/aceptar', [InvitacionController::class, 'aceptar'])->name('colaborador.invitaciones.aceptar');
+Route::patch('/colaborador/invitaciones/{id}/rechazar', [InvitacionController::class, 'rechazar'])->name('colaborador.invitaciones.rechazar');
 
 // Rutas para los mensajes del colaborador
 Route::get('/colaborador/mensajes', [MensajeController::class, 'index'])->name('colaborador.mensajes');
@@ -105,10 +110,7 @@ Route::get('/colaborador/mensajes', [MensajeController::class, 'index'])->name('
     Route::post('/colaborador/mensajes/search', [MensajeController::class, 'search'])->name('colaborador.mensajes.search');
 
 
-
 Route::get('/colaborador/reuniones', [\App\Http\Controllers\colaborador\ReunionController::class, 'index'])->name('colaborador.reuniones');
-Route::get('/colaborador/invitaciones', [\App\Http\Controllers\colaborador\InvitacionController::class, 'index'])->name('colaborador.invitaciones.index');
-
 
 // Rutas para la configuración del colaborador
 

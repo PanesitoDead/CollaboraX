@@ -41,6 +41,20 @@ class Equipo extends Model
         return $this->hasMany(Meta::class, 'equipo_id');
     }
 
+    public function actividades()
+    {
+        return $this->hasManyThrough(Tarea::class, Meta::class, 'equipo_id', 'meta_id');
+    }
+
+    public function tareasCompletadas()
+    {
+        return $this->hasManyThrough(Tarea::class, Meta::class, 'equipo_id', 'meta_id')
+                    ->whereHas('estado', function($query) {
+                        $query->where('nombre', 'Completo');
+                    });
+    }
+    
+
     public function reuniones()
     {
         return $this->hasMany(Reunion::class, 'equipo_id');

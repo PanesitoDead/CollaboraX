@@ -31,15 +31,6 @@ class CoordinadorGeneralController extends Controller
         $this->areaRepositorio = $areaRepositorio;
     }
 
-    public function getEmpresa()
-    {
-        $usuario = Auth::user();
-        $empresa = $this->empresaRepositorio->findOneBy('usuario_id', $usuario->id);
-        if (!$empresa) {
-            return redirect()->route('admin.dashboard')->with('error', 'No se encontró la empresa asociada al usuario.');
-        }
-        return $empresa;
-    }
     public function index(Request $request)
     {
         $empresa = $this->getEmpresa();
@@ -93,15 +84,6 @@ class CoordinadorGeneralController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        
-       
-    }
-
-    /**
      * Display the specified resource.
      */
     public function show(string $id)
@@ -152,11 +134,16 @@ class CoordinadorGeneralController extends Controller
         return redirect()->route('admin.coordinadores-generales.index')->with('success', 'Colaborador actualizado correctamente.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function getEmpresa()
     {
-        //
+        $usuario = Auth::user();
+        if (!$usuario) {
+            return redirect()->route('admin.dashboard')->with('error', 'Usuario no autenticado.');
+        }
+        $empresa = $this->empresaRepositorio->findOneBy('usuario_id', $usuario->id);
+        if (!$empresa) {
+            return redirect()->route('admin.dashboard')->with('error', 'No se encontró la empresa asociada al usuario.');
+        }
+        return $empresa;
     }
 }

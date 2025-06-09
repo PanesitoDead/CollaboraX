@@ -24,25 +24,22 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             {{-- Área --}}
                             <div class="mb-2">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                     <i data-lucide="layers" class="w-4 h-4 mr-1"></i>
                                     {{ $inv->area->nombre }}
                                 </span>
                             </div>
                             {{-- Equipo --}}
                             <div class="flex items-center text-sm font-medium text-gray-900">
-                                <i data-lucide="users" class="w-4 h-4 text-gray-400 mr-1"></i>
+                                <i data-lucide="users" class="w-4 h-4 text-gray-400 mr-2"></i>
                                 <span>{{ $inv->equipo->nombre ?? 'Sin equipo' }}</span>
                             </div>
                             {{-- Coordinador --}}
-                            <div class="flex items-center mt-1 text-sm text-gray-500">
+                            <div class="flex items-center mt-2 text-sm text-gray-500">
                                 <div class="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center mr-2">
-                                    @php
-                                        $initialsInv = strtoupper(substr($inv->apellido_paterno, 0, 1) . substr($inv->apellido_materno, 0, 1));
-                                    @endphp
-                                    <span class="text-xs font-medium">{{ $initialsInv }}</span>
+                                    <span class="text-xs font-medium">{{ $inv->coordinador_iniciales }}</span>
                                 </div>
-                                <span>{{ $inv->nombres }} {{ $inv->apellido_paterno }}</span>
+                                <span>{{ $inv->coordinador_nombre_completo }}</span>
                             </div>
                         </td>
 
@@ -148,22 +145,23 @@
         </div>
     @endif
 </div>
-{{-- 
+
 <!-- Modal para ver detalles de la invitación -->
-@include('partials.admin.modales.invitaciones-modal-detalles')
+@include('partials.colaborador.modales.detalles.invitacion-modal-detalles')
 <!-- Modal para confirmar aceptación/rechazo de invitación -->
-@include('partials.admin.modales.invitaciones-modal-confirmacion')
+@include('partials.colaborador.modales.confirmacion.invitacion-modal-confirmacion')
 
 <script>
+    // Atajos para los botones de la tabla
     function aceptarInvitacion(id) {
-        abrirModalConfirmacionAceptacion(id);
+        abrirModalInvitacion(id, 'aceptar');
     }
 
     function rechazarInvitacion(id) {
-        abrirModalConfirmacionRechazo(id);
+        abrirModalInvitacion(id, 'rechazar');
     }
 
     function verDetallesInvitacion(id) {
         abrirModalDetallesInvitacion(id);
     }
-</script> --}}
+</script>

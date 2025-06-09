@@ -44,7 +44,7 @@ class CoordEquipoController extends Controller
             'metas_completadas' => $metas_completadas->count(),
             'actividades_totales' => $actividades->count(),
             'actividades_completadas' => $actividades_completadas->count(),
-            'cumplimiento' => $actividades_completadas->count() / $actividades->count() * 100
+            'cumplimiento' => ($actividades->count() > 0) ? ($actividades_completadas->count() / $actividades->count() * 100) : 0
         ];
 
         return view('private.coord-equipo.dashboard', compact('stats', 'metas', 'actividades', 'colaboradores', 'equipo'));
