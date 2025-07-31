@@ -31,6 +31,11 @@ use App\Http\Controllers\SuperAdmin\EmpresasController;
 use App\Http\Controllers\SuperAdmin\EstadisticaController as SuperAdminEstadisticaController;
 use App\Http\Controllers\SuperAdmin\ConfiguracionController as SuperAdminConfiguracionController;
 
+
+// Route::get('/', function () {
+//     return 'Aplicación Laravel desplegada correctamente en GCP 🚀';
+// });
+
 Route::get('/', function () {
     return view('public.home.home');
 })->name('home');

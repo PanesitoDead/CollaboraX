@@ -1,0 +1,50 @@
+runtime: php82
+
+runtime_config:
+  document_root: public
+
+instance_class: F1
+
+env_variables:
+  APP_NAME: CollaboraX
+  APP_ENV: production
+  APP_DEBUG: true
+  APP_KEY: base64:oXHAxR/kpPKM2qjYU3uEHeelkDcpfyBLBsfGOzhcF08=
+
+  APP_URL: https://collaborax-gcp.uc.r.appspot.com
+  APP_TIMEZONE: UTC
+
+  DB_CONNECTION: mysql
+  DB_HOST: localhost
+  DB_PORT: 3306
+  DB_DATABASE: bd_collaborax
+  DB_USERNAME: root
+  DB_PASSWORD: 123456
+  DB_SOCKET: /cloudsql/collaborax:us-central1:collaborax
+
+  SESSION_DRIVER: cookie
+  SESSION_LIFETIME: 120
+  SESSION_SECURE_COOKIE: true
+
+  LOG_CHANNEL: stderr
+  LOG_LEVEL: debug
+
+  VIEW_COMPILED_PATH: "/tmp/storage/framework/views"
+  CACHE_PATH: "/tmp/storage/framework/cache/data"
+
+  VITE_APP_NAME: CollaboraX
+
+handlers:
+  - url: /build
+    static_dir: public/build
+
+  - url: /favicon\.ico
+    static_files: public/favicon.ico
+    upload: public/favicon\.ico
+
+  - url: /(.*\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))
+    static_files: public/\1
+    upload: public/.*\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)
+
+  - url: /.*
+    script: auto

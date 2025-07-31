@@ -3,7 +3,7 @@ import laravel from 'laravel-vite-plugin';
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-    base: '/collaborax/', // Adjust the base path as needed
+    base: '/build/', // Adjust the base path as needed
     plugins: [
         tailwindcss(),
         laravel({

@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 
@@ -20,6 +22,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-       
+       if (env('APP_ENV') === 'production' && env('VIEW_COMPILED_PATH')) {
+            $path = env('VIEW_COMPILED_PATH');
+
+            if (!File::exists($path)) {
+                File::makeDirectory($path, 0755, true);
+            }
+
+            View::addNamespace('view', $path);
+        }
     }
 }

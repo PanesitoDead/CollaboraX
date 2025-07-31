@@ -1,0 +1,11 @@
+# Incluye todo por defecto
+# luego excluye lo que realmente no quieres subir
+
+# Ignorar directorios comunes
+.git
+node_modules/
+vendor/
+
+# Pero asegúrate de incluir el build
+!public/build/
+!public/build/**
