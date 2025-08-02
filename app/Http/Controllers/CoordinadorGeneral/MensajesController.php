@@ -83,7 +83,6 @@ class MensajesController extends Controller
                 return [
                     'id' => $trabajador->id,
                     'name' => $trabajador->nombres . ' ' . $trabajador->apellido_paterno . ' ' . $trabajador->apellido_materno,
-                    // --- CORRECCIÓN AQUÍ ---
                     'avatar' => optional(optional($trabajador->usuario)->fotoPerfil)->ruta ? asset('storage/' . $trabajador->usuario->fotoPerfil->ruta) : '/placeholder.svg?height=40&width=40',
                     'online' => $enLinea,
                     'lastMessage' => $ultimoMensaje ? $ultimoMensaje->contenido : 'Sin mensajes',
@@ -95,11 +94,13 @@ class MensajesController extends Controller
             });
 
             // Transformar todos los trabajadores para nuevos chats
-            $allContacts = $todosTrabajadores->map(function($trabajador) {
+            $allWorkers = $todosTrabajadores->map(function($trabajador) {
                 return [
                     'id' => $trabajador->id,
                     'name' => $trabajador->nombres . ' ' . $trabajador->apellido_paterno . ' ' . $trabajador->apellido_materno,
-                    'role' => $trabajador->usuario && $trabajador->usuario->rol ? $trabajador->usuario->rol->nombre : 'Sin rol'
+                    'role' => $trabajador->usuario && $trabajador->usuario->rol ? $trabajador->usuario->rol->nombre : 'Sin rol',
+                    'avatar' => optional(optional($trabajador->usuario)->fotoPerfil)->ruta ? asset('storage/' . $trabajador->usuario->fotoPerfil->ruta) : '/placeholder.svg?height=40&width=40',
+                    'online' => $trabajador->usuario && $trabajador->usuario->en_linea
                 ];
             });
 
@@ -112,7 +113,7 @@ class MensajesController extends Controller
                 'important' => 0
             ];
 
-            return view('coordinador-general.mensajes.index', compact('contacts', 'allContacts', 'messages', 'stats'));
+            return view('coordinador-general.mensajes.index', compact('contacts', 'allWorkers', 'messages', 'stats'));
 
         } catch (\Exception $e) {
             Log::error('Error en mensajes index', [
@@ -123,7 +124,7 @@ class MensajesController extends Controller
             // En caso de error, mostrar vista con datos vacíos
             return view('coordinador-general.mensajes.index', [
                 'contacts' => collect([]),
-                'allContacts' => collect([]),
+                'allWorkers' => collect([]),
                 'messages' => [],
                 'stats' => [
                     'unread' => 0,
@@ -193,7 +194,6 @@ class MensajesController extends Controller
                     'id' => $trabajador->id,
                     'name' => $trabajador->nombres . ' ' . $trabajador->apellido_paterno . ' ' . $trabajador->apellido_materno,
                     'role' => $trabajador->usuario && $trabajador->usuario->rol ? $trabajador->usuario->rol->nombre : 'Sin rol',
-                    // --- CORRECCIÓN AQUÍ ---
                     'avatar' => optional(optional($trabajador->usuario)->fotoPerfil)->ruta ? asset('storage/' . $trabajador->usuario->fotoPerfil->ruta) : '/placeholder.svg?height=40&width=40',
                     'online' => $trabajador->usuario && $trabajador->usuario->en_linea
                 ];
@@ -428,6 +428,11 @@ class MensajesController extends Controller
         }
     }
 
+    // Este método 'search' en el controlador no se estaba utilizando en el JS original para la búsqueda de contactos en la lista principal.
+    // El JS original filtraba los contactos ya cargados en el cliente.
+    // Si deseas que la búsqueda de contactos en la lista principal sea del lado del servidor,
+    // deberías modificar la función `searchContacts` en `mensajes.js` para que haga una petición AJAX a esta ruta.
+    // Por ahora, lo mantendremos como estaba en tu controlador, pero ten en cuenta su uso.
     public function search(Request $request)
     {
         $request->validate([
@@ -446,12 +451,11 @@ class MensajesController extends Controller
             $resultados = $trabajadores->map(function($trabajador) {
                 return [
                     'id' => $trabajador->id,
-                    'name' => $trabajador->nombre_completo,
-                    // --- CORRECCIÓN AQUÍ ---
+                    'name' => $trabajador->nombres . ' ' . $trabajador->apellido_paterno . ' ' . $trabajador->apellido_materno,
                     'avatar' => optional(optional($trabajador->usuario)->fotoPerfil)->ruta ? asset('storage/' . $trabajador->usuario->fotoPerfil->ruta) : '/placeholder.svg?height=40&width=40',
                     'online' => $trabajador->usuario && $trabajador->usuario->en_linea,
-                    'lastMessage' => 'Resultado de búsqueda',
-                    'time' => '',
+                    'lastMessage' => 'Resultado de búsqueda', // Esto es un placeholder, ajusta según tu lógica
+                    'time' => '', // Esto es un placeholder, ajusta según tu lógica
                     'unreadCount' => 0,
                     'important' => false,
                     'group' => false
