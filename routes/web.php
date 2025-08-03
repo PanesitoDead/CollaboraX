@@ -263,3 +263,4 @@ Route::post('/coordinador-general/configuracion/security', [CoordinadorConfigura
     Route::post('/coordinador-general/mensajes/new-chat', [MensajesController::class, 'newChat'])->name('coordinador-general.mensajes.new-chat');
     Route::post('/coordinador-general/mensajes/mark-as-read', [MensajesController::class, 'markAsRead'])->name('coordinador-general.mensajes.mark-as-read');
     Route::post('/coordinador-general/mensajes/search', [MensajesController::class, 'search'])->name('coordinador-general.mensajes.search');
+    Route::post('/coordinador-general/mensajes/store-fcm-token', [MensajesController::class, 'storeFcmToken'])->name('coordinador-general.mensajes.store-fcm-token');

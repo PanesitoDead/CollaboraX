@@ -1,6 +1,13 @@
 @extends('layouts.coordinador-general.app')
 
 @section('content')
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+
+<!-- Meta tag para el ID del usuario actual -->
+<meta name="user-id" content="{{ Auth::user()->trabajador->id }}">
+
 <div class="flex flex-col h-[calc(100vh-4rem)]">
     <!-- Header -->
     <div class="p-6 pb-4">
@@ -45,41 +52,16 @@
                     data-tab="unread"
                 >
                     No leídos
-                    <span class="ml-1 bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full">{{ $stats['unread'] }}</span>
+                    <span id="unread-badge" class="ml-1 bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full">0</span>
                 </button>
             </div>
             
             <!-- Contacts List -->
             <div class="flex-1 overflow-y-auto" id="contacts-container">
-                @foreach($contacts as $contact)
-                <div 
-                    class="contact-item p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors hover-scale {{ $loop->first ? 'bg-blue-50' : '' }}" 
-                    data-contact-id="{{ $contact['id'] }}"
-                    data-unread="{{ $contact['unreadCount'] > 0 ? 'true' : 'false' }}"
-                    data-important="{{ $contact['important'] ? 'true' : 'false' }}"
-                >
-                    <div class="flex items-center space-x-3">
-                        <div class="relative">
-                            <img src="{{ $contact['avatar'] }}" alt="{{ $contact['name'] }}" class="w-10 h-10 rounded-full">
-                            @if($contact['online'])
-                            <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                            @endif
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center justify-between">
-                                <p class="contact-name text-sm font-medium text-gray-900 truncate">{{ $contact['name'] }}</p>
-                                <p class="contact-time text-xs text-gray-500">{{ $contact['time'] }}</p>
-                            </div>
-                            <p class="contact-last-message text-sm text-gray-500 truncate">{{ $contact['lastMessage'] }}</p>
-                        </div>
-                        @if($contact['unreadCount'] > 0)
-                        <div class="bg-blue-500 text-white text-xs font-medium px-2 py-1 rounded-full min-w-[20px] text-center">
-                            {{ $contact['unreadCount'] }}
-                        </div>
-                        @endif
-                    </div>
+                <!-- Los contactos se cargarán dinámicamente desde Firebase -->
+                <div id="contacts-loading" class="flex items-center justify-center py-8">
+                    <div class="text-gray-500">Cargando conversaciones...</div>
                 </div>
-                @endforeach
             </div>
         </div>
         
@@ -234,20 +216,21 @@
 <script>
     // Pasar datos iniciales y URLs de rutas a JavaScript
     window.appData = {
-        initialContacts: @json($contacts),
+        initialContacts: [], // Ahora vacío, se carga desde Firebase
         initialStats: @json($stats),
-        allWorkers: @json($allWorkers), // Pasa todos los trabajadores para la búsqueda inicial del modal
+        allWorkers: @json($allWorkers),
+        firebaseConfig: @json($firebaseConfig),
         routes: {
             searchWorkers: "{{ route('coordinador-general.mensajes.search-workers') }}",
-            getMessages: "{{ route('coordinador-general.mensajes.get-messages', ['contactId' => 'PLACEHOLDER']) }}".replace('PLACEHOLDER', ''),
             sendMessage: "{{ route('coordinador-general.mensajes.send') }}",
             newChat: "{{ route('coordinador-general.mensajes.new-chat') }}",
             csrfToken: "{{ csrf_token() }}"
         }
     };
 </script>
-{{-- Carga el archivo JavaScript externo --}}
-<script src="{{ asset('js/mensajes.js') }}" defer></script>
+
+{{-- Carga el archivo JavaScript con funcionalidad de tiempo real --}}
+<script src="{{ asset('js/mensajes-realtime.js') }}" defer></script>
 
 <style>
 .sidebar-transition {
@@ -293,7 +276,6 @@
     to { opacity: 1; }
 }
 
-/* Asegurar que el contenedor de mensajes mantenga su altura fija */
 #messages-container {
     scrollbar-width: thin;
     scrollbar-color: #cbd5e0 #f7fafc;
@@ -317,13 +299,11 @@
     background: #a0aec0;
 }
 
-/* Asegurar que el chat interface use toda la altura disponible */
 #chat-interface {
     max-height: 100%;
     overflow: hidden;
 }
 
-/* Transición suave para contactos que se mueven */
 .contact-item {
     transition: all 0.3s ease;
 }

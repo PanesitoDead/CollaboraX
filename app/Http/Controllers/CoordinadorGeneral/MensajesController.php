@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\CoordinadorGeneral;
 
 use App\Http\Controllers\Controller;
-use App\Repositories\MensajeRepositorio;
+use App\Services\FirebaseServices;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -11,12 +11,11 @@ use Carbon\Carbon;
 
 class MensajesController extends Controller
 {
-    protected $mensajeRepositorio;
+    protected $firebaseService;
 
-    public function __construct(MensajeRepositorio $mensajeRepositorio)
+    public function __construct(FirebaseServices $firebaseService)
     {
-        $this->mensajeRepositorio = $mensajeRepositorio;
-        // Configurar zona horaria de Lima, Perú
+        $this->firebaseService = $firebaseService;
         config(['app.timezone' => 'America/Lima']);
         date_default_timezone_set('America/Lima');
     }
@@ -24,7 +23,6 @@ class MensajesController extends Controller
     public function index()
     {
         try {
-            // Obtener el coordinador autenticado
             $user = Auth::user();
             $trabajador = $user->trabajador;
             
@@ -44,56 +42,12 @@ class MensajesController extends Controller
                 'empresa_id' => $empresaId
             ]);
 
-            // Obtener conversaciones del coordinador
-            $conversaciones = $this->mensajeRepositorio->getConversacionesByCoordinador($coordinadorId, $empresaId);
-        
-            // Obtener todos los trabajadores de la empresa para nuevos chats
-            $todosTrabajadores = $this->mensajeRepositorio->getTrabajadoresDisponiblesParaChat($empresaId, $coordinadorId);
-        
-            // Obtener estadísticas
-            $estadisticas = $this->mensajeRepositorio->getEstadisticas($coordinadorId, $empresaId);
+            // Solo obtener trabajadores disponibles de MySQL para el selector
+            $todosTrabajadores = \App\Models\Trabajador::where('empresa_id', $empresaId)
+                ->where('id', '!=', $coordinadorId)
+                ->with(['usuario.rol', 'usuario.fotoPerfil'])
+                ->get();
 
-            Log::info('Datos obtenidos para mensajería', [
-                'conversaciones_count' => $conversaciones->count(),
-                'trabajadores_disponibles' => $todosTrabajadores->count(),
-                'mensajes_no_leidos' => $estadisticas['mensajes_no_leidos']
-            ]);
-
-            // Transformar conversaciones para la vista manteniendo el formato original
-            $contacts = $conversaciones->map(function($conversacion) {
-                $trabajador = $conversacion['trabajador'];
-                $ultimoMensaje = $conversacion['ultimo_mensaje'];
-            
-                // Determinar si está en línea
-                $enLinea = $trabajador->usuario && $trabajador->usuario->en_linea;
-            
-                // Formatear tiempo del último mensaje
-                $tiempo = 'Sin mensajes';
-                if ($ultimoMensaje) {
-                    $fechaMensaje = Carbon::parse($ultimoMensaje->fecha . ' ' . $ultimoMensaje->hora, 'America/Lima');
-                    if ($fechaMensaje->isToday()) {
-                        $tiempo = $fechaMensaje->format('H:i');
-                    } elseif ($fechaMensaje->isYesterday()) {
-                        $tiempo = 'Ayer';
-                    } else {
-                        $tiempo = $fechaMensaje->format('d/m');
-                    }
-                }
-
-                return [
-                    'id' => $trabajador->id,
-                    'name' => $trabajador->nombres . ' ' . $trabajador->apellido_paterno . ' ' . $trabajador->apellido_materno,
-                    'avatar' => optional(optional($trabajador->usuario)->fotoPerfil)->ruta ? asset('storage/' . $trabajador->usuario->fotoPerfil->ruta) : '/placeholder.svg?height=40&width=40',
-                    'online' => $enLinea,
-                    'lastMessage' => $ultimoMensaje ? $ultimoMensaje->contenido : 'Sin mensajes',
-                    'time' => $tiempo,
-                    'unreadCount' => $conversacion['mensajes_no_leidos'],
-                    'important' => false,
-                    'group' => false
-                ];
-            });
-
-            // Transformar todos los trabajadores para nuevos chats
             $allWorkers = $todosTrabajadores->map(function($trabajador) {
                 return [
                     'id' => $trabajador->id,
@@ -104,16 +58,18 @@ class MensajesController extends Controller
                 ];
             });
 
-            // No cargar mensajes inicialmente, se cargarán por AJAX
+            // Los contactos, mensajes y estadísticas ahora se cargarán desde Firebase via JavaScript
+            $contacts = collect([]);
             $messages = [];
-
-            // Estadísticas para las pestañas
             $stats = [
-                'unread' => $estadisticas['mensajes_no_leidos'],
+                'unread' => 0,
                 'important' => 0
             ];
 
-            return view('coordinador-general.mensajes.index', compact('contacts', 'allWorkers', 'messages', 'stats'));
+            // Obtener configuración de Firebase para el frontend
+            $firebaseConfig = $this->firebaseService->getFirebaseConfig();
+
+            return view('coordinador-general.mensajes.index', compact('contacts', 'allWorkers', 'messages', 'stats', 'firebaseConfig'));
 
         } catch (\Exception $e) {
             Log::error('Error en mensajes index', [
@@ -121,7 +77,6 @@ class MensajesController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
         
-            // En caso de error, mostrar vista con datos vacíos
             return view('coordinador-general.mensajes.index', [
                 'contacts' => collect([]),
                 'allWorkers' => collect([]),
@@ -129,15 +84,162 @@ class MensajesController extends Controller
                 'stats' => [
                     'unread' => 0,
                     'important' => 0
-                ]
+                ],
+                'firebaseConfig' => $this->firebaseService->getFirebaseConfig()
             ])->with('error', 'Error al cargar los mensajes: ' . $e->getMessage());
+        }
+    }
+
+    public function send(Request $request)
+    {
+        $request->validate([
+            'contact_id' => 'required|integer',
+            'message' => 'nullable|string|max:1000',
+            'files.*' => 'nullable|file|max:10240',
+            'images.*' => 'nullable|image|max:5120'
+        ]);
+
+        try {
+            $user = Auth::user();
+            $trabajador = $user->trabajador;
+            $coordinadorId = $trabajador->id;
+            $empresaId = $trabajador->empresa_id;
+
+            // Verificar que el contacto pertenece a la misma empresa
+            $contacto = \App\Models\Trabajador::where('id', $request->contact_id)
+                ->where('empresa_id', $empresaId)
+                ->first();
+
+            if (!$contacto) {
+                return response()->json(['error' => 'Contacto no válido'], 403);
+            }
+
+            $ahora = Carbon::now('America/Lima');
+            $ultimoMensajeTexto = '';
+
+            // Process text message only if it exists and no files/images are included
+            if ($request->filled('message') && !$request->hasFile('files') && !$request->hasFile('images')) {
+                $ultimoMensajeTexto = $request->message;
+
+                $this->firebaseService->sendMessage(
+                    $coordinadorId,
+                    $request->contact_id,
+                    $request->message,
+                    $ahora->timestamp,
+                    null, // attachmentUrl
+                    null, // attachmentType
+                    false // isRead: false por defecto
+                );
+            }
+
+            // Process files
+            if ($request->hasFile('files')) {
+                foreach ($request->file('files') as $file) {
+                    try {
+                        $filePath = $file->store('public/mensajes/archivos');
+                        $fileUrl = asset(str_replace('public/', 'storage/', $filePath));
+                        $contenidoArchivo = '📎 ' . $file->getClientOriginalName();
+
+                        if (empty($ultimoMensajeTexto)) {
+                            $ultimoMensajeTexto = $contenidoArchivo;
+                        }
+
+                        $this->firebaseService->sendMessage(
+                            $coordinadorId,
+                            $request->contact_id,
+                            $request->filled('message') ? $request->message : $contenidoArchivo,
+                            $ahora->timestamp,
+                            $fileUrl,
+                            $file->getMimeType(),
+                            false // isRead: false por defecto
+                        );
+                    } catch (\Exception $e) {
+                        Log::error('Error al procesar archivo', ['error' => $e->getMessage(), 'file' => $file->getClientOriginalName()]);
+                    }
+                }
+            }
+
+            // Process images
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $image) {
+                    try {
+                        $imagePath = $image->store('public/mensajes/imagenes');
+                        $imageUrl = asset(str_replace('public/', 'storage/', $imagePath));
+                        $contenidoImagen = '🖼️ ' . $image->getClientOriginalName();
+
+                        if (empty($ultimoMensajeTexto)) {
+                            $ultimoMensajeTexto = $contenidoImagen;
+                        }
+
+                        $this->firebaseService->sendMessage(
+                            $coordinadorId,
+                            $request->contact_id,
+                            $request->filled('message') ? $request->message : $contenidoImagen,
+                            $ahora->timestamp,
+                            $imageUrl,
+                            $image->getMimeType(),
+                            false // isRead: false por defecto
+                        );
+                    } catch (\Exception $e) {
+                        Log::error('Error al procesar imagen', ['error' => $e->getMessage(), 'image' => $image->getClientOriginalName()]);
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'last_message' => $ultimoMensajeTexto,
+                'time' => $ahora->format('H:i'),
+                'contact_id' => $request->contact_id
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al enviar mensaje', [
+                'error' => $e->getMessage(),
+                'data' => $request->except(['files', 'images'])
+            ]);
+            return response()->json(['error' => 'Error al enviar el mensaje'], 500);
+        }
+    }
+
+    public function markAsRead(Request $request)
+    {
+        $request->validate([
+            'contact_id' => 'required|integer'
+        ]);
+
+        try {
+            $user = Auth::user();
+            $trabajador = $user->trabajador;
+            $coordinadorId = $trabajador->id;
+            $empresaId = $trabajador->empresa_id;
+
+            // Verificar que el contacto pertenece a la misma empresa
+            $contacto = \App\Models\Trabajador::where('id', $request->contact_id)
+                ->where('empresa_id', $empresaId)
+                ->first();
+
+            if (!$contacto) {
+                return response()->json(['error' => 'Contacto no válido'], 403);
+            }
+
+            // Marcar como leídos solo en Firebase
+            $this->firebaseService->markAsRead($request->contact_id, $coordinadorId);
+
+            return response()->json(['success' => true]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al marcar como leído', [
+                'error' => $e->getMessage(),
+                'contact_id' => $request->contact_id
+            ]);
+            return response()->json(['error' => 'Error al marcar como leído'], 500);
         }
     }
 
     public function searchWorkers(Request $request)
     {
         try {
-            // Obtener el coordinador autenticado
             $user = Auth::user();
             
             if (!$user) {
@@ -160,11 +262,7 @@ class MensajesController extends Controller
                 return response()->json(['error' => 'No se pudo determinar la empresa'], 404);
             }
         
-            // Obtener query de forma segura
-            $query = '';
-            if ($request->has('query')) {
-                $query = $request->input('query');
-            }
+            $query = $request->input('query', '');
             
             Log::info('Búsqueda de trabajadores iniciada', [
                 'coordinador_id' => $coordinadorId,
@@ -172,10 +270,11 @@ class MensajesController extends Controller
                 'query' => $query
             ]);
 
-            // Obtener trabajadores disponibles directamente
-            $trabajadores = $this->mensajeRepositorio->getTrabajadoresDisponiblesParaChat($empresaId, $coordinadorId);
+            $trabajadores = \App\Models\Trabajador::where('empresa_id', $empresaId)
+                ->where('id', '!=', $coordinadorId)
+                ->with(['usuario.rol', 'usuario.fotoPerfil'])
+                ->get();
             
-            // Si hay query, filtrar los resultados
             if (!empty($query)) {
                 $trabajadores = $trabajadores->filter(function($trabajador) use ($query) {
                     $nombreCompleto = strtolower($trabajador->nombres . ' ' . $trabajador->apellido_paterno . ' ' . $trabajador->apellido_materno);
@@ -188,7 +287,6 @@ class MensajesController extends Controller
                 'query' => $query
             ]);
 
-            // Transformar resultados
             $resultados = $trabajadores->map(function($trabajador) {
                 return [
                     'id' => $trabajador->id,
@@ -197,7 +295,7 @@ class MensajesController extends Controller
                     'avatar' => optional(optional($trabajador->usuario)->fotoPerfil)->ruta ? asset('storage/' . $trabajador->usuario->fotoPerfil->ruta) : '/placeholder.svg?height=40&width=40',
                     'online' => $trabajador->usuario && $trabajador->usuario->en_linea
                 ];
-            })->values(); // Asegurar que sea un array indexado
+            })->values();
 
             return response()->json([
                 'success' => true,
@@ -215,174 +313,7 @@ class MensajesController extends Controller
         }
     }
 
-    public function getMessages($contactId)
-    {
-        try {
-            $user = Auth::user();
-            $trabajador = $user->trabajador;
-            $coordinadorId = $trabajador->id;
-            $empresaId = $trabajador->empresa_id;
-
-            // Verificar que el contacto pertenece a la empresa
-            if (!$this->mensajeRepositorio->trabajadorPerteneceAEmpresa($contactId, $empresaId)) {
-                return response()->json(['error' => 'Contacto no válido'], 403);
-            }
-
-            // Obtener mensajes entre el coordinador y el contacto
-            $mensajes = $this->mensajeRepositorio->getMensajesEntreUsuarios($coordinadorId, $contactId);
-
-            // Marcar mensajes como leídos
-            $this->mensajeRepositorio->marcarComoLeidos($contactId, $coordinadorId);
-
-            // Transformar mensajes para la vista
-            $mensajesTransformados = $mensajes->map(function($mensaje) use ($coordinadorId) {
-                $esEnviado = $mensaje->remitente_id == $coordinadorId;
-                
-                $fechaHora = Carbon::parse($mensaje->fecha . ' ' . $mensaje->hora, 'America/Lima');
-                $tiempo = $fechaHora->format('H:i');
-
-                $mensajeData = [
-                    'id' => $mensaje->id,
-                    'sent' => $esEnviado,
-                    'text' => $mensaje->contenido,
-                    'time' => $tiempo,
-                    'read' => $mensaje->leido
-                ];
-
-                // Agregar archivo si existe
-                if ($mensaje->archivo) {
-                    $mensajeData['attachment'] = [
-                        'name' => $mensaje->archivo->nombre ?? 'archivo',
-                        'size' => $this->formatFileSize($mensaje->archivo->tamaño ?? 0),
-                        'type' => $mensaje->archivo->tipo ?? 'application/octet-stream',
-                        'url' => asset('storage/' . $mensaje->archivo->ruta)
-                    ];
-                }
-
-                return $mensajeData;
-            });
-
-            return response()->json([
-                'success' => true,
-                'messages' => $mensajesTransformados
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error al obtener mensajes', [
-                'error' => $e->getMessage(),
-                'contactId' => $contactId
-            ]);
-            return response()->json(['error' => 'Error al cargar los mensajes'], 500);
-        }
-    }
-
-    public function send(Request $request)
-    {
-        $request->validate([
-            'contact_id' => 'required|integer',
-            'message' => 'nullable|string|max:1000',
-            'files.*' => 'nullable|file|max:10240', // 10MB por archivo
-            'images.*' => 'nullable|image|max:5120' // 5MB por imagen
-        ]);
-
-        try {
-            $user = Auth::user();
-            $trabajador = $user->trabajador;
-            $coordinadorId = $trabajador->id;
-            $empresaId = $trabajador->empresa_id;
-
-            // Verificar que el contacto pertenece a la empresa
-            if (!$this->mensajeRepositorio->trabajadorPerteneceAEmpresa($request->contact_id, $empresaId)) {
-                return response()->json(['error' => 'Contacto no válido'], 403);
-            }
-
-            $ahora = Carbon::now('America/Lima');
-            $mensajesCreados = [];
-            $ultimoMensajeTexto = '';
-
-            // Crear mensaje de texto si existe
-            if ($request->filled('message')) {
-                $mensaje = $this->mensajeRepositorio->create([
-                    'remitente_id' => $coordinadorId,
-                    'destinatario_id' => $request->contact_id,
-                    'contenido' => $request->message,
-                    'fecha' => $ahora->toDateString(),
-                    'hora' => $ahora->toTimeString()
-                ]);
-                $mensajesCreados[] = $mensaje;
-                $ultimoMensajeTexto = $request->message;
-            }
-
-            // Procesar archivos
-            if ($request->hasFile('files')) {
-                foreach ($request->file('files') as $file) {
-                    try {
-                        // Crear archivo en la base de datos
-                        $archivo = $this->mensajeRepositorio->crearArchivo($file);
-                        
-                        // Crear mensaje con archivo
-                        $mensaje = $this->mensajeRepositorio->create([
-                            'remitente_id' => $coordinadorId,
-                            'destinatario_id' => $request->contact_id,
-                            'contenido' => '📎 ' . $archivo->nombre,
-                            'fecha' => $ahora->toDateString(),
-                            'hora' => $ahora->toTimeString(),
-                            'archivo_id' => $archivo->id
-                        ]);
-                        
-                        $mensajesCreados[] = $mensaje;
-                        if (empty($ultimoMensajeTexto)) {
-                            $ultimoMensajeTexto = '📎 ' . $archivo->nombre;
-                        }
-                    } catch (\Exception $e) {
-                        Log::error('Error al procesar archivo', ['error' => $e->getMessage(), 'file' => $file->getClientOriginalName()]);
-                    }
-                }
-            }
-
-            // Procesar imágenes
-            if ($request->hasFile('images')) {
-                foreach ($request->file('images') as $image) {
-                    try {
-                        // Crear archivo en la base de datos
-                        $archivo = $this->mensajeRepositorio->crearArchivo($image);
-                        
-                        // Crear mensaje con imagen
-                        $mensaje = $this->mensajeRepositorio->create([
-                            'remitente_id' => $coordinadorId,
-                            'destinatario_id' => $request->contact_id,
-                            'contenido' => '🖼️ ' . $archivo->nombre,
-                            'fecha' => $ahora->toDateString(),
-                            'hora' => $ahora->toTimeString(),
-                            'archivo_id' => $archivo->id
-                        ]);
-                        
-                        $mensajesCreados[] = $mensaje;
-                        if (empty($ultimoMensajeTexto)) {
-                            $ultimoMensajeTexto = '🖼️ ' . $archivo->nombre;
-                        }
-                    } catch (\Exception $e) {
-                        Log::error('Error al procesar imagen', ['error' => $e->getMessage(), 'image' => $image->getClientOriginalName()]);
-                    }
-                }
-            }
-
-            return response()->json([
-                'success' => true,
-                'messages_count' => count($mensajesCreados),
-                'last_message' => $ultimoMensajeTexto,
-                'time' => $ahora->format('H:i'),
-                'contact_id' => $request->contact_id
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error al enviar mensaje', [
-                'error' => $e->getMessage(),
-                'data' => $request->except(['files', 'images'])
-            ]);
-            return response()->json(['error' => 'Error al enviar el mensaje'], 500);
-        }
-    }
+    // ELIMINADO: getMessages - ahora se carga directamente desde Firebase
 
     public function newChat(Request $request)
     {
@@ -397,21 +328,27 @@ class MensajesController extends Controller
             $coordinadorId = $trabajador->id;
             $empresaId = $trabajador->empresa_id;
 
-            // Verificar que el contacto pertenece a la empresa
-            if (!$this->mensajeRepositorio->trabajadorPerteneceAEmpresa($request->contact_id, $empresaId)) {
+            // Verificar que el contacto pertenece a la misma empresa
+            $contacto = \App\Models\Trabajador::where('id', $request->contact_id)
+                ->where('empresa_id', $empresaId)
+                ->first();
+
+            if (!$contacto) {
                 return response()->json(['error' => 'Contacto no válido'], 403);
             }
 
             $ahora = Carbon::now('America/Lima');
 
-            // Crear el primer mensaje de la conversación
-            $mensaje = $this->mensajeRepositorio->create([
-                'remitente_id' => $coordinadorId,
-                'destinatario_id' => $request->contact_id,
-                'contenido' => $request->message,
-                'fecha' => $ahora->toDateString(),
-                'hora' => $ahora->toTimeString()
-            ]);
+            // Enviar solo a Firebase, con leido: false inicialmente
+            $this->firebaseService->sendMessage(
+                $coordinadorId,
+                $request->contact_id,
+                $request->message,
+                $ahora->timestamp,
+                null, // attachmentUrl
+                null, // attachmentType
+                false // isRead: false por defecto para nuevos mensajes
+            );
 
             return response()->json([
                 'success' => true,
@@ -428,11 +365,6 @@ class MensajesController extends Controller
         }
     }
 
-    // Este método 'search' en el controlador no se estaba utilizando en el JS original para la búsqueda de contactos en la lista principal.
-    // El JS original filtraba los contactos ya cargados en el cliente.
-    // Si deseas que la búsqueda de contactos en la lista principal sea del lado del servidor,
-    // deberías modificar la función `searchContacts` en `mensajes.js` para que haga una petición AJAX a esta ruta.
-    // Por ahora, lo mantendremos como estaba en tu controlador, pero ten en cuenta su uso.
     public function search(Request $request)
     {
         $request->validate([
@@ -443,19 +375,27 @@ class MensajesController extends Controller
             $user = Auth::user();
             $trabajador = $user->trabajador;
             $empresaId = $trabajador->empresa_id;
+            $coordinadorId = $trabajador->id;
             
-            // Buscar trabajadores
-            $trabajadores = $this->mensajeRepositorio->buscarTrabajadores($request->input('query'), $empresaId);
+            $trabajadores = \App\Models\Trabajador::where('empresa_id', $empresaId)
+                ->where('id', '!=', $coordinadorId)
+                ->with(['usuario.fotoPerfil'])
+                ->get();
 
-            // Transformar resultados manteniendo el formato original
+            $query = $request->input('query');
+            $trabajadores = $trabajadores->filter(function($trabajador) use ($query) {
+                $nombreCompleto = strtolower($trabajador->nombres . ' ' . $trabajador->apellido_paterno . ' ' . $trabajador->apellido_materno);
+                return str_contains($nombreCompleto, strtolower($query));
+            });
+
             $resultados = $trabajadores->map(function($trabajador) {
                 return [
                     'id' => $trabajador->id,
                     'name' => $trabajador->nombres . ' ' . $trabajador->apellido_paterno . ' ' . $trabajador->apellido_materno,
                     'avatar' => optional(optional($trabajador->usuario)->fotoPerfil)->ruta ? asset('storage/' . $trabajador->usuario->fotoPerfil->ruta) : '/placeholder.svg?height=40&width=40',
                     'online' => $trabajador->usuario && $trabajador->usuario->en_linea,
-                    'lastMessage' => 'Resultado de búsqueda', // Esto es un placeholder, ajusta según tu lógica
-                    'time' => '', // Esto es un placeholder, ajusta según tu lógica
+                    'lastMessage' => 'Resultado de búsqueda',
+                    'time' => '',
                     'unreadCount' => 0,
                     'important' => false,
                     'group' => false
@@ -473,37 +413,6 @@ class MensajesController extends Controller
                 'query' => $request->input('query')
             ]);
             return response()->json(['error' => 'Error en la búsqueda'], 500);
-        }
-    }
-
-    public function markAsRead(Request $request)
-    {
-        $request->validate([
-            'contact_id' => 'required|integer'
-        ]);
-
-        try {
-            $user = Auth::user();
-            $trabajador = $user->trabajador;
-            $coordinadorId = $trabajador->id;
-            $empresaId = $trabajador->empresa_id;
-
-            // Verificar que el contacto pertenece a la empresa
-            if (!$this->mensajeRepositorio->trabajadorPerteneceAEmpresa($request->contact_id, $empresaId)) {
-                return response()->json(['error' => 'Contacto no válido'], 403);
-            }
-
-            // Marcar mensajes como leídos
-            $this->mensajeRepositorio->marcarComoLeidos($request->contact_id, $coordinadorId);
-
-            return response()->json(['success' => true]);
-
-        } catch (\Exception $e) {
-            Log::error('Error al marcar como leído', [
-                'error' => $e->getMessage(),
-                'contact_id' => $request->contact_id
-            ]);
-            return response()->json(['error' => 'Error al marcar como leído'], 500);
         }
     }
 
