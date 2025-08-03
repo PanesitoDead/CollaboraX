@@ -12,17 +12,17 @@
       <tbody class="bg-white divide-y divide-gray-200">
         @forelse($meetings as $meeting)
           @php
-            $meetingDateTime = \Carbon\Carbon::parse($meeting['date'] . ' ' . $meeting['time']);
+            $meetingDateTime = \Carbon\Carbon::parse($meeting->fecha . ' ' . $meeting->hora);
             $isPast = $meetingDateTime->isPast();
           @endphp
           <tr class="hover:bg-gray-50">
             {{-- Título y descripción --}}
             <td class="px-6 py-4 whitespace-nowrap max-w-[250px]">
-              <div class="text-sm font-medium text-gray-900 truncate">{{ $meeting['title'] }}</div>
-              <div class="text-sm text-gray-500 truncate">{{ $meeting['description'] }}</div>
+              <div class="text-sm font-medium text-gray-900 truncate">{{ $meeting->asunto }}</div>
+              <div class="text-sm text-gray-500 truncate">{{ $meeting->descripcion }}</div>
               <div class="md:hidden text-xs text-gray-500 mt-1">
                 <i data-lucide="calendar" class="w-4 h-4 inline-block mr-1 text-gray-400"></i>
-                {{ $meeting['date'] }} – {{ $meeting['time'] }} ({{ $meeting['duration'] }} min)
+                {{ $meetingDateTime->format('d/m/Y H:i') }} ({{ $meeting->duracion }} min)
               </div>
             </td>
 
@@ -30,41 +30,42 @@
             <td class="px-6 py-4 whitespace-nowrap hidden md:table-cell">
               <div class="flex items-center text-sm text-gray-900">
                 <i data-lucide="calendar" class="w-4 h-4 mr-1 text-gray-400"></i>
-                {{ $meeting['date'] }}
+                {{ $meeting->fecha }}
               </div>
               <div class="flex items-center text-sm text-gray-500">
                 <i data-lucide="clock" class="w-4 h-4 mr-1 text-gray-400"></i>
-                {{ $meeting['time'] }} ({{ $meeting['duration'] }} min)
+                {{ $meeting->hora }} ({{ $meeting->duracion }} min)
               </div>
             </td>
 
-            {{-- Ubicación --}}
+            {{-- Ubicación / Modalidad --}}
             <td class="px-6 py-4 whitespace-nowrap hidden md:table-cell">
               <div class="flex items-center">
                 <i data-lucide="map-pin" class="w-4 h-4 mr-1 text-gray-400"></i>
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-2">
-                  {{ $meeting['type'] }}
+                  {{ $meeting->modalidad->nombre ?? 'Sin modalidad' }}
                 </span>
-                <span class="text-sm text-gray-500 truncate max-w-[150px]">{{ $meeting['location'] }}</span>
+                <span class="text-sm text-gray-500 truncate max-w-[150px]">{{ $meeting->sala }}</span>
               </div>
             </td>
 
             {{-- Acciones --}}
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
               <div class="flex justify-end gap-2">
-                @if(!$isPast && $showJoin)
-                  <button
-                    onclick="joinMeeting('{{ $meeting['id'] }}')"
+                @if($showJoin)
+                  <a
+                    href="{{ $meeting->link_participante }}"
+                    target="_blank"
                     class="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     <i data-lucide="log-in" class="w-4 h-4 mr-1"></i>
                     Unirse
-                  </button>
+                  </a>
                 @endif
 
                 @if(!$isPast && $showEdit)
                   <button
-                    onclick="editMeeting('{{ $meeting['id'] }}')"
+                    onclick="editMeeting('{{ $meeting->id }}')"
                     class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
                   >
                     <i data-lucide="edit" class="w-4 h-4 mr-1"></i>
@@ -74,7 +75,7 @@
 
                 @if($showDetails)
                   <button
-                    onclick="viewMeetingDetails('{{ $meeting['id'] }}')"
+                    onclick="viewMeetingDetails('{{ $meeting->id }}')"
                     class="inline-flex items-center px-3 py-2 text-indigo-600 hover:text-indigo-900 transition-colors"
                   >
                     <i data-lucide="info" class="w-4 h-4 mr-1"></i>
@@ -107,5 +108,12 @@
 {{-- Scripts --}}
 @push('scripts')
 <script>
+  function editMeeting(id) {
+    // implementar
+  }
+
+  function viewMeetingDetails(id) {
+    // implementar
+  }
 </script>
 @endpush

@@ -147,15 +147,13 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        @if($reunion->link_reunion)
-                        <form action="{{ route('coord-equipo.reuniones.join', $reunion->id) }}" method="POST" class="inline">
-                            @csrf
-                            <button type="submit" 
-                                    class="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700">
-                                Unirse
-                            </button>
-                        </form>
+                        @if($reunion->link_moderador)
+                            <a href="{{ $reunion->link_moderador }}" target="_blank"
+                            class="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 inline-block">
+                                Unirse como moderador
+                            </a>
                         @endif
+
                         <button onclick="openReprogramarModal({{ $reunion->id }})" 
                                 class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
                             Reprogramar
