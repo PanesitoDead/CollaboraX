@@ -6,10 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Usuario extends Authenticatable
 {
-    use HasFactory, Notifiable, SoftDeletes;
+    use HasFactory, Notifiable, SoftDeletes, LogsActivity;
 
     protected $table = 'usuarios';
     public $timestamps = false;
@@ -53,6 +55,15 @@ class Usuario extends Authenticatable
     public function getAuthIdentifierName()
     {
         return 'correo';
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontLogIfAttributesChangedOnly(['ultima_conexion', 'en_linea'])
+            ->setDescriptionForEvent(fn(string $eventName) => "Usuario {$this->correo} fue {$eventName}");
     }
     
 }

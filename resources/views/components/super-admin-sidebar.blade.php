@@ -155,9 +155,10 @@
     <nav class="space-y-2 nav-links">
         @php
         $items = [
-          // ['route' => 'super-admin.dashboard', 'icon' => 'home', 'label' => 'Dashboard'],
+          ['route' => 'super-admin.dashboard', 'icon' => 'home', 'label' => 'Dashboard'],
           ['route' => 'super-admin.empresas.index', 'icon' => 'building', 'label' => 'Empresas'],
           ['route' => 'super-admin.estadisticas', 'icon' => 'bar-chart-2', 'label' => 'Estadísticas'],
+          ['route' => 'super-admin.auditoria.index', 'icon' => 'shield-check', 'label' => 'Auditoría'],
           ['route' => 'super-admin.configuracion.index', 'icon' => 'settings', 'label' => 'Configuración'],
         ];
       @endphp

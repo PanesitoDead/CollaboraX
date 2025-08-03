@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Meta extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, LogsActivity;
     public $timestamps = false;
     protected $table = 'metas';
 
@@ -57,5 +59,13 @@ class Meta extends Model
     public function getTotalTareasCountAttribute()
     {
         return $this->tareas->count();
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->setDescriptionForEvent(fn(string $eventName) => "Meta '{$this->nombre}' fue {$eventName}");
     }
 }

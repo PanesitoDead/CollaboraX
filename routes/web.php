@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\CoordinadorEquipoController;
 use App\Http\Controllers\Admin\CoordinadorGeneralController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EstadisticaController;
+use App\Http\Controllers\Admin\SuscripcionController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\colaborador\ActividadController;
 use App\Http\Controllers\colaborador\InvitacionController;
@@ -30,6 +31,9 @@ use App\Http\Controllers\CoordinadorGeneral\MensajesController;
 use App\Http\Controllers\SuperAdmin\EmpresasController;
 use App\Http\Controllers\SuperAdmin\EstadisticaController as SuperAdminEstadisticaController;
 use App\Http\Controllers\SuperAdmin\ConfiguracionController as SuperAdminConfiguracionController;
+use App\Http\Controllers\SuperAdmin\AuditoriaController as SuperAdminAuditoriaController;
+use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
+use App\Http\Controllers\AuditoriaController;
 
 
 // Route::get('/', function () {
@@ -50,9 +54,8 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 
 //     Super Admin
-Route::get('/super-admin/dashboard', function () {
-    return view('super-admin.dashboard');
-})->name('super-admin.dashboard');
+Route::get('/super-admin/dashboard', [SuperAdminDashboardController::class, 'index'])->name('super-admin.dashboard');
+Route::get('/super-admin/dashboard/api/ingresos', [SuperAdminDashboardController::class, 'apiIngresos'])->name('super-admin.dashboard.api.ingresos');
 
 Route::get('/super-admin/empresas', [EmpresasController::class, 'index'])->name('super-admin.empresas.index');
 Route::get('/super-admin/empresas/{id}', [EmpresasController::class, 'show'])->name('super-admin.empresas.show');
@@ -62,7 +65,20 @@ Route::patch('/super-admin/empresas/{id}/cambiar-estado', [EmpresasController::c
 Route::get('/super-admin/estadisticas', [SuperAdminEstadisticaController::class, 'index'])->name('super-admin.estadisticas');
 
 Route::get('/super-admin/configuracion', [SuperAdminConfiguracionController::class, 'index'])->name('super-admin.configuracion.index');
+
+// Rutas de gestión de planes
+Route::get('/super-admin/configuracion/planes/create', [SuperAdminConfiguracionController::class, 'create'])->name('super-admin.configuracion.planes.create');
+Route::post('/super-admin/configuracion/planes', [SuperAdminConfiguracionController::class, 'store'])->name('super-admin.configuracion.planes.store');
+Route::get('/super-admin/configuracion/planes/{id}', [SuperAdminConfiguracionController::class, 'show'])->name('super-admin.configuracion.planes.show');
+Route::get('/super-admin/configuracion/planes/{id}/edit', [SuperAdminConfiguracionController::class, 'edit'])->name('super-admin.configuracion.planes.edit');
 Route::put('/super-admin/configuracion/planes/{id}', [SuperAdminConfiguracionController::class, 'update'])->name('super-admin.configuracion.planes.update');
+Route::delete('/super-admin/configuracion/planes/{id}', [SuperAdminConfiguracionController::class, 'destroy'])->name('super-admin.configuracion.planes.destroy');
+
+// Rutas de Auditoría Super Admin
+Route::get('/super-admin/auditoria', [SuperAdminAuditoriaController::class, 'index'])->name('super-admin.auditoria.index');
+Route::get('/super-admin/auditoria/{id}', [SuperAdminAuditoriaController::class, 'show'])->name('super-admin.auditoria.show');
+Route::get('/super-admin/auditoria/api/estadisticas', [SuperAdminAuditoriaController::class, 'estadisticas'])->name('super-admin.auditoria.estadisticas');
+Route::post('/super-admin/auditoria/limpiar', [SuperAdminAuditoriaController::class, 'limpiar'])->name('super-admin.auditoria.limpiar');
 
 
 //     Admin
@@ -94,7 +110,37 @@ Route::patch('/admin/coordinadores-generales/{id}/cambiar-estado', [CoordinadorG
 
 
 Route::get('/admin/estadisticas', [EstadisticaController::class, 'index'])->name('admin.estadisticas');
-Route::get('/admin/configuracion', [ConfiguracionController::class, 'index'])->name('admin.configuracion.index');
+Route::get('/admin/configuracion', [ConfiguracionController::class, 'index'])->name('admin.configuracion.index')->middleware('auth');
+
+// Rutas para suscripciones (Proxy a API externa)
+Route::prefix('admin/suscripciones')->name('admin.suscripciones.')->middleware('auth')->group(function () {
+    // Datos principales para la vista
+    Route::get('/datos', [SuscripcionController::class, 'obtenerDatosSuscripcion'])->name('datos');
+    Route::get('/resumen', [SuscripcionController::class, 'obtenerResumenCompleto'])->name('resumen');
+    Route::get('/actual', [SuscripcionController::class, 'obtenerSuscripcionActual'])->name('actual');
+    
+    // Gestión de planes
+    Route::get('/planes', [SuscripcionController::class, 'obtenerPlanes'])->name('planes');
+    
+    // Gestión de pagos
+    Route::post('/crear-preferencia', [SuscripcionController::class, 'crearPreferenciaPago'])->name('crear-preferencia');
+    Route::get('/historial', [SuscripcionController::class, 'obtenerHistorialPagos'])->name('historial');
+    Route::get('/pagos/{id}/estado', [SuscripcionController::class, 'verificarEstadoPago'])->name('pago.estado');
+    Route::get('/pagos/{id}/comprobante', [SuscripcionController::class, 'descargarComprobante'])->name('pago.comprobante');
+    
+    // Gestión de suscripciones
+    Route::post('/cancelar', [SuscripcionController::class, 'cancelarSuscripcion'])->name('cancelar');
+    Route::post('/renovar', [SuscripcionController::class, 'renovarSuscripcion'])->name('renovar');
+    Route::post('/cancelar-renovacion', [SuscripcionController::class, 'cancelarRenovacionAutomatica'])->name('cancelar-renovacion');
+    Route::post('/activar-renovacion', [SuscripcionController::class, 'activarRenovacionAutomatica'])->name('activar-renovacion');
+    Route::post('/cambiar-renovacion', [SuscripcionController::class, 'cambiarRenovacionAutomatica'])->name('cambiar-renovacion');
+    
+    // Métodos administrativos
+    Route::post('/verificar-vencidas', [SuscripcionController::class, 'verificarSuscripcionesVencidas'])->name('verificar-vencidas');
+});
+
+// Webhook para recibir notificaciones de la API externa (sin middleware de autenticación)
+Route::post('/webhook/pagos', [SuscripcionController::class, 'webhookPago'])->name('webhook.pagos');
 
 // Rutas para el colaborador
 Route::get('/colaborador/actividades', [ActividadController::class, 'index'])->name('colaborador.actividades');
@@ -169,6 +215,16 @@ Route::post('/colaborador/configuracion/security', [ColaboradorConfiguracionCont
     Route::post('/coord-equipo/api/actividades/crear', [ActividadesCoordinadorController::class, 'crearActividad'])->name('api.coord-equipo.actividades.crear');
 
 Route::middleware('auth')->group(function () {
+    
+    // Rutas de Auditoría
+    Route::prefix('auditoria')->name('auditoria.')->group(function () {
+        Route::get('/', [AuditoriaController::class, 'index'])->name('index');
+        Route::get('/show/{id}', [AuditoriaController::class, 'show'])->name('show');
+        Route::get('/api/modelos', [AuditoriaController::class, 'getModelosDisponibles'])->name('api.modelos');
+        Route::get('/api/eventos', [AuditoriaController::class, 'getEventosDisponibles'])->name('api.eventos');
+        Route::get('/api/estadisticas', [AuditoriaController::class, 'estadisticas'])->name('api.estadisticas');
+    });
+    
     // Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     // Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     // Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

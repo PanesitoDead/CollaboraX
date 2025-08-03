@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class MiembroEquipo extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, LogsActivity;
     public $timestamps = false;
     protected $table = 'miembros_equipo';
 
@@ -34,5 +36,13 @@ class MiembroEquipo extends Model
     public function getEsCoordinadorAttribute()
     {
         return $this->equipo && $this->equipo->coordinador_id === $this->trabajador_id;
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->setDescriptionForEvent(fn(string $eventName) => "Miembro de equipo fue {$eventName}");
     }
 }

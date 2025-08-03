@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Tarea extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, LogsActivity;
     public $timestamps = false;
     protected $table = 'tareas';
 
@@ -44,5 +46,13 @@ class Tarea extends Model
     public function getEstaCompletadaAttribute()
     {
         return $this->estado && $this->estado->nombre === 'Completo';
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->setDescriptionForEvent(fn(string $eventName) => "Tarea '{$this->nombre}' fue {$eventName}");
     }
 }

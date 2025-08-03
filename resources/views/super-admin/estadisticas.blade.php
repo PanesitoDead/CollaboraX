@@ -10,7 +10,10 @@
     <div class="flex justify-between items-center">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">Estadísticas del Sistema</h1>
-            <p class="text-gray-600">Visión general y métricas claves operativas</p>
+            <p class="text-gray-600">Datos reales del sistema y métricas de ingresos</p>
+            <div class="mt-2 text-sm text-green-600 font-medium">
+                ✅ Mostrando datos reales de la base de datos y API de pagos
+            </div>
         </div>
         <div class="flex items-center gap-4">
             <select class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Seleccionar periodo">
@@ -31,28 +34,32 @@
         @php
             $cards = [
                 [
-                    'label' => 'Crecimiento Mensual',
-                    'value' => "+{$growth}%",       // variable $growth
-                    'icon'  => 'trending-up',
-                    'text'  => "↗ {$growth_change}% vs mes anterior"
+                    'label' => 'Empresas Nuevas Este Mes',
+                    'value' => $growth,
+                    'icon'  => 'building-2',
+                    'text'  => ($growth_change >= 0 ? "↗ " : "↘ ") . abs($growth_change) . "% vs mes anterior",
+                    'color' => $growth_change >= 0 ? 'text-green-600' : 'text-red-600'
                 ],
                 [
                     'label' => 'Ingresos Totales',
-                    'value' => '$' . number_format($total_income, 0),
+                    'value' => 'S/ ' . number_format($total_income, 2),
                     'icon'  => 'dollar-sign',
-                    'text'  => "↗ {$income_change}% vs mes anterior"
+                    'text'  => "Datos reales de API de pagos",
+                    'color' => 'text-blue-600'
                 ],
                 [
-                    'label' => 'Retención de Usuarios',
+                    'label' => 'Usuarios Activos',
                     'value' => "{$user_retention}%",
                     'icon'  => 'users',
-                    'text'  => "↗ {$retention_change}% vs mes anterior"
+                    'text'  => ($retention_change >= 0 ? "↗ " : "↘ ") . abs($retention_change) . "% vs mes anterior",
+                    'color' => $retention_change >= 0 ? 'text-green-600' : 'text-red-600'
                 ],
                 [
                     'label' => 'Actividad Promedio',
                     'value' => "{$avg_activity}%",
                     'icon'  => 'activity',
-                    'text'  => "↘ {$activity_change}% vs mes anterior"
+                    'text'  => ($activity_change >= 0 ? "↗ " : "↘ ") . abs($activity_change) . "% vs mes anterior",
+                    'color' => $activity_change >= 0 ? 'text-green-600' : 'text-red-600'
                 ],
             ];
         @endphp
@@ -66,7 +73,7 @@
                     <p class="text-3xl font-bold text-gray-900">{{ $card['value'] }}</p>
                 </div>
                 @if($card['text'])
-                    <footer class="mt-4 text-xs text-gray-500">{{ $card['text'] }}</footer>
+                    <footer class="mt-4 text-xs {{ $card['color'] ?? 'text-gray-500' }}">{{ $card['text'] }}</footer>
                 @endif
             </div>
         @endforeach
@@ -101,26 +108,37 @@
     <div class="bg-white rounded-lg border border-gray-300 p-6 shadow-sm">
         <h3 class="text-lg font-medium mb-4 flex items-center">
             <i data-lucide="pie-chart" class="w-5 h-5 mr-2 text-gray-600"></i>
-            Distribución de Planes
+            Distribución de Planes (Datos Reales)
         </h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            @foreach($plans as $plan)
-                <div class="text-center">
-                    <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span class="text-2xl font-bold text-gray-600">{{ $plan['percent'] }}%</span>
+        @if(count($plans) > 0 && $plans[0]['name'] !== 'Sin datos')
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                @foreach($plans as $plan)
+                    <div class="text-center">
+                        <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-2xl font-bold text-blue-600">{{ $plan['percent'] }}%</span>
+                        </div>
+                        <h4 class="text-lg font-medium text-gray-900">{{ $plan['name'] }}</h4>
+                        <p class="text-sm text-gray-500">{{ $plan['count'] }} {{ $plan['count'] == 1 ? 'empresa' : 'empresas' }}</p>
+                        <p class="text-xs text-green-600 mt-1">Datos de API real</p>
                     </div>
-                    <h4 class="text-lg font-medium text-gray-900">{{ $plan['name'] }}</h4>
-                    <p class="text-sm text-gray-500">{{ $plan['count'] }} empresas</p>
+                @endforeach
+            </div>
+        @else
+            <div class="text-center py-8">
+                <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="database" class="w-8 h-8 text-gray-400"></i>
                 </div>
-            @endforeach
-        </div>
+                <h4 class="text-lg font-medium text-gray-900">Sin datos de planes</h4>
+                <p class="text-sm text-gray-500">No hay información de planes disponible</p>
+            </div>
+        @endif
     </div>
 
     {{-- Actividad Reciente --}}
     <div class="bg-white rounded-lg border border-gray-300 p-6 shadow-sm">
         <h3 class="text-lg font-medium mb-4 flex items-center">
             <i data-lucide="clock" class="w-5 h-5 mr-2 text-gray-600"></i>
-            Actividad Reciente del Sistema
+            Actividad Reciente del Sistema (Datos Reales)
         </h3>
         <div class="space-y-4">
             @foreach($recent_activities as $activity)
@@ -134,8 +152,14 @@
                         <p class="text-sm text-gray-900">{{ $activity['message'] }}</p>
                         <p class="text-xs text-gray-500">{{ $activity['time'] }}</p>
                     </div>
+                    <div class="text-xs text-blue-600 font-medium">Real</div>
                 </div>
             @endforeach
+        </div>
+        <div class="mt-4 pt-4 border-t border-gray-200">
+            <p class="text-xs text-green-600 text-center">
+                ✅ Mostrando actividad real del sistema
+            </p>
         </div>
     </div>
 </div>

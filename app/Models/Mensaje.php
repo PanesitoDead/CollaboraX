@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Mensaje extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, LogsActivity;
 
     protected $table = 'mensajes';
     public $timestamps = false;
@@ -26,5 +28,14 @@ class Mensaje extends Model
     public function archivo()
     {
         return $this->belongsTo(Archivo::class);
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontLogIfAttributesChangedOnly(['leido']) // No registrar solo cambios de lectura
+            ->setDescriptionForEvent(fn(string $eventName) => "Mensaje fue {$eventName}");
     }
 }

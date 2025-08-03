@@ -20,8 +20,17 @@
             <div class="flex space-x-8 px-6">
             <button
                 type="button"
-                data-tab="empresa"
+                data-tab="suscripcion"
                 class="tab-button inline-flex items-center whitespace-nowrap border-b-2 border-blue-500 py-4 px-1 font-medium text-sm text-blue-600 transition"
+                onclick="showTab('suscripcion')"
+            >
+                <i data-lucide="credit-card" class="w-4 h-4 mr-1"></i>
+                Suscripción y Pagos
+            </button>
+            <button
+                type="button"
+                data-tab="empresa"
+                class="tab-button inline-flex items-center whitespace-nowrap border-b-2 border-transparent py-4 px-1 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 transition"
                 onclick="showTab('empresa')"
             >
                 <i data-lucide="briefcase" class="w-4 h-4 mr-1"></i>
@@ -40,7 +49,11 @@
         </nav>
 
         <!-- Tab Contents -->
-        <div id="tab-empresa" class="tab-content p-6">
+        <div id="tab-suscripcion" class="tab-content p-6">
+            @include('partials.admin.suscripcion.suscripcion-info')
+        </div>
+
+        <div id="tab-empresa" class="tab-content p-6 hidden">
             <form method="POST" enctype="multipart/form-data">
             @csrf @method('PUT')
             <div class="space-y-6">
@@ -97,15 +110,15 @@
                     <label for="logo" class="block mb-1 text-sm font-medium text-gray-700">Logo</label>
                     <div class="mt-1 flex items-center space-x-4">
                         <div class="w-20 h-20 rounded-full overflow-hidden border-4 border-gray-300 bg-gray-100 flex items-center justify-center relative">
-                        @if($empresa->logo)
+                        {{-- @if($empresa->logo)
                             <img
                             src="{{ asset('storage/'.$empresa->logo) }}"
                             alt="Logo"
                             class="w-20 h-20 rounded-lg object-cover"
                             />
-                        @else
+                        @else --}}
                             <i data-lucide="image" class="w-8 h-8 text-gray-400"></i>
-                        @endif
+                        {{-- @endif --}}
                         </div>
                         <input
                         type="file"
@@ -177,22 +190,130 @@
         </div>
         </div>
 </div>
+
+{{-- Modales fuera de los tabs para que sean accesibles --}}
+@include('partials.admin.modales.suscripcion.seleccionar-plan-modal')
+@include('partials.admin.modales.suscripcion.estado-pago-modal')
+
 @endsection
 
 @push('scripts')
+<!-- Variables globales para JavaScript -->
 <script>
-    function showTab(tab) {
-    document.querySelectorAll('.tab-content').forEach(el => {
-      el.classList.add('hidden');
-    });
-    document.querySelectorAll('.tab-button').forEach(btn => {
-      btn.classList.remove('border-blue-500', 'text-blue-600');
-      btn.classList.add('border-transparent', 'text-gray-500');
-    });
-    document.getElementById(`tab-${tab}`).classList.remove('hidden');
-    const activeBtn = document.querySelector(`.tab-button[data-tab="${tab}"]`);
-    activeBtn.classList.add('border-blue-500', 'text-blue-600');
-    activeBtn.classList.remove('border-transparent', 'text-gray-500');
-  }
+// Variable global para el ID de suscripción actual
+window.suscripcionActualId = {{ isset($suscripcionActual) && $suscripcionActual && isset($suscripcionActual['id']) ? $suscripcionActual['id'] : 'null' }};
+
+function mostrarNotificacion(mensaje, tipo = 'info') {
+    // Crear elemento de notificación
+    const notificacion = document.createElement('div');
+    notificacion.className = `fixed top-4 right-4 p-4 rounded-lg z-50 transition-all duration-300 ${
+        tipo === 'success' ? 'bg-green-500 text-white' :
+        tipo === 'error' ? 'bg-red-500 text-white' :
+        'bg-blue-500 text-white'
+    }`;
+    notificacion.textContent = mensaje;
+    
+    document.body.appendChild(notificacion);
+    
+    // Remover después de 3 segundos
+    setTimeout(() => {
+        notificacion.style.opacity = '0';
+        setTimeout(() => {
+            if (document.body.contains(notificacion)) {
+                document.body.removeChild(notificacion);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Event listener para el toggle de auto-renovación
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar el estado visual del toggle de auto-renovación
+    const toggle = document.getElementById('autoRenovacionToggle');
+    if (toggle) {
+        const dot = toggle.parentElement.querySelector('.dot');
+        const bg = toggle.parentElement.querySelector('.block');
+        
+        if (toggle.checked) {
+            dot.style.transform = 'translateX(1rem)';
+            bg.classList.remove('bg-gray-300');
+            bg.classList.add('bg-blue-500');
+        } else {
+            dot.style.transform = 'translateX(0)';
+            bg.classList.remove('bg-blue-500');
+            bg.classList.add('bg-gray-300');
+        }
+        
+        // Event listener para el cambio del toggle
+        toggle.addEventListener('change', function() {
+            const isEnabled = this.checked;
+            
+            // Actualizar visualmente el toggle primero para mejor UX
+            if (isEnabled) {
+                dot.style.transform = 'translateX(1rem)';
+                bg.classList.remove('bg-gray-300');
+                bg.classList.add('bg-blue-500');
+            } else {
+                dot.style.transform = 'translateX(0)';
+                bg.classList.remove('bg-blue-500');
+                bg.classList.add('bg-gray-300');
+            }
+            
+            fetch('/admin/suscripciones/cambiar-renovacion', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ 
+                    suscripcion_id: window.suscripcionActualId,
+                    renovacion_automatica: isEnabled 
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Mostrar notificación de éxito
+                    mostrarNotificacion('Auto-renovación ' + (isEnabled ? 'activada' : 'desactivada'), 'success');
+                } else {
+                    // Revertir el toggle si falla
+                    this.checked = !isEnabled;
+                    // Revertir el cambio visual
+                    if (!isEnabled) {
+                        dot.style.transform = 'translateX(1rem)';
+                        bg.classList.remove('bg-gray-300');
+                        bg.classList.add('bg-blue-500');
+                    } else {
+                        dot.style.transform = 'translateX(0)';
+                        bg.classList.remove('bg-blue-500');
+                        bg.classList.add('bg-gray-300');
+                    }
+                    mostrarNotificacion(data.message || 'Error al cambiar configuración', 'error');
+                }
+            })
+            .catch(error => {
+                // Revertir el toggle si hay error
+                this.checked = !isEnabled;
+                // Revertir el cambio visual
+                if (!isEnabled) {
+                    dot.style.transform = 'translateX(1rem)';
+                    bg.classList.remove('bg-gray-300');
+                    bg.classList.add('bg-blue-500');
+                } else {
+                    dot.style.transform = 'translateX(0)';
+                    bg.classList.remove('bg-blue-500');
+                    bg.classList.add('bg-gray-300');
+                }
+                mostrarNotificacion('Error de conexión', 'error');
+            });
+        });
+    }
+});
 </script>
+
+<!-- Scripts organizados por funcionalidad -->
+<script src="{{ asset('js/configuracion-tabs.js') }}"></script>
+<script src="{{ asset('js/suscripcion-modales.js') }}"></script>
+<script src="{{ asset('js/suscripcion-funciones.js') }}"></script>
+<script src="{{ asset('js/configuracion-init.js') }}"></script>
 @endpush
