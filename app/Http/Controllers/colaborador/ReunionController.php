@@ -3,6 +3,10 @@
 namespace App\Http\Controllers\Colaborador;
 
 use App\Http\Controllers\Controller;
+use App\Repositories\EquipoRepositorio;
+use App\Repositories\ReunionRepositorio;
+use App\Repositories\TrabajadorRepositorio;
+use Auth;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -10,33 +14,50 @@ use Faker\Factory as Faker;
 
 class ReunionController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    
+    protected TrabajadorRepositorio $trabajadorRepositorio;
+    protected EquipoRepositorio $equipoRepositorio;
+    protected ReunionRepositorio $reunionRepositorio;
+
+    public function __construct(TrabajadorRepositorio $trabajadorRepositorio, EquipoRepositorio $equipoRepositorio, ReunionRepositorio $reunionRepositorio)
+    {
+        $this->trabajadorRepositorio = $trabajadorRepositorio;
+        $this->equipoRepositorio = $equipoRepositorio;
+        $this->reunionRepositorio = $reunionRepositorio;
+    }
+
     public function index()
     {
-        // 1) Obtengo el paginador
-        $meetingsPaginator = $this->getMeetingsData(5);
-        $pastMeetings      = $this->getPastMeetingsData();
+        $usuario = Auth::user();
+        $trabajador = $this->trabajadorRepositorio->findOneBy('usuario_id', $usuario->id);
+        $equipo = $trabajador->getEquipoFromColabAttribute();
 
-        // 2) Extraigo los ítems (array de reuniones) y creo una colección
+        $meetingsPaginator = $this->reunionRepositorio->obtenerReunionesPorEquipo($equipo->id, 'PROGRAMADA', 5);
+
+        foreach ($meetingsPaginator as $reunion) {
+            $this->reunionRepositorio->actualizarEstadoSiFinalizada($reunion->id);
+        }
+
+        $meetingsPaginator = $this->reunionRepositorio->obtenerReunionesPorEquipo($equipo->id, 'PROGRAMADA', 5);
+
         $meetings = collect($meetingsPaginator->items());
 
-        // 3) Filtro sobre la colección de reuniones
-        $upcomingMeetings = $meetings
-            ->filter(fn($m) => Carbon::parse("{$m['date']} {$m['time']}")->isFuture() && ! Carbon::parse("{$m['date']} {$m['time']}")->isToday())
-            ->values(); // reset keys si quieres
+        $todayMeetings = $meetings->filter(fn($m) =>
+            Carbon::parse("{$m['date']} {$m['time']}")->isToday()
+        )->values();
 
-        $todayMeetings = $meetings
-            ->filter(fn($m) => Carbon::parse("{$m['date']} {$m['time']}")->isToday())
-            ->values();
+        $upcomingMeetings = $meetings->filter(fn($m) =>
+            Carbon::parse("{$m['date']} {$m['time']}")->isFuture() &&
+            !Carbon::parse("{$m['date']} {$m['time']}")->isToday()
+        )->values();
 
-        // 4) Paso tanto el paginador (para la tabla + links) como las colecciones filtradas
+        $pastMeetings = $this->reunionRepositorio->obtenerReunionesPorEquipo($equipo->id, 'COMPLETADA', 5);
+
         return view('private.colaborador.reuniones', [
-            'meetingsPaginator' => $meetingsPaginator,
-            'pastMeetings'      => $pastMeetings,
-            'upcomingMeetings'  => $upcomingMeetings,
+            'meetingsPaginator' => $meetingsPaginator, 
             'todayMeetings'     => $todayMeetings,
+            'upcomingMeetings'  => $upcomingMeetings,
+            'pastMeetings'      => $pastMeetings,
         ]);
     }
 

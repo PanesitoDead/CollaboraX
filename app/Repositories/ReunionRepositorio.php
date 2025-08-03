@@ -4,6 +4,7 @@
 
 use App\Models\Reunion;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Http;
 
 class ReunionRepositorio extends RepositorioBase
 {
@@ -121,6 +122,45 @@ class ReunionRepositorio extends RepositorioBase
                     break;
             }
         }
+    }
+
+    public function actualizarEstadoSiFinalizada($id)
+    {
+        $reunion = $this->getById($id);
+
+        if (!$reunion) return false;
+        if ($reunion->estado !== 'PROGRAMADA') return;
+        if (empty($reunion->meeting_id)) return;
+
+        try {
+            $response = Http::get(config('bbb.url') . "/info/{$reunion->meeting_id}");
+
+            if ($response->successful()) {
+                $info = $response->json();
+
+                if (!$info['running'] && !empty($info['end_time'])) {
+                    $reunion->estado = 'COMPLETADA';
+                    $reunion->save();
+                }
+            } else {
+                // Si la reunión no existe en BBB, asumimos que fue finalizada
+                if ($response->status() === 404 || str_contains($response->body(), 'does not exist')) {
+                    $reunion->estado = 'COMPLETADA';
+                    $reunion->save();
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error("Error al consultar info de reunión {$reunion->id}: " . $e->getMessage());
+        }
+    }
+
+    public function obtenerReunionesPorEquipo($equipoId, $estado, $limit = 10)
+    {
+        return $this->model->where('equipo_id', $equipoId)
+            ->where('estado', $estado)
+            ->orderBy('fecha', 'desc')
+            ->orderBy('hora', 'desc')
+            ->paginate($limit);
     }
 
 }

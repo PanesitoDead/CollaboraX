@@ -12,7 +12,7 @@ class Reunion extends Model
     protected $table = 'reuniones';
     public $timestamps = false;
 
-    protected $fillable = ['equipo_id', 'fecha', 'hora', 'duracion', 'descripcion', 'asunto', 'modalidad_id', 'sala', 'estado', 'observacion'];
+    protected $fillable = ['equipo_id', 'fecha', 'hora', 'duracion', 'descripcion', 'asunto', 'modalidad_id', 'sala', 'estado', 'observacion', 'link_moderador', 'link_participante', 'meeting_id'];
 
     public function equipo()
     {
