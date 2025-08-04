@@ -47,6 +47,18 @@ const routes = window.appData.routes
 const csrfToken = window.appData.routes.csrfToken
 const firebaseConfig = window.appData.firebaseConfig
 
+// Función para detectar y convertir enlaces en texto
+function linkifyText(text) {
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|[^\s]+\.[a-z]{2,}(?:\/[^\s]*)?)/gi
+  return text.replace(urlRegex, (url) => {
+    let href = url
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      href = "https://" + url
+    }
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700 underline break-all">${url}</a>`
+  })
+}
+
 // Función para actualizar último mensaje del contacto (ya no se usa directamente para DOM)
 function updateContactLastMessage(contactId, lastMessage, time) {
   // Esta función ya no manipula el DOM directamente,
@@ -187,11 +199,6 @@ function displayContacts() {
 
   // Actualizar contador de no leídos
   updateUnreadBadge()
-
-  // Seleccionar primer contacto si no hay ninguno seleccionado y hay contactos
-  if (!currentContactId && sortedContacts.length > 0) {
-    selectContact(sortedContacts[0].id)
-  }
 
   // Re-aplicar el filtro de la pestaña activa
   filterContacts(activeTab)
@@ -400,7 +407,7 @@ function displayMessagesFromFirebase(messages) {
   messages.forEach((message) => {
     const messageEl = document.createElement("div")
     const isSent = message.remitente_id === currentUserId
-    messageEl.className = `flex ${isSent ? "justify-end" : "justify-start"} fade-in`
+    messageEl.className = `flex ${isSent ? "justify-end" : "justify-start"} fade-in mb-2`
 
     const time = formatTimestamp(message.timestamp)
     const readStatus = isSent ? (message.leido ? "✓✓" : "✓") : "" // Mostrar ✓✓ si es enviado y leído, ✓ si solo enviado
@@ -428,8 +435,8 @@ function displayMessagesFromFirebase(messages) {
     if (isSent) {
       html = `
         <div class="max-w-xs lg:max-w-md">
-          <div class="bg-blue-500 text-white rounded-lg px-4 py-2">
-            ${message.contenido ? `<p class="text-sm">${message.contenido}</p>` : ""}
+          <div class="bg-white-500 text-black rounded-lg  px-4 py-2 border border-blue-800 word-wrap break-words overflow-wrap-anywhere">
+            ${message.contenido ? `<p class="text-sm whitespace-pre-wrap">${linkifyText(message.contenido)}</p>` : ""}
             ${attachmentHtml}
           </div>
           <div class="flex items-center justify-end mt-1 space-x-1">
@@ -441,8 +448,8 @@ function displayMessagesFromFirebase(messages) {
     } else {
       html = `
         <div class="max-w-xs lg:max-w-md">
-          <div class="bg-white text-gray-900 rounded-lg px-4 py-2 border border-gray-200">
-            ${message.contenido ? `<p class="text-sm">${message.contenido}</p>` : ""}
+          <div class="bg-white text-gray-900 rounded-lg px-4 py-2 border border-gray-400 word-wrap break-words overflow-wrap-anywhere">
+            ${message.contenido ? `<p class="text-sm whitespace-pre-wrap">${linkifyText(message.contenido)}</p>` : ""}
             ${attachmentHtml}
           </div>
           <p class="text-xs text-gray-500 mt-1">${time}</p>
@@ -461,7 +468,7 @@ function displayMessagesFromFirebase(messages) {
 // Agregar mensaje en tiempo real al chat
 function addRealtimeMessageToChat(messageData, isSent) {
   const messageEl = document.createElement("div")
-  messageEl.className = `flex ${isSent ? "justify-end" : "justify-start"} fade-in realtime-message`
+  messageEl.className = `flex ${isSent ? "justify-end" : "justify-start"} fade-in realtime-message mb-2`
 
   const time = formatTimestamp(messageData.timestamp)
   const readStatus = isSent ? (messageData.leido ? "✓✓" : "✓") : "" // Mostrar ✓✓ si es enviado y leído, ✓ si solo enviado
@@ -489,8 +496,8 @@ function addRealtimeMessageToChat(messageData, isSent) {
   if (isSent) {
     html = `
       <div class="max-w-xs lg:max-w-md">
-        <div class="bg-blue-500 text-white rounded-lg px-4 py-2">
-          ${messageData.contenido ? `<p class="text-sm">${messageData.contenido}</p>` : ""}
+        <div class="bg-white-500 text-black rounded-lg  px-4 py-2 border border-blue-800 word-wrap break-words overflow-wrap-anywhere">
+          ${messageData.contenido ? `<p class="text-sm whitespace-pre-wrap">${linkifyText(messageData.contenido)}</p>` : ""}
           ${attachmentHtml}
         </div>
         <div class="flex items-center justify-end mt-1 space-x-1">
@@ -502,8 +509,8 @@ function addRealtimeMessageToChat(messageData, isSent) {
   } else {
     html = `
       <div class="max-w-xs lg:max-w-md">
-        <div class="bg-white text-gray-900 rounded-lg px-4 py-2 border border-gray-200">
-          ${messageData.contenido ? `<p class="text-sm">${messageData.contenido}</p>` : ""}
+        <div class="bg-white text-gray-900 rounded-lg px-4 py-2 border border-gray-400 word-wrap break-words overflow-wrap-anywhere">
+          ${messageData.contenido ? `<p class="text-sm whitespace-pre-wrap">${linkifyText(messageData.contenido)}</p>` : ""}
           ${attachmentHtml}
         </div>
         <p class="text-xs text-gray-500 mt-1">${time}</p>
@@ -652,8 +659,13 @@ function sendMessageWithFirebase(messageText, contactId) {
   }
 }
 
-// Función para seleccionar contacto
+// Función para seleccionar contacto - CORREGIDA
 function selectContact(contactId) {
+  // Evitar seleccionar el mismo contacto múltiples veces
+  if (currentContactId === contactId) {
+    return
+  }
+
   currentContactId = contactId
   contactIdInput.value = contactId
 
@@ -1073,7 +1085,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   })
 
-  // Nuevo chat
+  // Nuevo chat - CORREGIDO para evitar duplicados
   newChatForm.addEventListener("submit", function (e) {
     e.preventDefault()
 
@@ -1094,7 +1106,7 @@ document.addEventListener("DOMContentLoaded", () => {
     submitButton.textContent = "Enviando..."
     submitButton.disabled = true
 
-    // Enviar a Firebase inmediatamente
+    // Enviar SOLO a Firebase (no al servidor Laravel para evitar duplicados)
     const contactId = Number.parseInt(selectedWorkerId.value)
     sendMessageWithFirebase(messageText, contactId)
       .then(() => {
@@ -1106,39 +1118,16 @@ document.addEventListener("DOMContentLoaded", () => {
         // Agregar el nuevo contacto a la lista si no existe
         addNewContactToList(contactId, messageText)
 
-        // Seleccionar el nuevo contacto
+        // Seleccionar el nuevo contacto con un pequeño delay para asegurar que se cargue
         setTimeout(() => {
           selectContact(contactId)
-        }, 100)
-
-        // Enviar a servidor Laravel en segundo plano (para registro en DB si es necesario, o para archivos)
-        const formData = new FormData(this)
-        fetch(routes.newChat, {
-          method: "POST",
-          headers: {
-            "X-CSRF-TOKEN": csrfToken,
-          },
-          body: formData,
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.success) {
-              console.log("Chat guardado en servidor")
-            } else {
-              console.error("Error guardando chat en servidor:", data.error)
-            }
-          })
-          .catch((error) => {
-            console.error("Error:", error)
-          })
-          .finally(() => {
-            submitButton.textContent = originalText
-            submitButton.disabled = false
-          })
+        }, 200)
       })
       .catch((error) => {
         console.error("Error enviando a Firebase:", error)
         alert("Error al iniciar el chat")
+      })
+      .finally(() => {
         submitButton.textContent = originalText
         submitButton.disabled = false
       })

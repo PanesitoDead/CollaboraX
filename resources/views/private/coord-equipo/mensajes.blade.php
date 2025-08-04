@@ -1,4 +1,4 @@
-@extends('layouts.coordinador-general.app')
+@extends('layouts.private.coord-equipo')
 
 @section('content')
 <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -215,9 +215,9 @@
         allWorkers: @json($allWorkers),
         firebaseConfig: @json($firebaseConfig),
         routes: {
-            searchWorkers: "{{ route('coordinador-general.mensajes.search-workers') }}",
-            sendMessage: "{{ route('coordinador-general.mensajes.send') }}",
-            newChat: "{{ route('coordinador-general.mensajes.new-chat') }}",
+            searchWorkers: "{{ route('coord-equipo.mensajes.search-workers') }}",
+            sendMessage: "{{ route('coord-equipo.mensajes.send') }}",
+            newChat: "{{ route('coord-equipo.mensajes.new-chat') }}",
             csrfToken: "{{ csrf_token() }}"
         }
     };

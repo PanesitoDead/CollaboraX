@@ -99,7 +99,7 @@
                         <a href="{{ route('coordinador-general.mensajes') }}" class="flex items-center space-x-3 p-3 rounded-lg {{ request()->routeIs('coordinador-general.mensajes') ? 'bg-blue-800' : 'hover:bg-blue-800' }} tab-transition hover-scale relative">
                             <i data-lucide="message-circle" class="w-5 h-5"></i>
                             <span>Mensajes</span>
-                            <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center notification-badge">3</span>
+                            
                         </a>
                     </li>
                     <li>

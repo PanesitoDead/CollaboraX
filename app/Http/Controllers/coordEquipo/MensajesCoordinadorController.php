@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\colaborador;
+namespace App\Http\Controllers\coordEquipo;
 
 use App\Http\Controllers\Controller;
 use App\Services\FirebaseServices;
@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
-class MensajeController extends Controller
+class MensajesCoordinadorController extends Controller
 {
     protected $firebaseService;
 
@@ -69,7 +69,7 @@ class MensajeController extends Controller
             // Obtener configuración de Firebase para el frontend
             $firebaseConfig = $this->firebaseService->getFirebaseConfig();
 
-            return view('private.colaborador.mensajes', compact('contacts', 'allWorkers', 'messages', 'stats', 'firebaseConfig'));
+            return view('private.coord-equipo.mensajes', compact('contacts', 'allWorkers', 'messages', 'stats', 'firebaseConfig'));
 
         } catch (\Exception $e) {
             Log::error('Error en mensajes index', [
@@ -77,7 +77,7 @@ class MensajeController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
         
-            return view('private.colaborador.mensajes', [
+            return view('private.coord-equipo.mensajes', [
                 'contacts' => collect([]),
                 'allWorkers' => collect([]),
                 'messages' => [],

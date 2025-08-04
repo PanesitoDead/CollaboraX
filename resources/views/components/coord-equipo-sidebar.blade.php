@@ -160,7 +160,8 @@
           ['route' => 'coord-equipo.actividades', 'icon' => 'check-circle', 'label' => 'Actividades'],
           ['route' => 'coord-equipo.equipo', 'icon' => 'clipboard-list', 'label' => 'Mi Equipo'],
           ['route' => 'coord-equipo.reuniones', 'icon' => 'message-square', 'label' => 'Reuniones'],
-          ['route' => 'coord-equipo.configuracion', 'icon' => 'calendar-clock', 'label' => 'Configuración'],  
+          ['route' => 'coord-equipo.configuracion', 'icon' => 'calendar-clock', 'label' => 'Configuración'], 
+          ['route' => 'coord-equipo.mensajes', 'icon' => 'mail', 'label' => 'Mensajes'], 
             // ['route' => 'coord-equipo.mi-equipo', 'icon' => 'users', 'label' => 'Mi Equipo'],
             // ['route' => 'coord-equipo.configuracion', 'icon' => 'settings', 'label' => 'Configuración'],
         ];
