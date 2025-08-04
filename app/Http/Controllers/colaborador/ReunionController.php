@@ -32,6 +32,29 @@ class ReunionController extends Controller
         $trabajador = $this->trabajadorRepositorio->findOneBy('usuario_id', $usuario->id);
         $equipo = $trabajador->getEquipoFromColabAttribute();
 
+        // Verificar si el trabajador tiene un equipo asignado
+        if (!$equipo) {
+            // Crear paginadores vacíos para evitar errores en la vista
+            $emptyPaginator = new LengthAwarePaginator(
+                [],
+                0,
+                5,
+                1,
+                [
+                    'path' => request()->url(),
+                    'pageName' => 'page',
+                ]
+            );
+            
+            return view('private.colaborador.reuniones', [
+                'meetingsPaginator' => $emptyPaginator, 
+                'todayMeetings'     => collect(),
+                'upcomingMeetings'  => collect(),
+                'pastMeetings'      => $emptyPaginator,
+                'mensaje'           => 'No tienes un equipo asignado aún. Contacta con tu administrador para que te asigne a un equipo y puedas acceder a las reuniones.',
+            ]);
+        }
+
         $meetingsPaginator = $this->reunionRepositorio->obtenerReunionesPorEquipo($equipo->id, 'PROGRAMADA', 5);
 
         foreach ($meetingsPaginator as $reunion) {
@@ -58,6 +81,7 @@ class ReunionController extends Controller
             'todayMeetings'     => $todayMeetings,
             'upcomingMeetings'  => $upcomingMeetings,
             'pastMeetings'      => $pastMeetings,
+            'mensaje'           => null,
         ]);
     }
 
