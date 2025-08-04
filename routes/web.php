@@ -276,28 +276,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/api/modelos', [AuditoriaController::class, 'getModelosDisponibles'])->name('api.modelos');
         Route::get('/api/eventos', [AuditoriaController::class, 'getEventosDisponibles'])->name('api.eventos');
         Route::get('/api/estadisticas', [AuditoriaController::class, 'estadisticas'])->name('api.estadisticas');
-    });
-    
-    // Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    // Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    // Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-    // Route::get('/prontuario/index/{slug}', [ProntuarioController::class,'index'])->name('prontuario');
-    // Route::get( '/prontuario/create', [ProntuarioController::class,'create'])->name('prontuario.create');
-    // Route::get( '/prontuario/create/{slug}', [ProntuarioController::class,'createByType'])->name('prontuario.create.bytype');
-    // Route::post('/prontuario', [ProntuarioController::class,'store'])->name('prontuario.store');
-    // //Route::get('/prontuario/show/{id}', [ProntuarioController::class,'show'])->name('prontuario.show');
-    // Route::get('/prontuario/show/{slug}/{id}', [ProntuarioController::class, 'showByType'])->name('prontuario.show');
-    // Route::delete('/prontuario/{id}', [ProntuarioController::class, 'destroy'])->name('prontuario.destroy');
-    // Route::get('/prontuario/initial-numbers', [ProntuarioController::class,'initialNumbers'])->name('prontuario.initial.numbers');
-    // Route::post('/prontuario/initial-numbers/store', [ProntuarioController::class, 'storeInitialNumber'])->name('prontuario.initial.store');
-
-    // Route::get('/report', [PDFGeneratorController::class, 'index'])->name('report');
-    // Route::get('/report-user/{id}', [PDFGeneratorController::class, 'generateByWorker'])->name('report.user');
-    // Route::get('/report-admin', [PDFGeneratorController::class, 'generateAdminReports'])->name('report.admin');
-    // Route::get('/export-excel', [PDFGeneratorController::class, 'exportByAdmin'])->name('export.admin');
-    // Route::get('/export-excel/{id}', [PDFGeneratorController::class, 'exportByWorker'])->name('export.user');  
-    
+    }); 
     
 });
 
