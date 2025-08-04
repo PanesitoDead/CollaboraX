@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\CrearColaboradorRequest;
+use App\Http\Requests\Admin\EditarColaboradorRequest;
+use App\Models\Usuario;
 use App\Repositories\AreaRepositorio;
 use App\Repositories\EmpresaRepositorio;
 use App\Repositories\TrabajadorRepositorio;
@@ -11,6 +14,8 @@ use App\Traits\Http\Controllers\CriterioTrait;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class ColaboradorController extends Controller
 {
@@ -47,6 +52,7 @@ class ColaboradorController extends Controller
 
     public function getPaginado(Request $request)
     {
+        /** @var Usuario $usuario */
         $usuario = Auth::user();
         $empresa = $this->empresaRepositorio->findOneBy('usuario_id', $usuario->id);
 
@@ -86,43 +92,269 @@ class ColaboradorController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(CrearColaboradorRequest $request)
     {
         // Agregar al correo el dominio de la empresa
         $empresa = $this->getEmpresa();
-        $request->merge([
-            'correo' => $request->input('correo') . '@' . strtolower($empresa->nombre) . '.cx.com',
-        ]);
+        $correoCompleto = $request->input('correo') . '@' . strtolower($empresa->nombre) . '.cx.com';
 
-        // Creamos el usuario primero
-        $usuario = $this->usuarioRepositorio->create([
-            'correo' => $request->input('correo'),
-            'correo_personal' => $request->input('correo_personal'),
-            'clave' => bcrypt($request->input('clave')),
-            'clave_mostrar' => $request->input('clave'),
-            'rol_id' => 5, // Rol de colaborador
-            'activo' => true,
-            'en_linea' => false,
-            'foto' => null, // Asignar foto si es necesario
-            'ultima_conexion' => Carbon::now(),
-            'fecha_registro' => Carbon::now(),
-        ]);
-
-
-        // Crear el colaborador
-        $trabajador = $this->trabajadorRepositorio->create([
-            'nombres' => $request->input('nombres'),
-            'apellido_paterno' => $request->input('apellido_paterno'),
-            'apellido_materno' => $request->input('apellido_materno'),
-            'usuario_id' => $usuario->id,
-            'empresa_id' => $empresa->id,
-        ]);
-        if (!$trabajador) {
-            return redirect()->route('admin.colaboradores.index')->with('error', 'Error al crear el colaborador.');
+        // Verificar que el correo corporativo no exista
+        $existeCorreo = $this->usuarioRepositorio->findOneBy('correo', $correoCompleto);
+        if ($existeCorreo) {
+            return back()->withErrors(['correo' => 'Este correo corporativo ya está en uso.'])->withInput();
         }
 
-        return redirect()->route('admin.colaboradores.index')->with('success', 'Colaborador creado correctamente.');
-       
+        try {
+            // Creamos el usuario primero
+            $usuario = $this->usuarioRepositorio->create([
+                'correo' => $correoCompleto,
+                'correo_personal' => $request->input('correo_personal'),
+                'clave' => bcrypt($request->input('clave')),
+                'clave_mostrar' => $request->input('clave'),
+                'rol_id' => 5, // Rol de colaborador
+                'activo' => true,
+                'en_linea' => false,
+                'foto' => null, // Asignar foto si es necesario
+                'ultima_conexion' => Carbon::now(),
+                'fecha_registro' => Carbon::now(),
+            ]);
+
+            // Crear el colaborador
+            $trabajador = $this->trabajadorRepositorio->create([
+                'nombres' => $request->input('nombres'),
+                'apellido_paterno' => $request->input('apellido_paterno'),
+                'apellido_materno' => $request->input('apellido_materno'),
+                'usuario_id' => $usuario->id,
+                'empresa_id' => $empresa->id,
+            ]);
+
+            return redirect()->route('admin.colaboradores.index')->with('success', 'Colaborador creado correctamente.');
+        } catch (\Exception $e) {
+            return back()->withErrors(['general' => 'Error al crear el colaborador: ' . $e->getMessage()])->withInput();
+        }
+    }
+
+    /**
+     * Validar correo personal en tiempo real
+     */
+    public function validarCorreoPersonal(Request $request)
+    {
+        $correoPersonal = $request->input('correo_personal');
+        
+        if (!$correoPersonal) {
+            return response()->json(['valido' => false, 'mensaje' => 'El correo personal es obligatorio.']);
+        }
+
+        if (!filter_var($correoPersonal, FILTER_VALIDATE_EMAIL)) {
+            return response()->json(['valido' => false, 'mensaje' => 'El correo personal debe ser una dirección válida.']);
+        }
+
+        $existe = $this->usuarioRepositorio->findOneBy('correo_personal', $correoPersonal);
+        
+        if ($existe) {
+            return response()->json(['valido' => false, 'mensaje' => 'Este correo personal ya está registrado.']);
+        }
+
+        return response()->json(['valido' => true, 'mensaje' => 'Correo personal disponible.']);
+    }
+
+    /**
+     * Validar correo corporativo en tiempo real
+     */
+    public function validarCorreoCorporativo(Request $request)
+    {
+        $correo = $request->input('correo');
+        
+        if (!$correo) {
+            return response()->json(['valido' => false, 'mensaje' => 'El correo corporativo es obligatorio.']);
+        }
+
+        try {
+            $empresa = $this->getEmpresa();
+            $correoCompleto = $correo . '@' . strtolower($empresa->nombre) . '.cx.com';
+            
+            $existe = $this->usuarioRepositorio->findOneBy('correo', $correoCompleto);
+            
+            if ($existe) {
+                return response()->json(['valido' => false, 'mensaje' => 'Este correo corporativo ya está en uso.']);
+            }
+
+            return response()->json(['valido' => true, 'mensaje' => 'Correo corporativo disponible.']);
+        } catch (\Exception $e) {
+            return response()->json(['valido' => false, 'mensaje' => 'Error al validar el correo corporativo.']);
+        }
+    }
+
+    /**
+     * Validar campo individual
+     */
+    public function validarCampo(Request $request)
+    {
+        $campo = $request->input('campo');
+        $valor = $request->input('valor');
+        
+        // Debug log
+        Log::info('Validando campo', ['campo' => $campo, 'valor' => $valor]);
+        
+        $rules = [];
+        $messages = [];
+        
+        switch ($campo) {
+            case 'nombres':
+                $rules = ['required', 'string', 'max:255', 'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/'];
+                $messages = [
+                    'required' => 'El nombre es obligatorio.',
+                    'string' => 'El nombre debe ser una cadena de texto.',
+                    'max' => 'El nombre no puede superar los 255 caracteres.',
+                    'regex' => 'El nombre solo puede contener letras y espacios.',
+                ];
+                break;
+            case 'apellido_paterno':
+                $rules = ['required', 'string', 'max:255', 'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/'];
+                $messages = [
+                    'required' => 'El apellido paterno es obligatorio.',
+                    'string' => 'El apellido paterno debe ser una cadena de texto.',
+                    'max' => 'El apellido paterno no puede superar los 255 caracteres.',
+                    'regex' => 'El apellido paterno solo puede contener letras y espacios.',
+                ];
+                break;
+            case 'apellido_materno':
+                $rules = ['required', 'string', 'max:255', 'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/'];
+                $messages = [
+                    'required' => 'El apellido materno es obligatorio.',
+                    'string' => 'El apellido materno debe ser una cadena de texto.',
+                    'max' => 'El apellido materno no puede superar los 255 caracteres.',
+                    'regex' => 'El apellido materno solo puede contener letras y espacios.',
+                ];
+                break;
+            default:
+                Log::warning('Campo no reconocido para validación', ['campo' => $campo]);
+                return response()->json(['valido' => false, 'mensaje' => 'Campo no válido para validación.']);
+        }
+        
+        $validator = Validator::make([$campo => $valor], [$campo => $rules], $messages);
+        
+        if ($validator->fails()) {
+            return response()->json(['valido' => false, 'mensaje' => $validator->errors()->first($campo)]);
+        }
+        
+        return response()->json(['valido' => true, 'mensaje' => 'Campo válido.']);
+    }
+
+    /**
+     * Validar correo personal en tiempo real para edición
+     */
+    public function validarCorreoPersonalEdicion(Request $request)
+    {
+        $correoPersonal = $request->input('correo_personal');
+        $colaboradorId = $request->input('colaborador_id');
+        
+        if (!$correoPersonal) {
+            return response()->json(['valido' => false, 'mensaje' => 'El correo personal es obligatorio.']);
+        }
+
+        if (!filter_var($correoPersonal, FILTER_VALIDATE_EMAIL)) {
+            return response()->json(['valido' => false, 'mensaje' => 'El correo personal debe ser una dirección válida.']);
+        }
+
+        // Verificar que no exista otro usuario con este correo (excluyendo el actual)
+        $trabajador = $this->trabajadorRepositorio->getById($colaboradorId);
+        if (!$trabajador) {
+            return response()->json(['valido' => false, 'mensaje' => 'Colaborador no encontrado.']);
+        }
+
+        $usuarioExistente = $this->usuarioRepositorio->findOneBy('correo_personal', $correoPersonal);
+        
+        if ($usuarioExistente && $usuarioExistente->id !== $trabajador->usuario_id) {
+            return response()->json(['valido' => false, 'mensaje' => 'Este correo personal ya está registrado por otro usuario.']);
+        }
+
+        return response()->json(['valido' => true, 'mensaje' => 'Correo personal válido.']);
+    }
+
+    /**
+     * Validar campo individual para edición
+     */
+    public function validarCampoEdicion(Request $request)
+    {
+        $campo = $request->input('campo');
+        $valor = $request->input('valor');
+        
+        Log::info('Validando campo edición', ['campo' => $campo, 'valor' => $valor]);
+        
+        $rules = [];
+        $messages = [];
+        
+        switch ($campo) {
+            case 'nombres':
+                $rules = ['required', 'string', 'max:255', 'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/'];
+                $messages = [
+                    'required' => 'El nombre es obligatorio.',
+                    'string' => 'El nombre debe ser una cadena de texto.',
+                    'max' => 'El nombre no puede superar los 255 caracteres.',
+                    'regex' => 'El nombre solo puede contener letras y espacios.',
+                ];
+                break;
+            case 'apellido_paterno':
+                $rules = ['required', 'string', 'max:255', 'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/'];
+                $messages = [
+                    'required' => 'El apellido paterno es obligatorio.',
+                    'string' => 'El apellido paterno debe ser una cadena de texto.',
+                    'max' => 'El apellido paterno no puede superar los 255 caracteres.',
+                    'regex' => 'El apellido paterno solo puede contener letras y espacios.',
+                ];
+                break;
+            case 'apellido_materno':
+                $rules = ['required', 'string', 'max:255', 'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/'];
+                $messages = [
+                    'required' => 'El apellido materno es obligatorio.',
+                    'string' => 'El apellido materno debe ser una cadena de texto.',
+                    'max' => 'El apellido materno no puede superar los 255 caracteres.',
+                    'regex' => 'El apellido materno solo puede contener letras y espacios.',
+                ];
+                break;
+            case 'doc_identidad':
+                if (empty($valor)) {
+                    return response()->json(['valido' => true, 'mensaje' => 'Documento de identidad válido (opcional).']);
+                }
+                $rules = ['string', 'max:8', 'regex:/^[0-9]+$/'];
+                $messages = [
+                    'string' => 'El documento de identidad debe ser una cadena de texto.',
+                    'max' => 'El documento de identidad no puede superar los 8 caracteres.',
+                    'regex' => 'El documento de identidad solo puede contener números.',
+                ];
+                break;
+            case 'telefono':
+                if (empty($valor)) {
+                    return response()->json(['valido' => true, 'mensaje' => 'Teléfono válido (opcional).']);
+                }
+                $rules = ['digits:9'];
+                $messages = [
+                    'digits' => 'El teléfono debe contener exactamente 9 dígitos.',
+                ];
+                break;
+            case 'fecha_nacimiento':
+                if (empty($valor)) {
+                    return response()->json(['valido' => true, 'mensaje' => 'Fecha de nacimiento válida (opcional).']);
+                }
+                $rules = ['date', 'before:today'];
+                $messages = [
+                    'date' => 'La fecha de nacimiento debe ser una fecha válida.',
+                    'before' => 'La fecha de nacimiento debe ser anterior a hoy.',
+                ];
+                break;
+            default:
+                Log::warning('Campo no reconocido para validación de edición', ['campo' => $campo]);
+                return response()->json(['valido' => false, 'mensaje' => 'Campo no válido para validación.']);
+        }
+        
+        $validator = Validator::make([$campo => $valor], [$campo => $rules], $messages);
+        
+        if ($validator->fails()) {
+            return response()->json(['valido' => false, 'mensaje' => $validator->errors()->first($campo)]);
+        }
+        
+        return response()->json(['valido' => true, 'mensaje' => 'Campo válido.']);
     }
 
     /**
@@ -151,28 +383,32 @@ class ColaboradorController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(EditarColaboradorRequest $request, string $id)
     {
         $trabajador = $this->trabajadorRepositorio->getById($id);
         if (!$trabajador) {
             return redirect()->route('admin.colaboradores.index')->with('error', 'Colaborador no encontrado.');
         }
 
-        // Actualizar el usuario
-        $usuario = $trabajador->usuario;
-        $usuario->correo_personal = $request->input('correo_personal');
-        $usuario->save();
+        try {
+            // Actualizar el usuario
+            $usuario = $trabajador->usuario;
+            $usuario->correo_personal = $request->input('correo_personal');
+            $usuario->save();
 
-        // Actualizar el colaborador
-        $trabajador->nombres = $request->input('nombres');
-        $trabajador->apellido_paterno = $request->input('apellido_paterno');
-        $trabajador->apellido_materno = $request->input('apellido_materno');
-        $trabajador->telefono = $request->input('telefono');
-        $trabajador->doc_identidad = $request->input('doc_identidad');
-        $trabajador->fecha_nacimiento = $request->input('fecha_nacimiento');
-        $trabajador->save();
+            // Actualizar el colaborador
+            $trabajador->nombres = $request->input('nombres');
+            $trabajador->apellido_paterno = $request->input('apellido_paterno');
+            $trabajador->apellido_materno = $request->input('apellido_materno');
+            $trabajador->telefono = $request->input('telefono');
+            $trabajador->doc_identidad = $request->input('doc_identidad');
+            $trabajador->fecha_nacimiento = $request->input('fecha_nacimiento');
+            $trabajador->save();
 
-        return redirect()->route('admin.colaboradores.index')->with('success', 'Colaborador actualizado correctamente.');
+            return redirect()->route('admin.colaboradores.index')->with('success', 'Colaborador actualizado correctamente.');
+        } catch (\Exception $e) {
+            return back()->withErrors(['general' => 'Error al actualizar el colaborador: ' . $e->getMessage()])->withInput();
+        }
     }
 
     /**
@@ -185,13 +421,14 @@ class ColaboradorController extends Controller
 
     public function getEmpresa()
     {
+        /** @var Usuario $usuario */
         $usuario = Auth::user();
         if (!$usuario) {
-            return redirect()->route('admin.dashboard')->with('error', 'Usuario no autenticado.');
+            abort(401, 'Usuario no autenticado.');
         }
         $empresa = $this->empresaRepositorio->findOneBy('usuario_id', $usuario->id);
         if (!$empresa) {
-            return redirect()->route('admin.dashboard')->with('error', 'No se encontró la empresa asociada al usuario.');
+            abort(404, 'No se encontró la empresa asociada al usuario.');
         }
         return $empresa;
     }

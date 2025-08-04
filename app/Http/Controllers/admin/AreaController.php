@@ -9,6 +9,7 @@ use App\Traits\Http\Controllers\CriterioTrait;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class AreaController extends Controller
 {
@@ -66,7 +67,6 @@ class AreaController extends Controller
 
     public function store(Request $request)
     {   
-        
         try {
             // Validar los datos de entrada
             $request->validate([
@@ -134,20 +134,56 @@ class AreaController extends Controller
                     ->with('error', 'Área no encontrada.');
             }
 
+            // Buscar coordinadores generales de esta área y cambiar su rol a colaborador
+            $coordinadoresGenerales = DB::table('areas_coordinador as ac')
+                ->join('trabajadores as t', 't.id', '=', 'ac.trabajador_id')
+                ->join('usuarios as u', 'u.id', '=', 't.usuario_id')
+                ->join('roles as r', 'r.id', '=', 'u.rol_id')
+                ->where('ac.area_id', $id)
+                ->where('r.nombre', 'Coord. General')
+                ->whereNull('ac.deleted_at')
+                ->whereNull('t.deleted_at')
+                ->whereNull('u.deleted_at')
+                ->select('u.id as usuario_id')
+                ->get();
+
+            // Obtener el rol de colaborador
+            $rolColaborador = DB::table('roles')
+                ->where('nombre', 'Colaborador')
+                ->first();
+
+            if (!$rolColaborador) {
+                return redirect()->route('admin.areas.index')
+                    ->with('error', 'No se encontró el rol de Colaborador en el sistema.');
+            }
+
+            // Cambiar el rol de los coordinadores generales a colaborador
+            foreach ($coordinadoresGenerales as $coordinador) {
+                DB::table('usuarios')
+                    ->where('id', $coordinador->usuario_id)
+                    ->update(['rol_id' => $rolColaborador->id]);
+            }
+
             // Eliminar el área
             $this->areaRepositorio->delete($id);
 
+            $mensaje = 'Área eliminada correctamente';
+            if ($coordinadoresGenerales->count() > 0) {
+                $mensaje .= '. Se han cambiado ' . $coordinadoresGenerales->count() . ' coordinador(es) general(es) a colaborador(es)';
+            }
+
             return redirect()->route('admin.areas.index')
-                ->with('success', 'Área eliminada correctamente.');
+                ->with('success', $mensaje);
+
         } catch (\Exception $e) {
             return redirect()->route('admin.areas.index')
-                ->with('error', 'Error al eliminar el área. Inténtalo de nuevo.');
+                ->with('error', 'Error al eliminar el área: ' . $e->getMessage());
         }
     }
 
     public function show($id)
     {
-      $area = $this->areaRepositorio->getById($id);
+        $area = $this->areaRepositorio->getById($id);
         // Verificamos si el área existe
         
         if (!$area) {
@@ -173,5 +209,140 @@ class AreaController extends Controller
             ? Carbon::parse($area->fecha_creacion)->format('d/m/Y')
             : 'No disponible';
         return response()->json($area);
+    }
+
+    /**
+     * Validar campo para edición de área
+     */
+    public function validarCampoEdicion(Request $request)
+    {
+        $campo = $request->input('campo');
+        $valor = $request->input('valor');
+        $areaId = $request->input('area_id');
+
+        // Validaciones básicas
+        if (empty($valor)) {
+            return response()->json([
+                'valido' => false,
+                'mensaje' => 'Este campo es obligatorio.'
+            ]);
+        }
+
+        switch ($campo) {
+            case 'nombre':
+                if (strlen($valor) < 2) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El nombre del área debe tener al menos 2 caracteres.'
+                    ]);
+                }
+                if (strlen($valor) > 100) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El nombre del área no puede exceder 100 caracteres.'
+                    ]);
+                }
+                if (!preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s\-\_\.]+$/', $valor)) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El nombre solo puede contener letras, números, espacios, guiones y puntos.'
+                    ]);
+                }
+
+                // Verificar si ya existe otra área con el mismo nombre
+                $empresa = $this->getEmpresa();
+                if ($empresa) {
+                    // Buscar área con el mismo nombre en la misma empresa, excluyendo el área actual
+                    $query = $this->areaRepositorio->getModel()->newQuery();
+                    $query->where('nombre', $valor)
+                          ->where('empresa_id', $empresa->id);
+                    
+                    if ($areaId) {
+                        $query->where('id', '!=', $areaId);
+                    }
+                    
+                    $existente = $query->first();
+                    
+                    if ($existente) {
+                        return response()->json([
+                            'valido' => false,
+                            'mensaje' => 'Ya existe un área con este nombre en la empresa.'
+                        ]);
+                    }
+                }
+                break;
+
+            case 'codigo':
+                if (strlen($valor) < 2) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El código del área debe tener al menos 2 caracteres.'
+                    ]);
+                }
+                if (strlen($valor) > 10) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El código del área no puede exceder 10 caracteres.'
+                    ]);
+                }
+                if (!preg_match('/^[A-Z0-9\-\_]+$/', $valor)) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El código solo puede contener letras mayúsculas, números, guiones y guiones bajos.'
+                    ]);
+                }
+
+                // Verificar si ya existe otra área con el mismo código
+                $empresa = $this->getEmpresa();
+                if ($empresa) {
+                    // Buscar área con el mismo código en la misma empresa, excluyendo el área actual
+                    $query = $this->areaRepositorio->getModel()->newQuery();
+                    $query->where('codigo', $valor)
+                          ->where('empresa_id', $empresa->id);
+                    
+                    if ($areaId) {
+                        $query->where('id', '!=', $areaId);
+                    }
+                    
+                    $existente = $query->first();
+                    
+                    if ($existente) {
+                        return response()->json([
+                            'valido' => false,
+                            'mensaje' => 'Ya existe un área con este código en la empresa.'
+                        ]);
+                    }
+                }
+                break;
+
+            case 'descripcion':
+                if (strlen($valor) > 500) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'La descripción no puede exceder 500 caracteres.'
+                    ]);
+                }
+                break;
+
+            default:
+                return response()->json([
+                    'valido' => false,
+                    'mensaje' => 'Campo no válido para validación.'
+                ]);
+        }
+
+        return response()->json([
+            'valido' => true,
+            'mensaje' => 'Campo válido.'
+        ]);
+    }
+
+    /**
+     * Obtener la empresa del usuario autenticado
+     */
+    private function getEmpresa()
+    {
+        $usuario = Auth::user();
+        return $this->empresaRepositorio->findOneBy('usuario_id', $usuario->id);
     }
 }

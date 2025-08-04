@@ -25,7 +25,7 @@ class DashboardController extends Controller
             'timeout' => 30,
             'verify' => false
         ]);
-        $this->baseUrl = env('PAGOS_MICROSERVICE_URL', 'http://34.173.216.37:3000/api');
+        $this->baseUrl = env('PAGOS_MICROSERVICE_URL', 'http://34.173.216.37:3000');
     }
 
     public function index()
@@ -85,16 +85,16 @@ class DashboardController extends Controller
     {
         try {
             // Obtener estadísticas generales de ingresos
-            $ingresosGenerales = $this->llamarApiIngresos('/estadisticas/ingresos/generales');
+            $ingresosGenerales = $this->llamarApiIngresos('/api/estadisticas/ingresos/generales');
             
             // Obtener ingresos del mes actual
-            $ingresosMesActual = $this->llamarApiIngresos('/estadisticas/ingresos/mes-actual');
+            $ingresosMesActual = $this->llamarApiIngresos('/api/estadisticas/ingresos/mes-actual');
             
             // Obtener ingresos por mes (últimos 12 meses)
-            $ingresosPorMes = $this->llamarApiIngresos('/estadisticas/ingresos/por-mes');
+            $ingresosPorMes = $this->llamarApiIngresos('/api/estadisticas/ingresos/por-mes');
             
             // Obtener estadísticas por planes
-            $estadisticasPorPlanes = $this->llamarApiIngresos('/estadisticas/ingresos/por-planes');
+            $estadisticasPorPlanes = $this->llamarApiIngresos('/api/estadisticas/ingresos/por-planes');
 
             // Si todas las APIs fallan, usar datos por defecto
             if (!$ingresosGenerales && !$ingresosMesActual && !$ingresosPorMes && !$estadisticasPorPlanes) {
@@ -141,19 +141,55 @@ class DashboardController extends Controller
 
     private function obtenerEmpresasRecientes()
     {
-        return Empresa::with(['planServicio', 'usuario'])
+        return Empresa::with(['usuario'])
             ->orderBy('id', 'desc') // Usar ID para ordenar por más recientes
             ->limit(5)
             ->get()
             ->map(function ($empresa) {
+                // Obtener plan del microservicio usando el usuario_id
+                $planInfo = $this->obtenerPlanUsuario($empresa->usuario_id);
+                
                 return [
                     'id' => $empresa->id,
                     'nombre' => $empresa->nombre,
-                    'plan' => $empresa->planServicio->nombre ?? 'Sin plan',
+                    'plan' => $planInfo['nombre'] ?? 'Sin plan',
                     'fecha' => 'ID: ' . $empresa->id, // Mostrar ID ya que no hay timestamps
                     'activo' => $empresa->usuario->activo ?? true // Usar el activo del usuario
                 ];
             });
+    }
+
+    /**
+     * Obtiene información del plan desde el microservicio
+     */
+    private function obtenerPlanUsuario($usuarioId)
+    {
+        try {
+            $response = $this->client->get($this->baseUrl . "/api/suscripciones/usuario/{$usuarioId}/activa", [
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json'
+                ]
+            ]);
+
+            $responseData = json_decode($response->getBody()->getContents(), true);
+            
+            if (isset($responseData['success']) && $responseData['success'] && isset($responseData['data']['suscripcion_activa'])) {
+                return [
+                    'nombre' => $responseData['data']['suscripcion_activa']['plan_nombre'] ?? 'Sin plan',
+                    'estado' => $responseData['data']['tiene_suscripcion_activa'] ? 'activo' : 'inactivo',
+                    'fecha_fin' => $responseData['data']['suscripcion_activa']['fecha_fin'] ?? null,
+                    'renovacion_automatica' => $responseData['data']['suscripcion_activa']['renovacion_automatica'] ?? false,
+                    'dias_restantes' => $responseData['data']['dias_restantes'] ?? 0
+                ];
+            }
+            
+            return ['nombre' => 'Sin plan', 'estado' => 'inactivo'];
+            
+        } catch (\Exception $e) {
+            Log::error("Error obteniendo plan del usuario {$usuarioId}: " . $e->getMessage());
+            return ['nombre' => 'Error consulta', 'estado' => 'error'];
+        }
     }
 
     private function obtenerEstadisticasBasicasDefault()
@@ -310,21 +346,21 @@ class DashboardController extends Controller
             
             switch ($tipo) {
                 case 'por-mes':
-                    $data = $this->llamarApiIngresos('/estadisticas/ingresos/por-mes');
+                    $data = $this->llamarApiIngresos('/api/estadisticas/ingresos/por-mes');
                     if (!$data) {
                         $fallbackData = $this->obtenerEstadisticasIngresosDefault();
                         $data = $fallbackData['por_mes'];
                     }
                     break;
                 case 'mes-actual':
-                    $data = $this->llamarApiIngresos('/estadisticas/ingresos/mes-actual');
+                    $data = $this->llamarApiIngresos('/api/estadisticas/ingresos/mes-actual');
                     if (!$data) {
                         $fallbackData = $this->obtenerEstadisticasIngresosDefault();
                         $data = $fallbackData['mes_actual'];
                     }
                     break;
                 case 'por-planes':
-                    $data = $this->llamarApiIngresos('/estadisticas/ingresos/por-planes');
+                    $data = $this->llamarApiIngresos('/api/estadisticas/ingresos/por-planes');
                     if (!$data) {
                         $fallbackData = $this->obtenerEstadisticasIngresosDefault();
                         $data = $fallbackData['por_planes'];
@@ -343,7 +379,7 @@ class DashboardController extends Controller
                     }
                     break;
                 default:
-                    $data = $this->llamarApiIngresos('/estadisticas/ingresos/generales');
+                    $data = $this->llamarApiIngresos('/api/estadisticas/ingresos/generales');
                     if (!$data) {
                         $fallbackData = $this->obtenerEstadisticasIngresosDefault();
                         $data = $fallbackData['generales'];

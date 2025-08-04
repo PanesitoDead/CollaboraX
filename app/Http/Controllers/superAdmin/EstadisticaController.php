@@ -21,7 +21,7 @@ class EstadisticaController extends Controller
             'timeout' => 30,
             'verify' => false
         ]);
-        $this->baseUrl = env('PAGOS_MICROSERVICE_URL', 'http://34.173.216.37:3000/api');
+        $this->baseUrl = env('PAGOS_MICROSERVICE_URL', 'http://34.173.216.37:3000');
     }
 
     /**
@@ -96,10 +96,10 @@ class EstadisticaController extends Controller
     private function obtenerEstadisticasIngresos()
     {
         try {
-            $ingresosGenerales = $this->llamarApiIngresos('/estadisticas/ingresos/generales');
-            $ingresosMesActual = $this->llamarApiIngresos('/estadisticas/ingresos/mes-actual');
-            $ingresosPorMes = $this->llamarApiIngresos('/estadisticas/ingresos/por-mes');
-            $estadisticasPorPlanes = $this->llamarApiIngresos('/estadisticas/ingresos/por-planes');
+            $ingresosGenerales = $this->llamarApiIngresos('/api/estadisticas/ingresos/generales');
+            $ingresosMesActual = $this->llamarApiIngresos('/api/estadisticas/ingresos/mes-actual');
+            $ingresosPorMes = $this->llamarApiIngresos('/api/estadisticas/ingresos/por-mes');
+            $estadisticasPorPlanes = $this->llamarApiIngresos('/api/estadisticas/ingresos/por-planes');
 
             return [
                 'generales' => $ingresosGenerales ?: $this->getDefaultIngresos()['generales'],

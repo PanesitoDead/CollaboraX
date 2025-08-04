@@ -12,7 +12,8 @@
   <div class="fixed inset-0 flex items-center justify-center p-4">
     <div
       id="contenidoModalEditarColaborador"
-      class="bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col overflow-hidden min-h-0 transform scale-95 transition-transform duration-300"
+      class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden transform scale-95 transition-transform duration-300"
+      style="height: fit-content; min-height: 300px;"
     >
       <form
         id="formularioEditarColaborador"
@@ -43,7 +44,8 @@
 
         <!-- Contenido scrollable -->
         <div
-          class="px-6 py-4 space-y-4 overflow-y-auto flex-1 max-h-[70vh] min-h-0"
+          class="px-6 py-4 space-y-4 overflow-y-auto flex-grow"
+          style="max-height: calc(90vh - 140px);"
         >
           <!-- Nombres -->
           <div>
@@ -60,7 +62,11 @@
               required
               class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-          </div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div id="errorNombresEditar" class="text-red-500 text-xs mt-1 hidden"></div>
+            <div id="successNombresEditar" class="text-green-500 text-xs mt-1 hidden"></div>
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <!-- Apellido Paterno -->
             <div>
               <label
@@ -76,6 +82,8 @@
                 required
                 class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              <div id="errorApellidoPaternoEditar" class="text-red-500 text-xs mt-1 hidden"></div>
+              <div id="successApellidoPaternoEditar" class="text-green-500 text-xs mt-1 hidden"></div>
             </div>
             <!-- Apellido Materno -->
             <div>
@@ -92,8 +100,9 @@
                 required
                 class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              <div id="errorApellidoMaternoEditar" class="text-red-500 text-xs mt-1 hidden"></div>
+              <div id="successApellidoMaternoEditar" class="text-green-500 text-xs mt-1 hidden"></div>
             </div>
-          <div>
           </div>
           <!-- Correo Personal -->
           <div>
@@ -109,6 +118,8 @@
               id="inputCorreoPersonalEditar"
               class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+            <div id="errorCorreoPersonalEditar" class="text-red-500 text-xs mt-1 hidden"></div>
+            <div id="successCorreoPersonalEditar" class="text-green-500 text-xs mt-1 hidden"></div>
           </div>
           <!-- Correo Corporativo (readonly) -->
           <div>
@@ -169,6 +180,8 @@
               id="inputDocumentoEditar"
               class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+            <div id="errorDocumentoEditar" class="text-red-500 text-xs mt-1 hidden"></div>
+            <div id="successDocumentoEditar" class="text-green-500 text-xs mt-1 hidden"></div>
           </div>
           <!-- Teléfono -->
           <div>
@@ -184,6 +197,8 @@
               id="inputTelefonoEditar"
               class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+            <div id="errorTelefonoEditar" class="text-red-500 text-xs mt-1 hidden"></div>
+            <div id="successTelefonoEditar" class="text-green-500 text-xs mt-1 hidden"></div>
           </div>
           <!-- Fecha de Nacimiento -->
           <div>
@@ -199,6 +214,8 @@
               id="inputNacimientoEditar"
               class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+            <div id="errorNacimientoEditar" class="text-red-500 text-xs mt-1 hidden"></div>
+            <div id="successNacimientoEditar" class="text-green-500 text-xs mt-1 hidden"></div>
           </div>
           <!-- Foto de Perfil con vista previa -->
           <div>
@@ -246,9 +263,13 @@
           </button>
           <button
             type="submit"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            id="btnActualizarColaborador"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            Guardar Cambios
+            <span id="btnTextoEditar">Guardar Cambios</span>
+            <span id="btnLoadingEditar" class="hidden">
+              <i class="fas fa-spinner fa-spin mr-2"></i>Validando...
+            </span>
           </button>
         </footer>
       </form>
@@ -258,6 +279,52 @@
 
 <script>
   let idColaboradorActual = null;
+  
+  // Variables para debounce
+  let timeoutNombresEditar = null;
+  let timeoutApellidoPaternoEditar = null;
+  let timeoutApellidoMaternoEditar = null;
+  let timeoutCorreoPersonalEditar = null;
+  let timeoutDocumentoEditar = null;
+  let timeoutTelefonoEditar = null;
+  let timeoutNacimientoEditar = null;
+
+  // Variable para rastrear el estado de validación de cada campo en edición
+  let estadosValidacionColaboradorEditar = {
+    nombres: null,           // null = no validado, true = válido, false = inválido
+    apellidoPaterno: null,
+    apellidoMaterno: null,
+    correoPersonal: null,
+    documento: true,         // opcional
+    telefono: true,          // opcional
+    nacimiento: true         // opcional
+  };
+
+  // Función para verificar si el formulario de edición es válido
+  function formularioColaboradorEditarEsValido() {
+    // Verificar que todos los campos requeridos estén validados y sean válidos
+    return estadosValidacionColaboradorEditar.nombres === true && 
+           estadosValidacionColaboradorEditar.apellidoPaterno === true && 
+           estadosValidacionColaboradorEditar.apellidoMaterno === true &&
+           estadosValidacionColaboradorEditar.correoPersonal === true;
+    // Los campos opcionales no afectan la validez si están en null o true
+  }
+
+  // Función para actualizar el estado del botón de envío de edición
+  function actualizarBotonEnvioColaboradorEditar() {
+    const btnEnviar = document.getElementById('btnActualizarColaborador');
+    if (!btnEnviar) return;
+    
+    if (formularioColaboradorEditarEsValido()) {
+      btnEnviar.disabled = false;
+      btnEnviar.classList.remove('bg-gray-400', 'cursor-not-allowed');
+      btnEnviar.classList.add('bg-blue-600', 'hover:bg-blue-700');
+    } else {
+      btnEnviar.disabled = true;
+      btnEnviar.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+      btnEnviar.classList.add('bg-gray-400', 'cursor-not-allowed');
+    }
+  }
 
   async function abrirModalEditarColaborador(id) {
     idColaboradorActual = id;
@@ -272,6 +339,9 @@
       const respuesta = await fetch(`/admin/colaboradores/${id}`);
       if (!respuesta.ok) throw new Error('No se recibieron datos del colaborador');
       const data = await respuesta.json();
+
+      // Limpiar mensajes y estilos previos
+      limpiarCamposYMensajesEditar();
 
       // Rellenar campos con los datos recibidos
       document.getElementById('inputNombresEditar').value = data.nombres ?? '';
@@ -293,6 +363,26 @@
       } else {
         imgPreview.classList.add('hidden');
       }
+
+      // Validar campos prellenados y actualizar estados
+      setTimeout(() => {
+        // Validar campos requeridos que vienen prellenados
+        if (data.nombres) {
+          estadosValidacionColaboradorEditar.nombres = true;
+        }
+        if (data.apellido_paterno) {
+          estadosValidacionColaboradorEditar.apellidoPaterno = true;
+        }
+        if (data.apellido_materno) {
+          estadosValidacionColaboradorEditar.apellidoMaterno = true;
+        }
+        if (data.correo_personal) {
+          estadosValidacionColaboradorEditar.correoPersonal = true;
+        }
+        
+        // Los campos opcionales ya están en true por defecto
+        actualizarBotonEnvioColaboradorEditar();
+      }, 100);
 
       // Mostrar modal con animación
       const modal = document.getElementById('modalEditarColaborador');
@@ -320,6 +410,349 @@
   }
 
   /**
+   * Limpia todos los campos y mensajes del modal de edición
+   */
+  function limpiarCamposYMensajesEditar() {
+    // Limpiar mensajes de error y éxito
+    const mensajes = ['NombresEditar', 'ApellidoPaternoEditar', 'ApellidoMaternoEditar', 'CorreoPersonalEditar', 
+                      'DocumentoEditar', 'TelefonoEditar', 'NacimientoEditar'];
+    mensajes.forEach(campo => {
+      const errorElement = document.getElementById(`error${campo}`);
+      const successElement = document.getElementById(`success${campo}`);
+      if (errorElement) errorElement.classList.add('hidden');
+      if (successElement) successElement.classList.add('hidden');
+    });
+
+    // Resetear estilos de los inputs
+    const inputs = document.querySelectorAll('#modalEditarColaborador input[type="text"], #modalEditarColaborador input[type="email"], #modalEditarColaborador input[type="tel"], #modalEditarColaborador input[type="date"]');
+    inputs.forEach(input => {
+      input.classList.remove('border-red-500', 'border-green-500');
+      input.classList.add('border-gray-300');
+    });
+
+    // Resetear estados de validación
+    estadosValidacionColaboradorEditar = {
+      nombres: null,
+      apellidoPaterno: null,
+      apellidoMaterno: null,
+      correoPersonal: null,
+      documento: true,     // opcional
+      telefono: true,      // opcional
+      nacimiento: true     // opcional
+    };
+
+    // Actualizar botón
+    actualizarBotonEnvioColaboradorEditar();
+  }
+
+  /**
+   * Muestra mensaje de error para edición
+   */
+  function mostrarErrorEditar(campo, mensaje) {
+    const errorElement = document.getElementById(`error${campo}`);
+    const successElement = document.getElementById(`success${campo}`);
+    
+    // Mapear nombres de campo para encontrar los inputs correctos y estados de validación
+    let inputId = '';
+    let campoValidacion = '';
+    switch (campo) {
+      case 'NombresEditar':
+        inputId = 'inputNombresEditar';
+        campoValidacion = 'nombres';
+        break;
+      case 'ApellidoPaternoEditar':
+        inputId = 'inputApellidoPaternoEditar';
+        campoValidacion = 'apellidoPaterno';
+        break;
+      case 'ApellidoMaternoEditar':
+        inputId = 'inputApellidoMaternoEditar';
+        campoValidacion = 'apellidoMaterno';
+        break;
+      case 'CorreoPersonalEditar':
+        inputId = 'inputCorreoPersonalEditar';
+        campoValidacion = 'correoPersonal';
+        break;
+      case 'DocumentoEditar':
+        inputId = 'inputDocumentoEditar';
+        campoValidacion = 'documento';
+        break;
+      case 'TelefonoEditar':
+        inputId = 'inputTelefonoEditar';
+        campoValidacion = 'telefono';
+        break;
+      case 'NacimientoEditar':
+        inputId = 'inputNacimientoEditar';
+        campoValidacion = 'nacimiento';
+        break;
+    }
+    
+    const inputElement = document.getElementById(inputId);
+
+    if (errorElement) {
+      errorElement.textContent = mensaje;
+      errorElement.classList.remove('hidden');
+    }
+    if (successElement) {
+      successElement.classList.add('hidden');
+    }
+    
+    if (inputElement) {
+      inputElement.classList.remove('border-gray-300', 'border-green-500');
+      inputElement.classList.add('border-red-500');
+    }
+
+    // Actualizar estado de validación
+    if (campoValidacion) {
+      estadosValidacionColaboradorEditar[campoValidacion] = false;
+      actualizarBotonEnvioColaboradorEditar();
+    }
+  }
+
+  /**
+   * Muestra mensaje de éxito para edición
+   */
+  function mostrarExitoEditar(campo, mensaje) {
+    const errorElement = document.getElementById(`error${campo}`);
+    const successElement = document.getElementById(`success${campo}`);
+    
+    // Mapear nombres de campo para encontrar los inputs correctos y estados de validación
+    let inputId = '';
+    let campoValidacion = '';
+    switch (campo) {
+      case 'NombresEditar':
+        inputId = 'inputNombresEditar';
+        campoValidacion = 'nombres';
+        break;
+      case 'ApellidoPaternoEditar':
+        inputId = 'inputApellidoPaternoEditar';
+        campoValidacion = 'apellidoPaterno';
+        break;
+      case 'ApellidoMaternoEditar':
+        inputId = 'inputApellidoMaternoEditar';
+        campoValidacion = 'apellidoMaterno';
+        break;
+      case 'CorreoPersonalEditar':
+        inputId = 'inputCorreoPersonalEditar';
+        campoValidacion = 'correoPersonal';
+        break;
+      case 'DocumentoEditar':
+        inputId = 'inputDocumentoEditar';
+        campoValidacion = 'documento';
+        break;
+      case 'TelefonoEditar':
+        inputId = 'inputTelefonoEditar';
+        campoValidacion = 'telefono';
+        break;
+      case 'NacimientoEditar':
+        inputId = 'inputNacimientoEditar';
+        campoValidacion = 'nacimiento';
+        break;
+    }
+    
+    const inputElement = document.getElementById(inputId);
+
+    if (successElement) {
+      successElement.textContent = mensaje;
+      successElement.classList.remove('hidden');
+    }
+    if (errorElement) {
+      errorElement.classList.add('hidden');
+    }
+    
+    if (inputElement) {
+      inputElement.classList.remove('border-gray-300', 'border-red-500');
+      inputElement.classList.add('border-green-500');
+    }
+
+    // Actualizar estado de validación
+    if (campoValidacion) {
+      estadosValidacionColaboradorEditar[campoValidacion] = true;
+      actualizarBotonEnvioColaboradorEditar();
+    }
+  }
+
+  /**
+   * Oculta todos los mensajes de un campo para edición
+   */
+  function ocultarMensajesEditar(campo) {
+    const errorElement = document.getElementById(`error${campo}`);
+    const successElement = document.getElementById(`success${campo}`);
+    
+    // Mapear nombres de campo para encontrar los inputs correctos y estados de validación
+    let inputId = '';
+    let campoValidacion = '';
+    switch (campo) {
+      case 'NombresEditar':
+        inputId = 'inputNombresEditar';
+        campoValidacion = 'nombres';
+        break;
+      case 'ApellidoPaternoEditar':
+        inputId = 'inputApellidoPaternoEditar';
+        campoValidacion = 'apellidoPaterno';
+        break;
+      case 'ApellidoMaternoEditar':
+        inputId = 'inputApellidoMaternoEditar';
+        campoValidacion = 'apellidoMaterno';
+        break;
+      case 'CorreoPersonalEditar':
+        inputId = 'inputCorreoPersonalEditar';
+        campoValidacion = 'correoPersonal';
+        break;
+      case 'DocumentoEditar':
+        inputId = 'inputDocumentoEditar';
+        campoValidacion = 'documento';
+        break;
+      case 'TelefonoEditar':
+        inputId = 'inputTelefonoEditar';
+        campoValidacion = 'telefono';
+        break;
+      case 'NacimientoEditar':
+        inputId = 'inputNacimientoEditar';
+        campoValidacion = 'nacimiento';
+        break;
+    }
+    
+    const inputElement = document.getElementById(inputId);
+
+    if (errorElement) {
+      errorElement.classList.add('hidden');
+    }
+    if (successElement) {
+      successElement.classList.add('hidden');
+    }
+    
+    if (inputElement) {
+      inputElement.classList.remove('border-red-500', 'border-green-500');
+      inputElement.classList.add('border-gray-300');
+    }
+
+    // Resetear estado de validación cuando se ocultan mensajes
+    if (campoValidacion) {
+      // Para campos opcionales, resetear a true; para requeridos, a null
+      if (['documento', 'telefono', 'nacimiento'].includes(campoValidacion)) {
+        estadosValidacionColaboradorEditar[campoValidacion] = true;
+      } else {
+        estadosValidacionColaboradorEditar[campoValidacion] = null;
+      }
+      actualizarBotonEnvioColaboradorEditar();
+    }
+  }
+
+  /**
+   * Valida un campo mediante AJAX para edición
+   */
+  function validarCampoEditar(campo, valor) {
+    if (!valor.trim()) {
+      ocultarMensajesEditar(campo);
+      return;
+    }
+
+    // Mapear los nombres de campos del frontend a los del backend
+    let campoBackend = campo.toLowerCase().replace('editar', '');
+    switch (campo) {
+      case 'NombresEditar':
+        campoBackend = 'nombres';
+        break;
+      case 'ApellidoPaternoEditar':
+        campoBackend = 'apellido_paterno';
+        break;
+      case 'ApellidoMaternoEditar':
+        campoBackend = 'apellido_materno';
+        break;
+      case 'DocumentoEditar':
+        campoBackend = 'doc_identidad';
+        break;
+      case 'TelefonoEditar':
+        campoBackend = 'telefono';
+        break;
+      case 'NacimientoEditar':
+        campoBackend = 'fecha_nacimiento';
+        break;
+    }
+
+    console.log('Validando campo edición:', campo, 'Backend:', campoBackend, 'Valor:', valor);
+
+    fetch('{{ route("admin.colaboradores.validar-campo-edicion") }}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify({
+        campo: campoBackend,
+        valor: valor
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log('Respuesta del servidor edición:', data);
+      if (data.valido) {
+        mostrarExitoEditar(campo, data.mensaje);
+      } else {
+        mostrarErrorEditar(campo, data.mensaje);
+      }
+    })
+    .catch(error => {
+      console.error('Error en la validación de edición:', error);
+      mostrarErrorEditar(campo, 'Error de conexión al validar el campo.');
+    });
+  }
+
+  /**
+   * Valida el correo personal para edición
+   */
+  function validarCorreoPersonalEditar() {
+    const correoPersonal = document.getElementById('inputCorreoPersonalEditar').value.trim();
+    
+    if (!correoPersonal) {
+      ocultarMensajesEditar('CorreoPersonalEditar');
+      return;
+    }
+
+    fetch('{{ route("admin.colaboradores.validar-correo-personal-edicion") }}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify({
+        correo_personal: correoPersonal,
+        colaborador_id: idColaboradorActual
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.valido) {
+        mostrarExitoEditar('CorreoPersonalEditar', data.mensaje);
+      } else {
+        mostrarErrorEditar('CorreoPersonalEditar', data.mensaje);
+      }
+    })
+    .catch(error => {
+      console.error('Error en la validación del correo personal para edición:', error);
+    });
+  }
+
+  /**
+   * Valida que todos los campos del formulario de edición sean válidos
+   */
+  function validarFormularioCompletoEditar() {
+    const nombres = document.getElementById('inputNombresEditar').value.trim();
+    const apellidoPaterno = document.getElementById('inputApellidoPaternoEditar').value.trim();
+    const apellidoMaterno = document.getElementById('inputApellidoMaternoEditar').value.trim();
+    const correoPersonal = document.getElementById('inputCorreoPersonalEditar').value.trim();
+
+    // Verificar que todos los campos requeridos estén llenos
+    if (!nombres || !apellidoPaterno || !apellidoMaterno || !correoPersonal) {
+      return false;
+    }
+
+    // Verificar que no haya mensajes de error visibles
+    const errores = document.querySelectorAll('#modalEditarColaborador [id^="error"]:not(.hidden)');
+    return errores.length === 0;
+  }
+
+  /**
    * Cierra el modal de edición del colaborador con animación inversa.
    */
   function cerrarModalEditarColaborador() {
@@ -339,6 +772,126 @@
       document.getElementById('vistaPreviaAvatarEditar').classList.add('hidden');
     }, 300);
   }
+
+  // Event listeners para validaciones en tiempo real
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, setting up edit validators');
+    
+    // Validación de nombres
+    const inputNombresEditar = document.getElementById('inputNombresEditar');
+    if (inputNombresEditar) {
+      inputNombresEditar.addEventListener('input', function() {
+        clearTimeout(timeoutNombresEditar);
+        timeoutNombresEditar = setTimeout(() => {
+          validarCampoEditar('NombresEditar', this.value);
+        }, 500);
+      });
+    }
+
+    // Validación de apellido paterno
+    const inputApellidoPaternoEditar = document.getElementById('inputApellidoPaternoEditar');
+    if (inputApellidoPaternoEditar) {
+      inputApellidoPaternoEditar.addEventListener('input', function() {
+        clearTimeout(timeoutApellidoPaternoEditar);
+        timeoutApellidoPaternoEditar = setTimeout(() => {
+          validarCampoEditar('ApellidoPaternoEditar', this.value);
+        }, 500);
+      });
+    }
+
+    // Validación de apellido materno
+    const inputApellidoMaternoEditar = document.getElementById('inputApellidoMaternoEditar');
+    if (inputApellidoMaternoEditar) {
+      inputApellidoMaternoEditar.addEventListener('input', function() {
+        clearTimeout(timeoutApellidoMaternoEditar);
+        timeoutApellidoMaternoEditar = setTimeout(() => {
+          validarCampoEditar('ApellidoMaternoEditar', this.value);
+        }, 500);
+      });
+    }
+
+    // Validación de correo personal
+    const inputCorreoPersonalEditar = document.getElementById('inputCorreoPersonalEditar');
+    if (inputCorreoPersonalEditar) {
+      inputCorreoPersonalEditar.addEventListener('input', function() {
+        clearTimeout(timeoutCorreoPersonalEditar);
+        timeoutCorreoPersonalEditar = setTimeout(() => {
+          validarCorreoPersonalEditar();
+        }, 800);
+      });
+    }
+
+    // Validación de documento
+    const inputDocumentoEditar = document.getElementById('inputDocumentoEditar');
+    if (inputDocumentoEditar) {
+      inputDocumentoEditar.addEventListener('input', function() {
+        clearTimeout(timeoutDocumentoEditar);
+        timeoutDocumentoEditar = setTimeout(() => {
+          validarCampoEditar('DocumentoEditar', this.value);
+        }, 500);
+      });
+    }
+
+    // Validación de teléfono
+    const inputTelefonoEditar = document.getElementById('inputTelefonoEditar');
+    if (inputTelefonoEditar) {
+      inputTelefonoEditar.addEventListener('input', function() {
+        clearTimeout(timeoutTelefonoEditar);
+        timeoutTelefonoEditar = setTimeout(() => {
+          validarCampoEditar('TelefonoEditar', this.value);
+        }, 500);
+      });
+    }
+
+    // Validación de fecha de nacimiento
+    const inputNacimientoEditar = document.getElementById('inputNacimientoEditar');
+    if (inputNacimientoEditar) {
+      inputNacimientoEditar.addEventListener('change', function() {
+        validarCampoEditar('NacimientoEditar', this.value);
+      });
+    }
+
+    // Manejo del envío del formulario de edición
+    const formularioEditar = document.getElementById('formularioEditarColaborador');
+    if (formularioEditar) {
+      formularioEditar.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Verificar si el formulario es válido antes de enviar
+        if (!formularioColaboradorEditarEsValido()) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Formulario incompleto',
+            text: 'Por favor, complete todos los campos requeridos correctamente antes de guardar.',
+            showConfirmButton: true,
+            timer: 5000
+          });
+          return false;
+        }
+        
+        const btnSubmit = document.getElementById('btnActualizarColaborador');
+        const btnTexto = document.getElementById('btnTextoEditar');
+        const btnLoading = document.getElementById('btnLoadingEditar');
+        
+        // Deshabilitar botón y mostrar loading
+        if (btnSubmit) btnSubmit.disabled = true;
+        if (btnTexto) btnTexto.classList.add('hidden');
+        if (btnLoading) btnLoading.classList.remove('hidden');
+        
+        // Validar todos los campos antes de enviar
+        if (validarFormularioCompletoEditar()) {
+          this.submit();
+        } else {
+          // Rehabilitar botón si hay errores
+          if (btnSubmit) btnSubmit.disabled = false;
+          if (btnTexto) btnTexto.classList.remove('hidden');
+          if (btnLoading) btnLoading.classList.add('hidden');
+          
+          alert('Por favor, corrija los errores en el formulario antes de continuar.');
+        }
+      });
+    }
+  });
 
   // Listener para actualizar la vista previa de la foto cuando seleccionan un archivo nuevo
   document.getElementById('avatarEditar').addEventListener('change', function (e) {

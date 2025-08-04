@@ -13,10 +13,10 @@
             <p class="text-gray-600">Gestiona todas las empresas del sistema</p>
         </div>
         <div class="flex items-center gap-2">
-            <button id="exportBtn" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            {{-- <button id="exportBtn" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                 <i data-lucide="download" class="w-4 h-4 mr-2"></i>
                 Exportar Datos
-            </button>
+            </button> --}}
         </div>
     </div>
     {{-- Filters --}}

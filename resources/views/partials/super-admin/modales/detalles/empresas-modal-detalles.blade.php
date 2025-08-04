@@ -119,7 +119,7 @@
 
       // Estado con estilos
       const estadoEl = document.getElementById('estadoEmpresa');
-      const activo = data.status === 'active';
+      const activo = data.activo === true;
       estadoEl.textContent = activo ? 'Activo' : 'Inactivo';
       estadoEl.className = `
         inline-block px-2 py-1 text-xs font-semibold rounded-full

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Repositories\EmpresaRepositorio;
 use App\Traits\Http\Controllers\CriterioTrait;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class EmpresasController extends Controller
@@ -105,6 +107,83 @@ class EmpresasController extends Controller
             return redirect()->route('super-admin.empresas.index')->with('error', 'Error al actualizar la empresa.');
         }
         return redirect()->route('super-admin.empresas.index')->with('success', 'Empresa actualizada correctamente.');
+    }
+
+    /**
+     * Validar campo individual para edición de empresas
+     */
+    public function validarCampo(Request $request)
+    {
+        $campo = $request->input('campo');
+        $valor = $request->input('valor');
+        $empresaId = $request->input('empresa_id');
+        
+        Log::info('Validando campo empresa', ['campo' => $campo, 'valor' => $valor, 'empresa_id' => $empresaId]);
+        
+        $rules = [];
+        $messages = [];
+        
+        switch ($campo) {
+            case 'nombre':
+                $rules = ['required', 'string', 'max:255', 'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ0-9 .,&-]+$/'];
+                $messages = [
+                    'required' => 'El nombre de la empresa es obligatorio.',
+                    'string' => 'El nombre debe ser una cadena de texto.',
+                    'max' => 'El nombre no puede superar los 255 caracteres.',
+                    'regex' => 'El nombre solo puede contener letras, números, espacios y algunos caracteres especiales (.,&-).',
+                ];
+                break;
+            case 'descripcion':
+                if (empty($valor)) {
+                    return response()->json(['valido' => true, 'mensaje' => 'Descripción válida (opcional).']);
+                }
+                $rules = ['string', 'max:500'];
+                $messages = [
+                    'string' => 'La descripción debe ser una cadena de texto.',
+                    'max' => 'La descripción no puede superar los 500 caracteres.',
+                ];
+                break;
+            case 'ruc':
+                $rules = ['required', 'string', 'size:11', 'regex:/^[0-9]+$/'];
+                
+                // Si estamos editando, excluir el RUC actual de la validación de unicidad
+                if ($empresaId) {
+                    $rules[] = "unique:empresas,ruc,{$empresaId}";
+                } else {
+                    $rules[] = 'unique:empresas,ruc';
+                }
+                
+                $messages = [
+                    'required' => 'El RUC es obligatorio.',
+                    'string' => 'El RUC debe ser una cadena de texto.',
+                    'size' => 'El RUC debe tener exactamente 11 dígitos.',
+                    'regex' => 'El RUC solo puede contener números.',
+                    'unique' => 'Este RUC ya está registrado por otra empresa.',
+                ];
+                break;
+            case 'telefono':
+                if (empty($valor)) {
+                    return response()->json(['valido' => true, 'mensaje' => 'Teléfono válido (opcional).']);
+                }
+                $rules = ['string', 'regex:/^[0-9+\-\s()]+$/', 'max:20'];
+                $messages = [
+                    'string' => 'El teléfono debe ser una cadena de texto.',
+                    'regex' => 'El teléfono solo puede contener números, espacios y los caracteres +, -, ( ).',
+                    'max' => 'El teléfono no puede superar los 20 caracteres.',
+                ];
+                break;
+            default:
+                Log::warning('Campo no reconocido para validación de empresa', ['campo' => $campo]);
+                return response()->json(['valido' => false, 'mensaje' => 'Campo no válido para validación.']);
+        }
+        
+        $validator = Validator::make([$campo => $valor], [$campo => $rules], $messages);
+        
+        if ($validator->fails()) {
+            return response()->json(['valido' => false, 'mensaje' => $validator->errors()->first($campo)]);
+        }
+        
+        return response()->json(['valido' => true, 'mensaje' => 'Campo válido.']);
     }
 
     /**

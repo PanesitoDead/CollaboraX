@@ -12,7 +12,7 @@
             <h1 class="text-2xl font-bold text-gray-900">Estadísticas del Sistema</h1>
             <p class="text-gray-600">Datos reales del sistema y métricas de ingresos</p>
             <div class="mt-2 text-sm text-green-600 font-medium">
-                ✅ Mostrando datos reales de la base de datos y API de pagos
+                ✅ Mostrando datos dela base de datos y API de pagos
             </div>
         </div>
         <div class="flex items-center gap-4">
@@ -22,10 +22,10 @@
                 <option value="90">Últimos 3 meses</option>
                 <option value="365">Último año</option>
             </select>
-            <button class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            {{-- <button class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                 <i data-lucide="download" class="h-4 w-4 mr-2"></i>
                 Exportar Reporte
-            </button>
+            </button> --}}
         </div>
     </div>
 
@@ -44,7 +44,7 @@
                     'label' => 'Ingresos Totales',
                     'value' => 'S/ ' . number_format($total_income, 2),
                     'icon'  => 'dollar-sign',
-                    'text'  => "Datos reales de API de pagos",
+                    'text'  => "Datos de API de pagos",
                     'color' => 'text-blue-600'
                 ],
                 [

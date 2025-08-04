@@ -45,27 +45,6 @@
         <div
           class="px-6 py-4 space-y-4 overflow-y-auto flex-1 max-h-[70vh] min-h-0"
         >
-          <!-- Selección de Plan -->
-          <div>
-            <label
-              for="inputPlanEmpresa"
-              class="block mb-1 text-sm font-medium text-gray-700"
-            >
-              Plan de Servicio
-            </label>
-            <select
-              name="plan_servicio_id"
-              id="inputPlanEmpresa"
-              required
-              class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">-- Seleccionar plan --</option>
-              <option value="1">Estándar</option>
-              <option value="2">Business</option>
-              <option value="3">Enterprise</option>
-            </select>
-          </div>
-
           <!-- Nombre de la empresa -->
           <div>
             <label
@@ -81,6 +60,8 @@
               required
               class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+            <div id="errorNombreEmpresa" class="text-red-500 text-xs mt-1 hidden"></div>
+            <div id="successNombreEmpresa" class="text-green-500 text-xs mt-1 hidden"></div>
           </div>
 
           <!-- Descripción -->
@@ -97,6 +78,8 @@
               rows="3"
               class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             ></textarea>
+            <div id="errorDescripcionEmpresa" class="text-red-500 text-xs mt-1 hidden"></div>
+            <div id="successDescripcionEmpresa" class="text-green-500 text-xs mt-1 hidden"></div>
           </div>
 
           <!-- RUC y Teléfono en dos columnas -->
@@ -115,6 +98,8 @@
                 required
                 class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              <div id="errorRucEmpresa" class="text-red-500 text-xs mt-1 hidden"></div>
+              <div id="successRucEmpresa" class="text-green-500 text-xs mt-1 hidden"></div>
             </div>
             <div>
               <label
@@ -129,6 +114,8 @@
                 id="inputTelefonoEmpresa"
                 class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              <div id="errorTelefonoEmpresa" class="text-red-500 text-xs mt-1 hidden"></div>
+              <div id="successTelefonoEmpresa" class="text-green-500 text-xs mt-1 hidden"></div>
             </div>
           </div>
 
@@ -214,9 +201,13 @@
           </button>
           <button
             type="submit"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            id="btnActualizarEmpresa"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             <span id="textoEnviarEmpresa">Actualizar Empresa</span>
+            <span id="btnLoadingEmpresa" class="hidden">
+              <i class="fas fa-spinner fa-spin mr-2"></i>Validando...
+            </span>
           </button>
         </footer>
       </form>
@@ -226,6 +217,44 @@
 
 <script>
   let idEmpresaActual = null;
+
+  // Variables para debounce
+  let timeoutNombreEmpresa = null;
+  let timeoutDescripcionEmpresa = null;
+  let timeoutRucEmpresa = null;
+  let timeoutTelefonoEmpresa = null;
+
+  // Variable para rastrear el estado de validación de cada campo
+  let estadosValidacionEmpresa = {
+    nombre: null,           // null = no validado, true = válido, false = inválido
+    descripcion: true,      // opcional
+    ruc: null,              // requerido
+    telefono: true          // opcional
+  };
+
+  // Función para verificar si el formulario de empresa es válido
+  function formularioEmpresaEsValido() {
+    // Verificar que todos los campos requeridos estén validados y sean válidos
+    return estadosValidacionEmpresa.nombre === true && 
+           estadosValidacionEmpresa.ruc === true;
+    // Los campos opcionales no afectan la validez si están en null o true
+  }
+
+  // Función para actualizar el estado del botón de envío
+  function actualizarBotonEnvioEmpresa() {
+    const btnEnviar = document.getElementById('btnActualizarEmpresa');
+    if (!btnEnviar) return;
+    
+    if (formularioEmpresaEsValido()) {
+      btnEnviar.disabled = false;
+      btnEnviar.classList.remove('bg-gray-400', 'cursor-not-allowed');
+      btnEnviar.classList.add('bg-blue-600', 'hover:bg-blue-700');
+    } else {
+      btnEnviar.disabled = true;
+      btnEnviar.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+      btnEnviar.classList.add('bg-gray-400', 'cursor-not-allowed');
+    }
+  }
 
   async function abrirModalEmpresa(id) {
     idEmpresaActual = id;
@@ -241,7 +270,9 @@
       if (!respuesta.ok) throw new Error('No se recibieron datos de la empresa');
       const data = await respuesta.json();
 
-      document.getElementById('inputPlanEmpresa').value = data.plan_servicio_id?.toString() ?? '';
+      // Limpiar mensajes y estilos previos
+      limpiarCamposYMensajesEmpresa();
+
       document.getElementById('inputNombreEmpresa').value = data.nombre ?? '';
       document.getElementById('inputDescripcionEmpresa').value = data.descripcion ?? '';
       document.getElementById('inputRucEmpresa').value = data.ruc ?? '';
@@ -249,6 +280,20 @@
       document.getElementById('inputCorreoEmpresa').value = data.correo ?? '';
       document.getElementById('inputActivoEmpresa').value = data.activo ? '1' : '0';
       document.getElementById('vistaPreviaAvatar').src = '/images/default-avatar.png';
+
+      // Validar campos prellenados y actualizar estados
+      setTimeout(() => {
+        // Validar campos requeridos que vienen prellenados
+        if (data.nombre) {
+          estadosValidacionEmpresa.nombre = true;
+        }
+        if (data.ruc) {
+          estadosValidacionEmpresa.ruc = true;
+        }
+        
+        // Los campos opcionales ya están en true por defecto
+        actualizarBotonEnvioEmpresa();
+      }, 100);
 
       // Mostrar modal con animación
       const modal = document.getElementById('modalEmpresa');
@@ -270,6 +315,267 @@
   }
 
   /**
+   * Limpia todos los campos y mensajes del modal de empresa
+   */
+  function limpiarCamposYMensajesEmpresa() {
+    // Limpiar mensajes de error y éxito
+    const mensajes = ['NombreEmpresa', 'DescripcionEmpresa', 'RucEmpresa', 'TelefonoEmpresa'];
+    mensajes.forEach(campo => {
+      const errorElement = document.getElementById(`error${campo}`);
+      const successElement = document.getElementById(`success${campo}`);
+      if (errorElement) errorElement.classList.add('hidden');
+      if (successElement) successElement.classList.add('hidden');
+    });
+
+    // Resetear estilos de los inputs
+    const inputs = document.querySelectorAll('#modalEmpresa input[type="text"], #modalEmpresa input[type="tel"], #modalEmpresa textarea');
+    inputs.forEach(input => {
+      input.classList.remove('border-red-500', 'border-green-500');
+      input.classList.add('border-gray-300');
+    });
+
+    // Resetear estados de validación
+    estadosValidacionEmpresa = {
+      nombre: null,
+      descripcion: true,   // opcional
+      ruc: null,
+      telefono: true       // opcional
+    };
+
+    // Actualizar botón
+    actualizarBotonEnvioEmpresa();
+  }
+
+  /**
+   * Muestra mensaje de error para empresa
+   */
+  function mostrarErrorEmpresa(campo, mensaje) {
+    const errorElement = document.getElementById(`error${campo}`);
+    const successElement = document.getElementById(`success${campo}`);
+    
+    // Mapear nombres de campo para encontrar los inputs correctos y estados de validación
+    let inputId = '';
+    let campoValidacion = '';
+    switch (campo) {
+      case 'NombreEmpresa':
+        inputId = 'inputNombreEmpresa';
+        campoValidacion = 'nombre';
+        break;
+      case 'DescripcionEmpresa':
+        inputId = 'inputDescripcionEmpresa';
+        campoValidacion = 'descripcion';
+        break;
+      case 'RucEmpresa':
+        inputId = 'inputRucEmpresa';
+        campoValidacion = 'ruc';
+        break;
+      case 'TelefonoEmpresa':
+        inputId = 'inputTelefonoEmpresa';
+        campoValidacion = 'telefono';
+        break;
+    }
+    
+    const inputElement = document.getElementById(inputId);
+
+    if (errorElement) {
+      errorElement.textContent = mensaje;
+      errorElement.classList.remove('hidden');
+    }
+    if (successElement) {
+      successElement.classList.add('hidden');
+    }
+    
+    if (inputElement) {
+      inputElement.classList.remove('border-gray-300', 'border-green-500');
+      inputElement.classList.add('border-red-500');
+    }
+
+    // Actualizar estado de validación
+    if (campoValidacion) {
+      estadosValidacionEmpresa[campoValidacion] = false;
+      actualizarBotonEnvioEmpresa();
+    }
+  }
+
+  /**
+   * Muestra mensaje de éxito para empresa
+   */
+  function mostrarExitoEmpresa(campo, mensaje) {
+    const errorElement = document.getElementById(`error${campo}`);
+    const successElement = document.getElementById(`success${campo}`);
+    
+    // Mapear nombres de campo para encontrar los inputs correctos y estados de validación
+    let inputId = '';
+    let campoValidacion = '';
+    switch (campo) {
+      case 'NombreEmpresa':
+        inputId = 'inputNombreEmpresa';
+        campoValidacion = 'nombre';
+        break;
+      case 'DescripcionEmpresa':
+        inputId = 'inputDescripcionEmpresa';
+        campoValidacion = 'descripcion';
+        break;
+      case 'RucEmpresa':
+        inputId = 'inputRucEmpresa';
+        campoValidacion = 'ruc';
+        break;
+      case 'TelefonoEmpresa':
+        inputId = 'inputTelefonoEmpresa';
+        campoValidacion = 'telefono';
+        break;
+    }
+    
+    const inputElement = document.getElementById(inputId);
+
+    if (successElement) {
+      successElement.textContent = mensaje;
+      successElement.classList.remove('hidden');
+    }
+    if (errorElement) {
+      errorElement.classList.add('hidden');
+    }
+    
+    if (inputElement) {
+      inputElement.classList.remove('border-gray-300', 'border-red-500');
+      inputElement.classList.add('border-green-500');
+    }
+
+    // Actualizar estado de validación
+    if (campoValidacion) {
+      estadosValidacionEmpresa[campoValidacion] = true;
+      actualizarBotonEnvioEmpresa();
+    }
+  }
+
+  /**
+   * Oculta todos los mensajes de un campo para empresa
+   */
+  function ocultarMensajesEmpresa(campo) {
+    const errorElement = document.getElementById(`error${campo}`);
+    const successElement = document.getElementById(`success${campo}`);
+    
+    // Mapear nombres de campo para encontrar los inputs correctos y estados de validación
+    let inputId = '';
+    let campoValidacion = '';
+    switch (campo) {
+      case 'NombreEmpresa':
+        inputId = 'inputNombreEmpresa';
+        campoValidacion = 'nombre';
+        break;
+      case 'DescripcionEmpresa':
+        inputId = 'inputDescripcionEmpresa';
+        campoValidacion = 'descripcion';
+        break;
+      case 'RucEmpresa':
+        inputId = 'inputRucEmpresa';
+        campoValidacion = 'ruc';
+        break;
+      case 'TelefonoEmpresa':
+        inputId = 'inputTelefonoEmpresa';
+        campoValidacion = 'telefono';
+        break;
+    }
+    
+    const inputElement = document.getElementById(inputId);
+
+    if (errorElement) {
+      errorElement.classList.add('hidden');
+    }
+    if (successElement) {
+      successElement.classList.add('hidden');
+    }
+    
+    if (inputElement) {
+      inputElement.classList.remove('border-red-500', 'border-green-500');
+      inputElement.classList.add('border-gray-300');
+    }
+
+    // Resetear estado de validación cuando se ocultan mensajes
+    if (campoValidacion) {
+      // Para campos opcionales, resetear a true; para requeridos, a null
+      if (['descripcion', 'telefono'].includes(campoValidacion)) {
+        estadosValidacionEmpresa[campoValidacion] = true;
+      } else {
+        estadosValidacionEmpresa[campoValidacion] = null;
+      }
+      actualizarBotonEnvioEmpresa();
+    }
+  }
+
+  /**
+   * Valida un campo mediante AJAX para empresa
+   */
+  function validarCampoEmpresa(campo, valor) {
+    if (!valor.trim()) {
+      ocultarMensajesEmpresa(campo);
+      return;
+    }
+
+    // Mapear los nombres de campos del frontend a los del backend
+    let campoBackend = campo.toLowerCase().replace('empresa', '');
+    switch (campo) {
+      case 'NombreEmpresa':
+        campoBackend = 'nombre';
+        break;
+      case 'DescripcionEmpresa':
+        campoBackend = 'descripcion';
+        break;
+      case 'RucEmpresa':
+        campoBackend = 'ruc';
+        break;
+      case 'TelefonoEmpresa':
+        campoBackend = 'telefono';
+        break;
+    }
+
+    console.log('Validando campo empresa:', campo, 'Backend:', campoBackend, 'Valor:', valor);
+
+    fetch('/super-admin/empresas/validar-campo', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify({
+        campo: campoBackend,
+        valor: valor,
+        empresa_id: idEmpresaActual
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log('Respuesta del servidor empresa:', data);
+      if (data.valido) {
+        mostrarExitoEmpresa(campo, data.mensaje);
+      } else {
+        mostrarErrorEmpresa(campo, data.mensaje);
+      }
+    })
+    .catch(error => {
+      console.error('Error en la validación de empresa:', error);
+      mostrarErrorEmpresa(campo, 'Error de conexión al validar el campo.');
+    });
+  }
+
+  /**
+   * Valida que todos los campos del formulario de empresa sean válidos
+   */
+  function validarFormularioCompletoEmpresa() {
+    const nombre = document.getElementById('inputNombreEmpresa').value.trim();
+    const ruc = document.getElementById('inputRucEmpresa').value.trim();
+
+    // Verificar que todos los campos requeridos estén llenos
+    if (!nombre || !ruc) {
+      return false;
+    }
+
+    // Verificar que no haya mensajes de error visibles
+    const errores = document.querySelectorAll('#modalEmpresa [id^="error"]:not(.hidden)');
+    return errores.length === 0;
+  }
+
+  /**
    * Cierra el modal de edición de empresa con animación inversa.
    */
   function cerrarModalEmpresa() {
@@ -287,6 +593,122 @@
       document.getElementById('campoMetodoEmpresa').innerHTML = '';
     }, 300);
   }
+
+  // Event listeners para validaciones en tiempo real
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, setting up empresa validators');
+    
+    // Inicializar el botón como deshabilitado
+    actualizarBotonEnvioEmpresa();
+    
+    // Validación de nombre
+    const inputNombreEmpresa = document.getElementById('inputNombreEmpresa');
+    if (inputNombreEmpresa) {
+      inputNombreEmpresa.addEventListener('input', function() {
+        clearTimeout(timeoutNombreEmpresa);
+        timeoutNombreEmpresa = setTimeout(() => {
+          validarCampoEmpresa('NombreEmpresa', this.value);
+        }, 500);
+      });
+    }
+
+    // Validación de descripción
+    const inputDescripcionEmpresa = document.getElementById('inputDescripcionEmpresa');
+    if (inputDescripcionEmpresa) {
+      inputDescripcionEmpresa.addEventListener('input', function() {
+        clearTimeout(timeoutDescripcionEmpresa);
+        timeoutDescripcionEmpresa = setTimeout(() => {
+          validarCampoEmpresa('DescripcionEmpresa', this.value);
+        }, 500);
+      });
+    }
+
+    // Validación de RUC
+    const inputRucEmpresa = document.getElementById('inputRucEmpresa');
+    if (inputRucEmpresa) {
+      inputRucEmpresa.addEventListener('input', function() {
+        clearTimeout(timeoutRucEmpresa);
+        timeoutRucEmpresa = setTimeout(() => {
+          validarCampoEmpresa('RucEmpresa', this.value);
+        }, 500);
+      });
+    }
+
+    // Validación de teléfono
+    const inputTelefonoEmpresa = document.getElementById('inputTelefonoEmpresa');
+    if (inputTelefonoEmpresa) {
+      inputTelefonoEmpresa.addEventListener('input', function() {
+        clearTimeout(timeoutTelefonoEmpresa);
+        timeoutTelefonoEmpresa = setTimeout(() => {
+          validarCampoEmpresa('TelefonoEmpresa', this.value);
+        }, 500);
+      });
+    }
+
+    // Manejo del envío del formulario de empresa
+    const formularioEmpresa = document.getElementById('formularioEmpresa');
+    if (formularioEmpresa) {
+      formularioEmpresa.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Verificar si el formulario es válido antes de enviar
+        if (!formularioEmpresaEsValido()) {
+          if (typeof Swal !== 'undefined') {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Formulario incompleto',
+              text: 'Por favor, complete todos los campos requeridos correctamente antes de guardar.',
+              showConfirmButton: true,
+              timer: 5000
+            });
+          } else {
+            alert('Por favor, complete todos los campos requeridos correctamente antes de guardar.');
+          }
+          return false;
+        }
+        
+        const btnSubmit = document.getElementById('btnActualizarEmpresa');
+        const btnTexto = document.getElementById('textoEnviarEmpresa');
+        const btnLoading = document.getElementById('btnLoadingEmpresa');
+        
+        // Deshabilitar botón y mostrar loading
+        if (btnSubmit) btnSubmit.disabled = true;
+        if (btnTexto) btnTexto.classList.add('hidden');
+        if (btnLoading) btnLoading.classList.remove('hidden');
+        
+        // Validar todos los campos antes de enviar
+        if (validarFormularioCompletoEmpresa()) {
+          this.submit();
+        } else {
+          // Rehabilitar botón si hay errores
+          if (btnSubmit) btnSubmit.disabled = false;
+          if (btnTexto) btnTexto.classList.remove('hidden');
+          if (btnLoading) btnLoading.classList.add('hidden');
+          
+          alert('Por favor, corrija los errores en el formulario antes de continuar.');
+        }
+      });
+    }
+  });
+
+  // Listener para actualizar la vista previa de la foto cuando seleccionan un archivo nuevo
+  document.addEventListener('DOMContentLoaded', function() {
+    const avatarInput = document.getElementById('avatarEmpresa');
+    if (avatarInput) {
+      avatarInput.addEventListener('change', function (e) {
+        const archivo = e.target.files[0];
+        const imgPreview = document.getElementById('vistaPreviaAvatar');
+        if (archivo) {
+          const lector = new FileReader();
+          lector.onload = () => {
+            imgPreview.src = lector.result;
+            imgPreview.classList.remove('hidden');
+          };
+          lector.readAsDataURL(archivo);
+        }
+      });
+    }
+  });
 
   // Cerrar modal cuando se presiona la tecla "Escape"
   document.addEventListener('keydown', (e) => {

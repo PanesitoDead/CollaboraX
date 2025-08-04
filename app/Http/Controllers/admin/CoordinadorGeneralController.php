@@ -146,4 +146,225 @@ class CoordinadorGeneralController extends Controller
         }
         return $empresa;
     }
+
+    /**
+     * Validar campo para edición de coordinador general
+     */
+    public function validarCampoEdicion(Request $request)
+    {
+        $campo = $request->input('campo');
+        $valor = $request->input('valor');
+        $coordinadorId = $request->input('coordinador_id');
+
+        // Validaciones básicas
+        if (empty($valor)) {
+            return response()->json([
+                'valido' => false,
+                'mensaje' => 'Este campo es obligatorio.'
+            ]);
+        }
+
+        switch ($campo) {
+            case 'nombres':
+                if (strlen($valor) < 2) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'Los nombres deben tener al menos 2 caracteres.'
+                    ]);
+                }
+                if (strlen($valor) > 100) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'Los nombres no pueden exceder 100 caracteres.'
+                    ]);
+                }
+                if (!preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/', $valor)) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'Los nombres solo pueden contener letras y espacios.'
+                    ]);
+                }
+                return response()->json([
+                    'valido' => true,
+                    'mensaje' => 'Nombres válidos.'
+                ]);
+
+            case 'apellido_paterno':
+                if (strlen($valor) < 2) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El apellido paterno debe tener al menos 2 caracteres.'
+                    ]);
+                }
+                if (strlen($valor) > 50) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El apellido paterno no puede exceder 50 caracteres.'
+                    ]);
+                }
+                if (!preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/', $valor)) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El apellido paterno solo puede contener letras y espacios.'
+                    ]);
+                }
+                return response()->json([
+                    'valido' => true,
+                    'mensaje' => 'Apellido paterno válido.'
+                ]);
+
+            case 'apellido_materno':
+                if (strlen($valor) < 2) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El apellido materno debe tener al menos 2 caracteres.'
+                    ]);
+                }
+                if (strlen($valor) > 50) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El apellido materno no puede exceder 50 caracteres.'
+                    ]);
+                }
+                if (!preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/', $valor)) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El apellido materno solo puede contener letras y espacios.'
+                    ]);
+                }
+                return response()->json([
+                    'valido' => true,
+                    'mensaje' => 'Apellido materno válido.'
+                ]);
+
+            case 'documento':
+                if (strlen($valor) < 8) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El documento debe tener al menos 8 caracteres.'
+                    ]);
+                }
+                if (strlen($valor) > 20) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El documento no puede exceder 20 caracteres.'
+                    ]);
+                }
+                if (!preg_match('/^[0-9]+$/', $valor)) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El documento solo puede contener números.'
+                    ]);
+                }
+
+                // Verificar si ya existe otro coordinador con el mismo documento
+                $coordinadorExistente = $this->trabajadorRepositorio->findOneBy('doc_identidad', $valor);
+                if ($coordinadorExistente && $coordinadorExistente->id != $coordinadorId) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'Ya existe un coordinador con este documento.'
+                    ]);
+                }
+
+                return response()->json([
+                    'valido' => true,
+                    'mensaje' => 'Documento válido y disponible.'
+                ]);
+
+            case 'telefono':
+                if (strlen($valor) < 9) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El teléfono debe tener al menos 9 dígitos.'
+                    ]);
+                }
+                if (strlen($valor) > 15) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El teléfono no puede exceder 15 dígitos.'
+                    ]);
+                }
+                if (!preg_match('/^[0-9+\-\s]+$/', $valor)) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El teléfono solo puede contener números, +, - y espacios.'
+                    ]);
+                }
+                return response()->json([
+                    'valido' => true,
+                    'mensaje' => 'Teléfono válido.'
+                ]);
+
+            case 'fecha_nacimiento':
+                $fecha = Carbon::createFromFormat('Y-m-d', $valor);
+                $hoy = Carbon::now();
+                $edad = $fecha->diffInYears($hoy);
+
+                if ($edad < 18) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El coordinador debe ser mayor de edad (18 años).'
+                    ]);
+                }
+                if ($edad > 100) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'La fecha de nacimiento no es válida.'
+                    ]);
+                }
+                return response()->json([
+                    'valido' => true,
+                    'mensaje' => 'Fecha de nacimiento válida.'
+                ]);
+
+            default:
+                return response()->json([
+                    'valido' => false,
+                    'mensaje' => 'Campo no reconocido.'
+                ]);
+        }
+    }
+
+    /**
+     * Validar correo personal para edición de coordinador general
+     */
+    public function validarCorreoPersonalEdicion(Request $request)
+    {
+        $correoPersonal = $request->input('correo_personal');
+        $coordinadorId = $request->input('coordinador_id');
+
+        // Validación básica
+        if (empty($correoPersonal)) {
+            return response()->json([
+                'valido' => false,
+                'mensaje' => 'El correo personal es obligatorio.'
+            ]);
+        }
+
+        // Validar formato de correo
+        if (!filter_var($correoPersonal, FILTER_VALIDATE_EMAIL)) {
+            return response()->json([
+                'valido' => false,
+                'mensaje' => 'El formato del correo no es válido.'
+            ]);
+        }
+
+        // Verificar si ya existe otro coordinador con el mismo correo personal
+        $usuarioExistente = $this->usuarioRepositorio->findOneBy('correo_personal', $correoPersonal);
+        if ($usuarioExistente) {
+            // Verificar si es un trabajador diferente al que se está editando
+            $trabajadorExistente = $this->trabajadorRepositorio->findOneBy('usuario_id', $usuarioExistente->id);
+            if ($trabajadorExistente && $trabajadorExistente->id != $coordinadorId) {
+                return response()->json([
+                    'valido' => false,
+                    'mensaje' => 'Ya existe un coordinador con este correo personal.'
+                ]);
+            }
+        }
+
+        return response()->json([
+            'valido' => true,
+            'mensaje' => 'Correo personal válido y disponible.'
+        ]);
+    }
 }

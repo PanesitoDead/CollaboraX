@@ -323,7 +323,7 @@ class SuscripcionController extends Controller
     {
         try {
             // Redirigir directamente a la API externa para descargar el comprobante
-            $url = env('PAGOS_MICROSERVICE_URL', 'http://34.173.216.37:3000/api') . "/pagos/{$pagoId}/comprobante";
+            $url = env('PAGOS_MICROSERVICE_URL', 'http://34.173.216.37:3000') . "/api/pagos/{$pagoId}/comprobante";
             return redirect($url);
         } catch (\Exception $e) {
             return response()->json([
@@ -455,6 +455,14 @@ class SuscripcionController extends Controller
                 $resultado = $this->suscripcionService->cancelarRenovacionAutomatica($suscripcionId);
             }
 
+            // Limpiar cache del usuario para forzar actualización de datos
+            if (isset($resultado['success']) && $resultado['success']) {
+                $usuario = Auth::user();
+                $usuarioId = $usuario->id;
+                Cache::forget("resumen_usuario_{$usuarioId}");
+                Log::info("Cache limpiado para usuario {$usuarioId} después de cambiar renovación automática");
+            }
+
             return response()->json($resultado);
         } catch (\Exception $e) {
             Log::error('Error al cambiar renovación automática: ' . $e->getMessage());
@@ -473,13 +481,17 @@ class SuscripcionController extends Controller
         try {
             $usuario = Auth::user();
             $usuarioId = $usuario->id;
+            
+            // Verificar si se solicita actualización forzada
+            $forzarActualizacion = request()->boolean('forzar_actualizacion', true); // Por defecto forzar para obtener datos frescos
 
-            $resumen = $this->suscripcionService->obtenerResumenUsuario($usuarioId);
+            $resumen = $this->suscripcionService->obtenerResumenUsuario($usuarioId, $forzarActualizacion);
 
             if ($resumen) {
                 return response()->json([
                     'success' => true,
-                    'data' => $resumen
+                    'data' => $resumen,
+                    'message' => $forzarActualizacion ? 'Datos actualizados desde el servidor' : 'Datos obtenidos correctamente'
                 ]);
             }
 
@@ -492,6 +504,30 @@ class SuscripcionController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener resumen del usuario'
+            ], 500);
+        }
+    }
+
+    /**
+     * Limpiar cache del usuario para forzar actualización
+     */
+    public function limpiarCache()
+    {
+        try {
+            $usuario = Auth::user();
+            $usuarioId = $usuario->id;
+            
+            $this->suscripcionService->limpiarCacheUsuario($usuarioId);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Cache limpiado correctamente'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error al limpiar cache: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al limpiar cache'
             ], 500);
         }
     }

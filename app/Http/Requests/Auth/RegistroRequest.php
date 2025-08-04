@@ -29,7 +29,6 @@ class RegistroRequest extends FormRequest
             'descripcion' => ['nullable', 'string', 'max:1000'],
             'ruc' => ['required', 'string', 'digits:11', 'unique:empresas,ruc'],
             'telefono' => ['required', 'digits:9'],
-            'plan' => ['required', 'exists:plan_servicios,id'],
             'terms' => ['accepted'],
         ];
     }
@@ -61,9 +60,6 @@ class RegistroRequest extends FormRequest
 
             'telefono.required' => 'El teléfono es obligatorio.',
             'telefono.digits'   => 'El teléfono debe contener exactamente 9 dígitos y no puede tener letras.',
-
-            'plan.required' => 'Debe seleccionar un plan.',
-            'plan.exists'   => 'El plan seleccionado no es válido.',
 
             'terms.accepted' => 'Debe aceptar los términos y condiciones.',
         ];

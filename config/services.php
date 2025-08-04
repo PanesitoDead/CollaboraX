@@ -31,4 +31,20 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Microservicio de Suscripciones/Pagos
+    |--------------------------------------------------------------------------
+    |
+    | Configuración para el microservicio que maneja las suscripciones y pagos
+    | con Mercado Pago. Este microservicio reemplaza el uso del campo obsoleto
+    | plan_servicio_id en la tabla empresas.
+    |
+    */
+    'suscripciones' => [
+        'url' => env('PAGOS_MICROSERVICE_URL', 'http://34.173.216.37:3000'),
+        'api_key' => env('PAGOS_MICROSERVICE_API_KEY', 'default-api-key'),
+        'timeout' => env('PAGOS_MICROSERVICE_TIMEOUT', 30),
+    ],
+
 ];

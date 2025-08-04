@@ -47,6 +47,7 @@ class CoordinadorEquipoController extends Controller
 
     public function getPaginado(Request $request)
     {
+        /** @var \App\Models\Usuario $usuario */
         $usuario = Auth::user();
         $empresa = $this->empresaRepositorio->findOneBy('usuario_id', $usuario->id);
 
@@ -131,18 +132,212 @@ class CoordinadorEquipoController extends Controller
         $trabajador->fecha_nacimiento = $request->input('fecha_nacimiento');
         $trabajador->save();
 
-        return redirect()->route('admin.coordinadores-equipos.index')->with('success', 'Colaborador actualizado correctamente.');
+        return redirect()->route('admin.coordinadores-equipos.index')->with('success', 'Datos actualizados exitosamente');
+    }
+
+    /**
+     * Valida campos específicos para edición de coordinadores de equipo
+     */
+    public function validarCampoEdicion(Request $request)
+    {
+        $campo = $request->input('campo');
+        $valor = $request->input('valor');
+        $coordinadorId = $request->input('coordinador_id');
+
+        // Validaciones básicas según el campo
+        switch ($campo) {
+            case 'nombres':
+                if (empty(trim($valor))) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'Los nombres son obligatorios.'
+                    ]);
+                }
+                if (strlen($valor) < 2) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'Los nombres deben tener al menos 2 caracteres.'
+                    ]);
+                }
+                if (strlen($valor) > 50) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'Los nombres no pueden exceder 50 caracteres.'
+                    ]);
+                }
+                break;
+
+            case 'apellido_paterno':
+                if (empty(trim($valor))) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El apellido paterno es obligatorio.'
+                    ]);
+                }
+                if (strlen($valor) < 2) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El apellido paterno debe tener al menos 2 caracteres.'
+                    ]);
+                }
+                if (strlen($valor) > 50) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El apellido paterno no puede exceder 50 caracteres.'
+                    ]);
+                }
+                break;
+
+            case 'apellido_materno':
+                if (empty(trim($valor))) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El apellido materno es obligatorio.'
+                    ]);
+                }
+                if (strlen($valor) < 2) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El apellido materno debe tener al menos 2 caracteres.'
+                    ]);
+                }
+                if (strlen($valor) > 50) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El apellido materno no puede exceder 50 caracteres.'
+                    ]);
+                }
+                break;
+
+            case 'documento':
+                if (empty(trim($valor))) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El documento es obligatorio.'
+                    ]);
+                }
+                if (strlen($valor) < 8) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El documento debe tener al menos 8 caracteres.'
+                    ]);
+                }
+                
+                // Verificar si ya existe otro coordinador con el mismo documento
+                $coordinadorExistente = $this->trabajadorRepositorio->findOneBy('doc_identidad', $valor);
+                if ($coordinadorExistente && $coordinadorExistente->id != $coordinadorId) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'Ya existe un coordinador con este documento.'
+                    ]);
+                }
+                break;
+
+            case 'telefono':
+                if (empty(trim($valor))) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El teléfono es obligatorio.'
+                    ]);
+                }
+                if (!preg_match('/^\d{9}$/', $valor)) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El teléfono debe tener exactamente 9 dígitos.'
+                    ]);
+                }
+                break;
+
+            case 'fecha_nacimiento':
+                if (empty(trim($valor))) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'La fecha de nacimiento es obligatoria.'
+                    ]);
+                }
+                
+                $fechaNacimiento = Carbon::parse($valor);
+                $edad = $fechaNacimiento->diffInYears(Carbon::now());
+                
+                if ($edad < 18) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'El coordinador debe ser mayor de edad.'
+                    ]);
+                }
+                if ($edad > 65) {
+                    return response()->json([
+                        'valido' => false,
+                        'mensaje' => 'La edad no puede ser mayor a 65 años.'
+                    ]);
+                }
+                break;
+
+            default:
+                return response()->json([
+                    'valido' => false,
+                    'mensaje' => 'Campo no válido para validación.'
+                ]);
+        }
+
+        return response()->json([
+            'valido' => true,
+            'mensaje' => 'Campo válido.'
+        ]);
+    }
+
+    /**
+     * Valida correo personal específicamente para edición de coordinadores
+     */
+    public function validarCorreoPersonalEdicion(Request $request)
+    {
+        $correo = $request->input('correo_personal');
+        $coordinadorId = $request->input('coordinador_id');
+
+        // Validación básica de formato
+        if (empty(trim($correo))) {
+            return response()->json([
+                'valido' => false,
+                'mensaje' => 'El correo personal es obligatorio.'
+            ]);
+        }
+
+        if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+            return response()->json([
+                'valido' => false,
+                'mensaje' => 'El formato del correo no es válido.'
+            ]);
+        }
+
+        // Verificar si ya existe otro coordinador con el mismo correo personal
+        $usuarioExistente = $this->usuarioRepositorio->findOneBy('correo_personal', $correo);
+        if ($usuarioExistente) {
+            // Verificar si es un trabajador diferente al que se está editando
+            $trabajadorExistente = $this->trabajadorRepositorio->findOneBy('usuario_id', $usuarioExistente->id);
+            if ($trabajadorExistente && $trabajadorExistente->id != $coordinadorId) {
+                return response()->json([
+                    'valido' => false,
+                    'mensaje' => 'Ya existe un coordinador con este correo personal.'
+                ]);
+            }
+        }
+
+        return response()->json([
+            'valido' => true,
+            'mensaje' => 'Correo válido y disponible.'
+        ]);
     }
 
     public function getEmpresa()
     {
+        /** @var \App\Models\Usuario $usuario */
         $usuario = Auth::user();
         if (!$usuario) {
-            return redirect()->route('admin.dashboard')->with('error', 'Usuario no autenticado.');
+            return null;
         }
         $empresa = $this->empresaRepositorio->findOneBy('usuario_id', $usuario->id);
         if (!$empresa) {
-            return redirect()->route('admin.dashboard')->with('error', 'No se encontró la empresa asociada al usuario.');
+            return null;
         }
         return $empresa;
     }

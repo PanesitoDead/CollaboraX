@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Auth\RegistroRequest;
 use App\Repositories\EmpresaRepositorio;
-use App\Repositories\PlanRepositorio;
 use App\Repositories\UsuarioRepositorio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,13 +14,11 @@ use Illuminate\Support\Facades\Log;
 class AuthController extends Controller
 {
 
-    protected PlanRepositorio $planRepositorio;
     protected UsuarioRepositorio $usuarioRepositorio;
     protected EmpresaRepositorio $empresaRepositorio;
 
-    public function __construct(PlanRepositorio $planRepositorio, UsuarioRepositorio $usuarioRepositorio, EmpresaRepositorio $empresaRepositorio)
+    public function __construct(UsuarioRepositorio $usuarioRepositorio, EmpresaRepositorio $empresaRepositorio)
     {
-        $this->planRepositorio = $planRepositorio;
         $this->usuarioRepositorio = $usuarioRepositorio;
         $this->empresaRepositorio = $empresaRepositorio;
     }
@@ -65,21 +62,27 @@ class AuthController extends Controller
 
     public function showRegisterForm()
     {
-        $planes = $this->planRepositorio->getAll();
-        return view('public.auth.register', ['planes' => $planes]);
+        return view('public.auth.register');
     }
 
     public function register(RegistroRequest $request)
     {
+        // Debug: Log de inicio
+        Log::info('=== INICIO REGISTRO ===');
+        Log::info('Datos recibidos:', $request->all());
+        
         DB::beginTransaction();
 
         try {
             $correoGenerado = $request->email . '@collaborax.com';
+            Log::info('Correo generado: ' . $correoGenerado);
 
             if ($this->usuarioRepositorio->existeCorreo($correoGenerado)) {
+                Log::info('Error: El correo ya existe');
                 return back()->withErrors(['email' => 'El correo ya está registrado.'])->withInput();
             }
 
+            Log::info('Creando usuario...');
             $usuario = $this->usuarioRepositorio->create([
                 'correo' => $correoGenerado,
                 'correo_personal' => $request->email_personal,
@@ -91,23 +94,30 @@ class AuthController extends Controller
                 'ultima_conexion' => now(),
                 'foto' => null,
             ]);
+            Log::info('Usuario creado exitosamente con ID: ' . $usuario->id);
 
-            $this->empresaRepositorio->create([
+            Log::info('Creando empresa...');
+            $empresa = $this->empresaRepositorio->create([
                 'usuario_id' => $usuario->id,
-                'plan_servicio_id' =>(int) $request->plan,
                 'nombre' => $request->nombre,
                 'descripcion' => $request->descripcion,
                 'ruc' => $request->ruc,
                 'telefono' => $request->telefono,
             ]);
+            Log::info('Empresa creada exitosamente con ID: ' . $empresa->id);
 
             DB::commit();
+            Log::info('=== REGISTRO COMPLETADO EXITOSAMENTE ===');
 
             return redirect()->route('login')->with('success', 'Cuenta registrada exitosamente.');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error en registro: ' . $e->getMessage());
-            return back()->withErrors(['error' => 'Ocurrió un error durante el registro.'])->withInput();
+            Log::error('=== ERROR EN REGISTRO ===');
+            Log::error('Mensaje: ' . $e->getMessage());
+            Log::error('Archivo: ' . $e->getFile() . ' Línea: ' . $e->getLine());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            Log::error('=========================');
+            return back()->withErrors(['error' => 'Ocurrió un error durante el registro: ' . $e->getMessage()])->withInput();
         }
     }
 

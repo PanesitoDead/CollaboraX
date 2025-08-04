@@ -3,11 +3,11 @@
     {{-- Estado de la Suscripción Actual --}}
     <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
         <div class="flex items-start justify-between">
-            <div class="flex items-center">
+            <div class="flex items-center flex-1">
                 <div class="flex-shrink-0">
                     <i data-lucide="credit-card" class="h-8 w-8 text-blue-600"></i>
                 </div>
-                <div class="ml-4">
+                <div class="ml-4 flex-1">
                     <h3 class="text-lg font-medium text-gray-900">
                         @if(isset($tieneSuscripcionActiva) && $tieneSuscripcionActiva && isset($suscripcionActual) && $suscripcionActual)
                             @if(isset($suscripcionActual['plan_nombre']))
@@ -76,41 +76,57 @@
                     </div>
                 </div>
             </div>
-            <div class="flex gap-2">
+            
+            {{-- Panel de acciones organizadas --}}
+            <div class="ml-6 flex-shrink-0 suscripcion-actions-panel">
                 @if(!isset($tieneSuscripcionActiva) || !$tieneSuscripcionActiva)
-                    {{-- No hay suscripción activa - El botón principal está abajo en la sección de planes --}}
-                    <div class="text-sm text-gray-600">
-                        <i data-lucide="info" class="inline w-4 h-4 mr-1"></i>
-                        Selecciona un plan de suscripción para comenzar
+                    {{-- No hay suscripción activa --}}
+                    <div class="text-sm text-gray-600 text-center p-4">
+                        <i data-lucide="info" class="inline w-5 h-5 mb-2"></i>
+                        <br><span class="text-xs">Selecciona un plan para comenzar</span>
                     </div>
                 @else
-                    {{-- Hay suscripción activa - Mostrar opciones de gestión --}}
-                    <button id="btnCambiarPlan" 
-                            class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                        <i data-lucide="refresh-cw" class="h-4 w-4 mr-2"></i>
-                        Cambiar
-                    </button>
-                    
-                    {{-- Switch de renovación automática --}}
-                    <div class="flex items-center">
-                        <label class="flex items-center cursor-pointer">
-                            <input type="checkbox" 
-                                   id="autoRenovacionToggle"
-                                   @if(isset($suscripcionActual['renovacion_automatica']) && $suscripcionActual['renovacion_automatica']) checked @endif
-                                   class="sr-only">
-                            <div class="relative">
-                                <div class="block bg-gray-300 w-10 h-6 rounded-full"></div>
-                                <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition"></div>
+                    {{-- Hay suscripción activa - Panel de gestión bien organizado --}}
+                    <div class="space-y-3">
+                        {{-- Primera fila: Botones de acción en grid 3x1 --}}
+                        <div class="grid grid-cols-3 gap-2">
+                            <button id="btnActualizarDatos" 
+                                    class="inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                                <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
+                                <span class="text-sm">Actualizar</span>
+                            </button>
+                            
+                            <button id="btnCambiarPlan" 
+                                    class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                <i data-lucide="edit" class="w-4 h-4 mr-2"></i>
+                                <span class="text-sm">Cambiar</span>
+                            </button>
+                            
+                            <button id="btnCancelarSuscripcion" 
+                                    class="inline-flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                                <i data-lucide="x-circle" class="w-4 h-4 mr-2"></i>
+                                <span class="text-sm">Cancelar</span>
+                            </button>
+                        </div>
+                        
+                        {{-- Segunda fila: Switch de renovación automática centrado --}}
+                        <div class="flex justify-center pt-2">
+                            <div class="auto-renovar-container bg-white border border-gray-200 rounded-lg px-4 py-2.5 shadow-sm hover:shadow-md transition-all duration-200">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" 
+                                           id="autoRenovacionToggle"
+                                           data-suscripcion-id="{{ isset($suscripcionActual['id']) ? $suscripcionActual['id'] : '' }}"
+                                           @if(isset($suscripcionActual['renovacion_automatica']) && $suscripcionActual['renovacion_automatica']) checked @endif
+                                           class="sr-only">
+                                    <div class="toggle-container relative mr-3">
+                                        <div class="toggle-bg block w-10 h-6 rounded-full transition-colors duration-200 @if(isset($suscripcionActual['renovacion_automatica']) && $suscripcionActual['renovacion_automatica']) bg-blue-500 @else bg-gray-300 @endif"></div>
+                                        <div class="toggle-dot absolute bg-white w-5 h-5 rounded-full transition-transform duration-200 @if(isset($suscripcionActual['renovacion_automatica']) && $suscripcionActual['renovacion_automatica']) translate-x-4 @endif" style="left: 0.125rem; top: 0.125rem;"></div>
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-700">Auto-renovar</span>
+                                </label>
                             </div>
-                            <span class="ml-2 text-sm text-gray-700">Auto-renovar</span>
-                        </label>
+                        </div>
                     </div>
-                    
-                    <button id="btnCancelarSuscripcion" 
-                            class="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 transition-colors">
-                        <i data-lucide="x-circle" class="h-4 w-4 mr-2"></i>
-                        Cancelar
-                    </button>
                 @endif
             </div>
         </div>
@@ -198,8 +214,8 @@
             <h4 class="text-lg font-medium text-gray-900">Historial de Pagos</h4>
             <div class="flex gap-2">
                 <button id="btnActualizarHistorial" 
-                        class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                    <i data-lucide="refresh-cw" class="h-4 w-4 mr-2"></i>
+                        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
                     Actualizar
                 </button>
             </div>

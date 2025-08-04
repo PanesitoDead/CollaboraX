@@ -149,14 +149,14 @@
                     </div>
 
                     {{-- Errores paso 2 --}}
-                    @if ($errors->hasAny(['email_personal', 'telefono', 'plan']))
+                    @if ($errors->hasAny(['email_personal', 'telefono']))
                         <div class="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
                             <div class="flex items-center mb-1">
                                 <i data-lucide="alert-circle" class="w-5 h-5 text-red-600 mr-2"></i>
                                 <span class="text-red-600 text-sm font-medium">Por favor corrige los errores</span>
                             </div>
                             <ul class="list-disc list-inside text-red-600 text-sm">
-                                @foreach (['email_personal', 'telefono', 'plan'] as $campo)
+                                @foreach (['email_personal', 'telefono'] as $campo)
                                     @foreach ($errors->get($campo) as $mensaje)
                                         <li>{{ $mensaje }}</li>
                                     @endforeach
@@ -205,28 +205,20 @@
                         @enderror
                     </div>
 
-                    {{-- Plan --}}
+                    {{-- Información sobre planes --}}
                     <div class="mb-6">
-                        <label for="plan" class="block text-sm font-medium text-gray-700 mb-1">Plan</label>
-                        <div class="relative">
-                            <i data-lucide="credit-card" class="absolute left-3 top-3 w-5 h-5 text-gray-400"></i>
-                            <select
-                                id="plan"
-                                name="plan"
-                                required
-                                class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            >
-                                <option value="">Seleccione un plan</option>
-                                @foreach ($planes as $plan)
-                                    <option value="{{ $plan->id }}" {{ old('plan') == $plan->id ? 'selected' : '' }}>
-                                        {{ $plan->nombre }}
-                                    </option>
-                                @endforeach
-                            </select>
+                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <div class="flex items-start">
+                                <i data-lucide="info" class="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0"></i>
+                                <div>
+                                    <h4 class="text-sm font-semibold text-blue-800 mb-1">Configuración de Plan</h4>
+                                    <p class="text-sm text-blue-700">
+                                        Podrás seleccionar y configurar tu plan de suscripción después del registro en la sección 
+                                        <span class="font-semibold">Configuración → Suscripciones y Pagos</span> de tu cuenta.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
-                        @error('plan')
-                            <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
-                        @enderror
                     </div>
 
                     <div class="flex justify-between">
@@ -420,7 +412,7 @@
         };
 
         // Si hay errores de validación, mostrar el paso correspondiente
-        @if ($errors->hasAny(['email_personal', 'telefono', 'plan']))
+        @if ($errors->hasAny(['email_personal', 'telefono']))
             showStep(2);
         @elseif ($errors->hasAny(['email', 'password', 'password_confirmation']))
             showStep(3);

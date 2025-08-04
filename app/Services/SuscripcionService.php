@@ -21,7 +21,7 @@ class SuscripcionService
         ]);
         
         // Configurar desde el archivo .env
-        $this->baseUrl = env('PAGOS_MICROSERVICE_URL', 'http://34.173.216.37:3000/api');
+        $this->baseUrl = env('PAGOS_MICROSERVICE_URL', 'http://34.173.216.37:3000');
         $this->apiKey = env('PAGOS_MICROSERVICE_API_KEY', 'default-api-key');
     }
 
@@ -36,7 +36,7 @@ class SuscripcionService
             // Intentar usar cache, si falla obtener directamente
             try {
                 return Cache::remember($cacheKey, 3600, function () { // Cache por 1 hora
-                    $response = $this->client->get($this->baseUrl . '/planes', [
+                    $response = $this->client->get($this->baseUrl . '/api/planes', [
                         'headers' => [
                             'Accept' => 'application/json',
                             'Content-Type' => 'application/json'
@@ -74,7 +74,7 @@ class SuscripcionService
                 // Si el cache falla, obtener directamente sin cache
                 Log::warning('Cache no disponible, obteniendo planes directamente: ' . $cacheException->getMessage());
                 
-                $response = $this->client->get($this->baseUrl . '/planes', [
+                $response = $this->client->get($this->baseUrl . '/api/planes', [
                     'headers' => [
                         'Accept' => 'application/json',
                         'Content-Type' => 'application/json'
@@ -115,23 +115,48 @@ class SuscripcionService
     }
 
     /**
-     * Obtener resumen completo del usuario (nueva funcionalidad)
+     * Limpiar cache del usuario para forzar actualización de datos
      */
-    public function obtenerResumenUsuario($usuarioId)
+    public function limpiarCacheUsuario($usuarioId)
+    {
+        $cacheKey = "resumen_usuario_{$usuarioId}";
+        Cache::forget($cacheKey);
+        Log::info("Cache limpiado manualmente para usuario {$usuarioId}");
+    }
+
+    /**
+     * Obtener resumen completo del usuario (nueva funcionalidad)
+     * @param int $usuarioId ID del usuario
+     * @param bool $forzarActualizacion Si es true, ignora el cache y obtiene datos frescos
+     */
+    public function obtenerResumenUsuario($usuarioId, $forzarActualizacion = false)
     {
         try {
             $cacheKey = "resumen_usuario_{$usuarioId}";
             
+            if ($forzarActualizacion) {
+                // Si se fuerza la actualización, eliminar el cache y obtener datos frescos
+                Cache::forget($cacheKey);
+                Log::info("Forzando actualización de datos para usuario {$usuarioId}");
+            }
+            
             return Cache::remember($cacheKey, 300, function () use ($usuarioId) { // Cache por 5 minutos
-                $response = $this->client->get($this->baseUrl . "/suscripciones/usuario/{$usuarioId}/resumen", [
+                $response = $this->client->get($this->baseUrl . "/api/suscripciones/usuario/{$usuarioId}/resumen", [
                     'headers' => [
                         'Accept' => 'application/json'
+                    ],
+                    'query' => [
+                        'timestamp' => time() // Evitar cache del navegador/proxy
                     ]
                 ]);
 
                 $data = json_decode($response->getBody()->getContents(), true);
                 
                 if (isset($data['success']) && $data['success'] === true && isset($data['data'])) {
+                    Log::info("Resumen actualizado para usuario {$usuarioId}", [
+                        'tiene_suscripcion' => $data['data']['tiene_suscripcion_activa'] ?? false,
+                        'plan' => $data['data']['suscripcion_activa']['plan_nombre'] ?? 'ninguno'
+                    ]);
                     return $data['data'];
                 }
                 
@@ -157,7 +182,7 @@ class SuscripcionService
             }
             
             // Fallback al endpoint original si el resumen no está disponible
-            $response = $this->client->get($this->baseUrl . "/suscripciones/usuario/{$usuarioId}/activa", [
+            $response = $this->client->get($this->baseUrl . "/api/suscripciones/usuario/{$usuarioId}/activa", [
                 'headers' => [
                     'Accept' => 'application/json'
                 ]
@@ -203,7 +228,7 @@ class SuscripcionService
             }
             
             // Fallback al endpoint específico de pagos para paginación completa
-            $response = $this->client->get($this->baseUrl . "/pagos/usuario/{$usuarioId}", [
+            $response = $this->client->get($this->baseUrl . "/api/pagos/usuario/{$usuarioId}", [
                 'headers' => [
                     'Accept' => 'application/json'
                 ],
@@ -296,7 +321,7 @@ class SuscripcionService
                 ];
             }
 
-            $response = $this->client->post($this->baseUrl . '/mercadopago/preferencia', [
+            $response = $this->client->post($this->baseUrl . '/api/mercadopago/preferencia', [
                 'headers' => [
                     'Accept' => 'application/json',
                     'Content-Type' => 'application/json'
@@ -363,7 +388,7 @@ class SuscripcionService
     public function verificarEstadoPago($pagoId)
     {
         try {
-            $response = $this->client->get($this->baseUrl . "/pagos/{$pagoId}", [
+            $response = $this->client->get($this->baseUrl . "/api/pagos/{$pagoId}", [
                 'headers' => [
                     'Accept' => 'application/json'
                 ]
@@ -386,11 +411,11 @@ class SuscripcionService
             Log::info('=== INICIANDO CANCELACIÓN DE SUSCRIPCIÓN ===', [
                 'usuario_id' => $usuarioId,
                 'suscripcion_id' => $suscripcionId,
-                'endpoint' => $this->baseUrl . "/suscripciones/{$suscripcionId}/estado"
+                'endpoint' => $this->baseUrl . "/api/suscripciones/{$suscripcionId}/estado"
             ]);
 
             // Usar el endpoint correcto según la documentación: PATCH /api/suscripciones/:id/estado
-            $response = $this->client->patch($this->baseUrl . "/suscripciones/{$suscripcionId}/estado", [
+            $response = $this->client->patch($this->baseUrl . "/api/suscripciones/{$suscripcionId}/estado", [
                 'headers' => [
                     'Accept' => 'application/json',
                     'Content-Type' => 'application/json'
@@ -471,7 +496,7 @@ class SuscripcionService
     public function renovarSuscripcion($suscripcionId)
     {
         try {
-            $response = $this->client->post($this->baseUrl . "/suscripciones/{$suscripcionId}/renovar", [
+            $response = $this->client->post($this->baseUrl . "/api/suscripciones/{$suscripcionId}/renovar", [
                 'headers' => [
                     'Accept' => 'application/json',
                     'Content-Type' => 'application/json'
@@ -505,7 +530,7 @@ class SuscripcionService
     public function cancelarRenovacionAutomatica($suscripcionId)
     {
         try {
-            $response = $this->client->patch($this->baseUrl . "/suscripciones/{$suscripcionId}/renovacion-automatica", [
+            $response = $this->client->patch($this->baseUrl . "/api/suscripciones/{$suscripcionId}/renovacion-automatica", [
                 'headers' => [
                     'Accept' => 'application/json',
                     'Content-Type' => 'application/json'

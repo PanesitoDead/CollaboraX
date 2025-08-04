@@ -12,18 +12,18 @@
             <p class="text-gray-600">Análisis y métricas de rendimiento de la empresa</p>
         </div>
         <div class="flex items-center gap-4">
-            <select class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            <select id="periodo-select" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             aria-label="Seleccionar periodo">
-                <option value="7">Últimos 7 días</option>
-                <option value="30" selected>Últimos 30 días</option>
-                <option value="90">Últimos 3 meses</option>
-                <option value="365">Último año</option>
+                <option value="7" {{ request('periodo') == 7 ? 'selected' : '' }}>Últimos 7 días</option>
+                <option value="30" {{ request('periodo', 30) == 30 ? 'selected' : '' }}>Últimos 30 días</option>
+                <option value="90" {{ request('periodo') == 90 ? 'selected' : '' }}>Últimos 3 meses</option>
+                <option value="365" {{ request('periodo') == 365 ? 'selected' : '' }}>Último año</option>
             </select>
-            <button
+            {{-- <button
             class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">
                 <i data-lucide="download" class="h-4 w-4 mr-2"></i>
                 Exportar Reporte
-            </button>
+            </button> --}}
         </div>
     </div>
 
@@ -88,6 +88,124 @@
         @endforeach
     </div>
 
+    {{-- Información del Plan --}}
+    <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center">
+                <i data-lucide="crown" class="w-5 h-5 mr-2 text-yellow-500"></i>
+                <h3 class="text-lg font-semibold text-gray-900">Plan Actual</h3>
+            </div>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium text-white {{ $infoDelPlan['color_estado'] ?? 'bg-gray-500' }}">
+                {{ $infoDelPlan['estado'] ?? 'Sin información' }}
+            </span>
+        </div>
+
+        @if(($infoDelPlan['estado'] ?? '') === 'Sin suscripción')
+            {{-- Mostrar información cuando no hay suscripción activa --}}
+            <div class="text-center py-8">
+                <div class="mb-4">
+                    <i data-lucide="alert-circle" class="w-16 h-16 mx-auto text-gray-400 mb-4"></i>
+                    <h4 class="text-xl font-semibold text-gray-900 mb-2">Sin Suscripción Activa</h4>
+                    <p class="text-gray-600 mb-6">No tienes ningún plan de suscripción activo en este momento</p>
+                </div>
+                
+                <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+                    <p class="text-sm text-orange-800">
+                        <i data-lucide="info" class="w-4 h-4 inline mr-1"></i>
+                        Para acceder a todas las funcionalidades de CollaboraX, necesitas suscribirte a uno de nuestros planes.
+                    </p>
+                </div>
+            </div>
+        @else
+            {{-- Mostrar información para plan con suscripción activa --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="text-center p-4 bg-gray-50 rounded-lg">
+                    <p class="text-2xl font-bold text-blue-600">{{ $infoDelPlan['nombre'] }}</p>
+                    <p class="text-sm text-gray-600">Plan Activo</p>
+                </div>
+
+                <div class="text-center p-4 bg-gray-50 rounded-lg">
+                    <p class="text-2xl font-bold text-green-600">
+                        S/. {{ number_format($infoDelPlan['plan']['precio'] ?? 0, 2) }}
+                    </p>
+                    <p class="text-sm text-gray-600">Precio {{ ucfirst($infoDelPlan['plan']['frecuencia'] ?? 'mensual') }}</p>
+                </div>
+
+                <div class="text-center p-4 bg-gray-50 rounded-lg">
+                    <p class="text-2xl font-bold text-purple-600">
+                        {{ (isset($infoDelPlan['limites']['trabajadores']) && $infoDelPlan['limites']['trabajadores'] == -1) ? '∞' : ($infoDelPlan['limites']['trabajadores'] ?? 'N/A') }}
+                    </p>
+                    <p class="text-sm text-gray-600">Límite Usuarios</p>
+                </div>
+
+                <div class="text-center p-4 bg-gray-50 rounded-lg">
+                    <p class="text-2xl font-bold text-orange-600">
+                        {{ (isset($infoDelPlan['funciones_avanzadas']) && $infoDelPlan['funciones_avanzadas']) ? 'Sí' : 'No' }}
+                    </p>
+                    <p class="text-sm text-gray-600">Funciones Avanzadas</p>
+                </div>
+            </div>
+
+            {{-- Información adicional del plan --}}
+            @if(isset($infoDelPlan['plan']) && $infoDelPlan['plan'])
+                <div class="mt-4">
+                    {{-- Descripción del plan --}}
+                    @if(isset($infoDelPlan['plan']['descripcion']))
+                        <div class="mb-4 p-4 bg-blue-50 rounded-lg">
+                            <h4 class="text-sm font-semibold text-blue-900 mb-2">Descripción del Plan</h4>
+                            <p class="text-sm text-blue-800">{{ $infoDelPlan['plan']['descripcion'] }}</p>
+                        </div>
+                    @endif
+
+                    {{-- Información de tiempo y renovación --}}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        @if(isset($infoDelPlan['dias_restantes']))
+                            <div class="text-center p-3 bg-yellow-50 rounded-lg">
+                                <p class="text-lg font-bold text-yellow-600">{{ $infoDelPlan['dias_restantes'] }}</p>
+                                <p class="text-sm text-gray-600">Días Restantes</p>
+                            </div>
+                        @endif
+
+                        @if(isset($infoDelPlan['renovacion_automatica']))
+                            <div class="text-center p-3 bg-green-50 rounded-lg">
+                                <p class="text-lg font-bold text-green-600">
+                                    {{ $infoDelPlan['renovacion_automatica'] ? 'Activada' : 'Desactivada' }}
+                                </p>
+                                <p class="text-sm text-gray-600">Renovación Automática</p>
+                            </div>
+                        @endif
+                    </div>
+
+                    {{-- Beneficios del plan --}}
+                    @if(isset($infoDelPlan['plan']['beneficios']) && is_array($infoDelPlan['plan']['beneficios']) && !empty($infoDelPlan['plan']['beneficios']))
+                        <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                            <h4 class="text-sm font-semibold text-gray-900 mb-3">Beneficios Incluidos</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                @foreach($infoDelPlan['plan']['beneficios'] as $beneficio)
+                                    <div class="flex items-center text-sm text-gray-700">
+                                        <i data-lucide="check" class="w-4 h-4 mr-2 text-green-500"></i>
+                                        {{ $beneficio }}
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            @endif
+
+            @if(isset($infoDelPlan['fecha_vencimiento']) && $infoDelPlan['fecha_vencimiento'])
+                <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p class="text-sm text-yellow-800">
+                        <i data-lucide="calendar" class="w-4 h-4 inline mr-1"></i>
+                        Vence el {{ \Carbon\Carbon::parse($infoDelPlan['fecha_vencimiento'])->format('d/m/Y') }}
+                        @if(isset($infoDelPlan['renovacion_automatica']) && $infoDelPlan['renovacion_automatica'])
+                            <span class="text-green-600">(Renovación automática activada)</span>
+                        @endif
+                    </p>
+                </div>
+            @endif
+        @endif
+    </div>
 
     {{-- Charts Section --}}
     <div class="grid gap-6 lg:grid-cols-2">
@@ -213,70 +331,85 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
+    // Manejar cambio de período
+    const periodoSelect = document.getElementById('periodo-select');
+    if (periodoSelect) {
+      periodoSelect.addEventListener('change', function() {
+        const periodo = this.value;
+        const url = new URL(window.location);
+        url.searchParams.set('periodo', periodo);
+        window.location.href = url.toString();
+      });
+    }
+
     // Gráfico circular Distribución de Roles
-    const ctx = document.getElementById('rolesChart').getContext('2d');
-    const rolesData = @json($roles_dist);
-    new Chart(ctx, {
-      type: 'pie',
-      data: {
-        labels: rolesData.map(r => r.nombre),
-        datasets: [{
-          data: rolesData.map(r => r.porcentaje),
-          backgroundColor: rolesData.map(r => r.color)
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        aspectRatio: 1,
-        plugins: {
-          legend: { position: 'bottom' }
-        }
-      }
-    });
-
-    const actividadSemanalData = @json($actividad_semanal);
-    const ctxActividad = document.getElementById('actividadSemanalChart').getContext('2d');
-    const labels = actividadSemanalData.map(d => d.dia);
-    const metas = actividadSemanalData.map(d => d.metas);
-    const actividades = actividadSemanalData.map(d => d.actividades);
-
-    const actividadChart = new Chart(ctxActividad, {
-        type: 'bar',
+    const rolesCtx = document.getElementById('rolesChart');
+    if (rolesCtx) {
+      const rolesData = @json($roles_dist);
+      new Chart(rolesCtx.getContext('2d'), {
+        type: 'pie',
         data: {
-        labels: labels,
-        datasets: [
-            {
-            label: 'Metas',
-            data: metas,
-            backgroundColor: '#8b5cf6' // purple-500
-            },
-            {
-            label: 'Actividades',
-            data: actividades,
-            backgroundColor: '#3b82f6' // blue-500
-            }
-        ]
+          labels: rolesData.map(r => r.nombre),
+          datasets: [{
+            data: rolesData.map(r => r.porcentaje),
+            backgroundColor: rolesData.map(r => r.color)
+          }]
         },
         options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            y: {
-            beginAtZero: true,
-            ticks: {
-                stepSize: 1
-            }
-            }
-        },
-        plugins: {
-            legend: {
-            position: 'bottom'
-            }
+          responsive: true,
+          maintainAspectRatio: false,
+          aspectRatio: 1,
+          plugins: {
+            legend: { position: 'bottom' }
+          }
         }
-        }
-    });
+      });
+    }
 
+    // Gráfico de Actividad Semanal
+    const actividadCtx = document.getElementById('actividadSemanalChart');
+    if (actividadCtx) {
+      const actividadSemanalData = @json($actividad_semanal);
+      const labels = actividadSemanalData.map(d => d.dia);
+      const metas = actividadSemanalData.map(d => d.metas);
+      const actividades = actividadSemanalData.map(d => d.actividades);
+
+      new Chart(actividadCtx.getContext('2d'), {
+          type: 'bar',
+          data: {
+          labels: labels,
+          datasets: [
+              {
+              label: 'Metas',
+              data: metas,
+              backgroundColor: '#8b5cf6'
+              },
+              {
+              label: 'Actividades',
+              data: actividades,
+              backgroundColor: '#3b82f6'
+              }
+          ]
+          },
+          options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+              y: {
+              beginAtZero: true,
+              ticks: {
+                  stepSize: 1
+              }
+              }
+          },
+          plugins: {
+              legend: {
+              position: 'bottom'
+              }
+          }
+          }
+      });
+    }
   });
 </script>
 @endpush
