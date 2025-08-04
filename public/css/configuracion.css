@@ -1,0 +1,440 @@
+/* Estilos específicos para la página de configuración */
+
+/* Transiciones suaves para tabs */
+.tab-content {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease-in-out;
+}
+
+.tab-content:not(.hidden) {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Estilos para el preview del logo */
+.logo-preview-container {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.logo-preview-container:hover {
+    transform: scale(1.02);
+}
+
+/* Indicador de fortaleza de contraseña */
+.password-strength-weak { width: 25%; background-color: #ef4444; }
+.password-strength-fair { width: 50%; background-color: #f59e0b; }
+.password-strength-good { width: 75%; background-color: #3b82f6; }
+.password-strength-strong { width: 100%; background-color: #10b981; }
+
+/* Animaciones para notificaciones */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+.notification {
+    animation: slideInRight 0.3s ease-out;
+}
+
+.notification.hide {
+    animation: slideOutRight 0.3s ease-in;
+}
+
+/* Estilos para formularios mejorados */
+.form-section {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.form-section:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Input focus mejorado */
+.enhanced-input {
+    transition: all 0.2s ease;
+}
+
+.enhanced-input:focus {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Diseño consistente con la aplicación - Botones de suscripción */
+.suscripcion-actions-panel {
+    min-width: 240px;
+    max-width: 280px;
+}
+
+.suscripcion-actions-panel .grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+
+.suscripcion-actions-panel button {
+    min-height: 40px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+    flex-direction: row;
+    white-space: nowrap;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s ease;
+    font-weight: 500;
+}
+
+/* Efectos hover consistentes con la aplicación */
+.suscripcion-actions-panel button:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.suscripcion-actions-panel button:active {
+    transform: none;
+}
+
+/* Toggle switch con diseño actualizado */
+.toggle-container {
+    display: inline-block;
+    position: relative;
+}
+
+.toggle-bg {
+    width: 2.5rem;
+    height: 1.5rem;
+    cursor: pointer;
+    border-radius: 9999px;
+    transition: background-color 0.2s ease;
+}
+
+.toggle-dot {
+    position: absolute;
+    width: 1.25rem;
+    height: 1.25rem;
+    background-color: white;
+    border-radius: 9999px;
+    transition: transform 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    left: 0.125rem;
+    top: 0.125rem;
+}
+
+.toggle-dot.translate-x-4 {
+    transform: translateX(1rem);
+}
+
+/* Contenedor de auto-renovar consistente */
+.auto-renovar-container {
+    background: white;
+    border: 1px solid #d1d5db;
+    transition: all 0.2s ease;
+    border-radius: 0.5rem;
+    padding: 0.625rem 1rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.auto-renovar-container:hover {
+    border-color: #9ca3af;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+/* Responsividad mejorada */
+@media (max-width: 768px) {
+    .suscripcion-actions-panel {
+        min-width: 220px;
+        max-width: 260px;
+    }
+    
+    .suscripcion-actions-panel button {
+        min-height: 36px;
+        padding: 0.375rem 0.75rem;
+        font-size: 0.75rem;
+    }
+    
+    .auto-renovar-container {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .auto-renovar-container span {
+        font-size: 0.875rem;
+    }
+    
+    .toggle-bg {
+        width: 2.25rem;
+        height: 1.375rem;
+    }
+    
+    .toggle-dot {
+        width: 1.125rem;
+        height: 1.125rem;
+    }
+    
+    .toggle-dot.translate-x-4 {
+        transform: translateX(0.875rem);
+    }
+}
+
+/* Estados de focus consistentes */
+.suscripcion-actions-panel button:focus {
+    outline: 2px solid rgba(59, 130, 246, 0.5);
+    outline-offset: 2px;
+}
+
+/* Diseño consistente con la aplicación */
+.suscripcion-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+    .suscripcion-buttons {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+}
+
+.suscripcion-buttons .flex {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.suscripcion-buttons button {
+    min-width: fit-content;
+    white-space: nowrap;
+}
+
+.auto-renovar-container {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.auto-renovar-container:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Toggle switch personalizado para autorenovación */
+.toggle-container {
+    cursor: pointer;
+    user-select: none;
+}
+
+.toggle-bg {
+    position: relative;
+    border-radius: 9999px;
+    transition: background-color 0.2s ease;
+}
+
+.toggle-dot {
+    position: absolute;
+    background-color: white;
+    border-radius: 9999px;
+    transition: transform 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-container:hover .toggle-bg {
+    opacity: 0.9;
+}
+
+.toggle-container:active .toggle-dot {
+    transform: scale(0.95);
+}
+
+/* Estados de carga para botones */
+.btn-loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.btn-loading .lucide {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Mejoras para notificaciones de estado */
+.notification-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+}
+
+.notification-error {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
+}
+
+.notification-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3);
+    color: #1f2937;
+}
+
+.notification-info {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+}
+
+/* Toggle switch personalizado */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 24px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+    background-color: #3b82f6;
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(24px);
+}
+
+/* Estilos para botones de acción */
+.action-button {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.action-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+.action-button:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* Indicadores de estado */
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.status-success {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.status-warning {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.status-error {
+    background-color: #fecaca;
+    color: #991b1b;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .tab-content {
+        padding: 1rem;
+    }
+    
+    .form-section {
+        margin: 0 -1rem;
+        border-radius: 0;
+        border-left: 0;
+        border-right: 0;
+    }
+    
+    .action-button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Dark mode support (preparación futura) */
+@media (prefers-color-scheme: dark) {
+    .form-section {
+        background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+        border-color: #374151;
+    }
+    
+    .enhanced-input {
+        background-color: #1f2937;
+        border-color: #374151;
+        color: #f9fafb;
+    }
+    
+    .enhanced-input:focus {
+        border-color: #3b82f6;
+        background-color: #111827;
+    }
+}
