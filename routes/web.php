@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\coordEquipo\ConfiguracionCoordinadorController;
 use App\Http\Controllers\coordEquipo\CoordEquipoController;
+use App\Http\Controllers\coordEquipo\MensajesCoordinadorController;
 use App\Http\Controllers\coordEquipo\EquipoCoordinadorController;
 use App\Http\Controllers\coordEquipo\MetasCoordinadorController;
 use App\Http\Controllers\coordEquipo\ReunionesCoordinadorController;
@@ -219,7 +220,7 @@ Route::middleware(['auth', 'role:Colaborador'])->group(function () {
     Route::post('/colaborador/mensajes/new-chat', [MensajeController::class, 'newChat'])->name('colaborador.mensajes.new-chat');
     Route::post('/colaborador/mensajes/mark-as-read', [MensajeController::class, 'markAsRead'])->name('colaborador.mensajes.mark-as-read');
     Route::post('/colaborador/mensajes/search', [MensajeController::class, 'search'])->name('colaborador.mensajes.search');
-
+    Route::post('/colaborador/mensajes/store-fcm-token', [MensajeController::class, 'storeFcmToken'])->name('colaborador.mensajes.store-fcm-token');
     Route::get('/colaborador/reuniones', [\App\Http\Controllers\colaborador\ReunionController::class, 'index'])->name('colaborador.reuniones');
 
     // Rutas para la configuración del colaborador
@@ -282,7 +283,14 @@ Route::middleware('auth')->group(function () {
 
 
 
-
+Route::get('/coord-equipo/mensajes', [MensajesCoordinadorController::class, 'index'])->name('coord-equipo.mensajes');
+    Route::post('/coord-equipo/mensajes/search-workers', [MensajesCoordinadorController::class, 'searchWorkers'])->name('coord-equipo.mensajes.search-workers');
+    Route::get('/coord-equipo/mensajes/get-messages/{contactId}', [MensajesCoordinadorController::class, 'getMessages'])->name('coord-equipo.mensajes.get-messages');
+    Route::post('/coord-equipo/mensajes/send', [MensajesCoordinadorController::class, 'send'])->name('coord-equipo.mensajes.send');
+    Route::post('/coord-equipo/mensajes/new-chat', [MensajesCoordinadorController::class, 'newChat'])->name('coord-equipo.mensajes.new-chat');
+    Route::post('/coord-equipo/mensajes/mark-as-read', [MensajesCoordinadorController::class, 'markAsRead'])->name('coord-equipo.mensajes.mark-as-read');
+    Route::post('/coord-equipo/mensajes/search', [MensajesCoordinadorController::class, 'search'])->name('coord-equipo.mensajes.search');
+    Route::post('/coord-equipo/mensajes/store-fcm-token', [MensajesCoordinadorController::class, 'storeFcmToken'])->name('coord-equipo.mensajes.store-fcm-token');
 
 
 // Rutas para Coordinador General
