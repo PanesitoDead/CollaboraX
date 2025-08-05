@@ -449,11 +449,19 @@ class SuscripcionController extends Controller
             $suscripcionId = $request->input('suscripcion_id');
             $activar = $request->boolean('renovacion_automatica');
             
+            Log::info('Cambiando renovación automática', [
+                'suscripcion_id' => $suscripcionId,
+                'activar' => $activar,
+                'usuario_id' => Auth::id()
+            ]);
+            
             if ($activar) {
                 $resultado = $this->suscripcionService->activarRenovacionAutomatica($suscripcionId);
             } else {
                 $resultado = $this->suscripcionService->cancelarRenovacionAutomatica($suscripcionId);
             }
+
+            Log::info('Resultado de cambiar renovación automática', $resultado);
 
             // Limpiar cache del usuario para forzar actualización de datos
             if (isset($resultado['success']) && $resultado['success']) {
@@ -465,7 +473,12 @@ class SuscripcionController extends Controller
 
             return response()->json($resultado);
         } catch (\Exception $e) {
-            Log::error('Error al cambiar renovación automática: ' . $e->getMessage());
+            Log::error('Error al cambiar renovación automática: ' . $e->getMessage(), [
+                'suscripcion_id' => $request->input('suscripcion_id'),
+                'renovacion_automatica' => $request->input('renovacion_automatica'),
+                'usuario_id' => Auth::id(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Error al cambiar renovación automática'

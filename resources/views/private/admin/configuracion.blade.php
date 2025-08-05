@@ -96,11 +96,20 @@ window.suscripcionActualId = {{ isset($suscripcionActual) && $suscripcionActual 
 
 // Función para cambiar renovación automática
 async function cambiarRenovacionAutomatica(suscripcionId, renovacionAutomatica) {
+    console.log('Iniciando cambiarRenovacionAutomatica:', { suscripcionId, renovacionAutomatica });
+    
     const csrfToken = document.querySelector('meta[name="csrf-token"]');
     
     if (!csrfToken) {
         throw new Error('Token CSRF no encontrado');
     }
+    
+    const requestData = {
+        suscripcion_id: suscripcionId,
+        renovacion_automatica: renovacionAutomatica
+    };
+    
+    console.log('Enviando petición:', requestData);
     
     const response = await fetch('/admin/suscripciones/cambiar-renovacion', {
         method: 'POST',
@@ -109,13 +118,11 @@ async function cambiarRenovacionAutomatica(suscripcionId, renovacionAutomatica) 
             'Accept': 'application/json',
             'X-CSRF-TOKEN': csrfToken.getAttribute('content')
         },
-        body: JSON.stringify({
-            suscripcion_id: suscripcionId,
-            renovacion_automatica: renovacionAutomatica
-        })
+        body: JSON.stringify(requestData)
     });
     
     const data = await response.json();
+    console.log('Respuesta recibida:', { status: response.status, data });
     
     if (!response.ok) {
         throw new Error(data.message || 'Error en la petición');
@@ -193,19 +200,21 @@ function actualizarUIConNuevosDatos(datos) {
         autoToggle.checked = renovacionActiva;
         autoToggle.dataset.suscripcionId = suscripcionData.suscripcion_activa.id;
         
-        // Actualizar UI del toggle
-        const container = autoToggle.closest('.flex');
+        // Actualizar UI del toggle usando clases de Tailwind consistentes
+        const container = autoToggle.closest('label');
         const toggleBg = container.querySelector('.toggle-bg');
         const toggleDot = container.querySelector('.toggle-dot');
         
         if (renovacionActiva) {
             toggleBg.classList.remove('bg-gray-300');
             toggleBg.classList.add('bg-blue-500');
-            toggleDot.classList.add('transform', 'translate-x-4');
+            toggleDot.classList.remove('translate-x-0');
+            toggleDot.classList.add('translate-x-4');
         } else {
             toggleBg.classList.remove('bg-blue-500');
             toggleBg.classList.add('bg-gray-300');
-            toggleDot.classList.remove('transform', 'translate-x-4');
+            toggleDot.classList.remove('translate-x-4');
+            toggleDot.classList.add('translate-x-0');
         }
     }
 }
@@ -366,8 +375,8 @@ document.addEventListener('DOMContentLoaded', function() {
         mostrarNotificacion('Por favor, corrija los errores en el formulario.', 'error');
     @endif
     
-    // Toggle switches - Actualizado para manejar autorenovación
-    document.querySelectorAll('.toggle-switch').forEach(toggle => {
+    // Toggle switches genéricos (excluyendo autorenovación que tiene su propio handler)
+    document.querySelectorAll('.toggle-switch:not(#autoRenovacionToggle)').forEach(toggle => {
         toggle.addEventListener('click', function() {
             const bg = this.querySelector('.toggle-bg');
             const dot = this.querySelector('.toggle-dot');
@@ -388,23 +397,51 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listener específico para el toggle de autorenovación
     const autoRenovacionToggle = document.getElementById('autoRenovacionToggle');
     if (autoRenovacionToggle) {
+        // Función para actualizar la apariencia del toggle
+        function actualizarAparienciaToggle(checkbox, isChecked) {
+            const container = checkbox.closest('label');
+            const toggleBg = container.querySelector('.toggle-bg');
+            const toggleDot = container.querySelector('.toggle-dot');
+            
+            if (isChecked) {
+                toggleBg.classList.remove('bg-gray-300');
+                toggleBg.classList.add('bg-blue-500');
+                toggleDot.classList.remove('translate-x-0');
+                toggleDot.classList.add('translate-x-4');
+            } else {
+                toggleBg.classList.remove('bg-blue-500');
+                toggleBg.classList.add('bg-gray-300');
+                toggleDot.classList.remove('translate-x-4');
+                toggleDot.classList.add('translate-x-0');
+            }
+        }
+        
         autoRenovacionToggle.addEventListener('change', function() {
             const suscripcionId = this.dataset.suscripcionId;
             const isChecked = this.checked;
             
-            if (!suscripcionId) {
+            console.log('Toggle cambiado:', { suscripcionId, isChecked });
+            
+            if (!suscripcionId || suscripcionId === '') {
                 mostrarNotificacion('No se encontró ID de suscripción', 'error');
                 // Revertir el toggle
                 this.checked = !isChecked;
+                actualizarAparienciaToggle(this, !isChecked);
                 return;
             }
             
+            // Actualizar inmediatamente la apariencia visual
+            actualizarAparienciaToggle(this, isChecked);
+            
             // Mostrar estado de carga
-            const container = this.closest('.flex');
-            const loadingSpinner = document.createElement('div');
-            loadingSpinner.className = 'ml-2 w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin';
-            loadingSpinner.id = 'autorenovar-loading';
-            container.appendChild(loadingSpinner);
+            const container = this.closest('label').parentElement;
+            let loadingSpinner = document.getElementById('autorenovar-loading');
+            if (!loadingSpinner) {
+                loadingSpinner = document.createElement('div');
+                loadingSpinner.className = 'ml-2 w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin';
+                loadingSpinner.id = 'autorenovar-loading';
+                container.appendChild(loadingSpinner);
+            }
             
             // Deshabilitar el toggle temporalmente
             this.disabled = true;
@@ -412,33 +449,23 @@ document.addEventListener('DOMContentLoaded', function() {
             // Hacer la petición AJAX
             cambiarRenovacionAutomatica(suscripcionId, isChecked)
                 .then(response => {
+                    console.log('Respuesta del servidor:', response);
                     if (response.success) {
                         mostrarNotificacion(response.message || 'Configuración actualizada correctamente', 'success');
-                        
-                        // Actualizar la UI del toggle
-                        const toggleBg = container.querySelector('.toggle-bg');
-                        const toggleDot = container.querySelector('.toggle-dot');
-                        
-                        if (isChecked) {
-                            toggleBg.classList.remove('bg-gray-300');
-                            toggleBg.classList.add('bg-blue-500');
-                            toggleDot.classList.add('transform', 'translate-x-4');
-                        } else {
-                            toggleBg.classList.remove('bg-blue-500');
-                            toggleBg.classList.add('bg-gray-300');
-                            toggleDot.classList.remove('transform', 'translate-x-4');
-                        }
+                        // La apariencia ya se actualizó arriba, no necesitamos hacerlo de nuevo
                     } else {
                         mostrarNotificacion(response.message || 'Error al actualizar configuración', 'error');
-                        // Revertir el toggle
+                        // Revertir el toggle y la apariencia
                         this.checked = !isChecked;
+                        actualizarAparienciaToggle(this, !isChecked);
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     mostrarNotificacion('Error de conexión', 'error');
-                    // Revertir el toggle
+                    // Revertir el toggle y la apariencia
                     this.checked = !isChecked;
+                    actualizarAparienciaToggle(this, !isChecked);
                 })
                 .finally(() => {
                     // Remover spinner y rehabilitar toggle

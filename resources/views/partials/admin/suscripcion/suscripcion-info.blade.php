@@ -120,7 +120,7 @@
                                            class="sr-only">
                                     <div class="toggle-container relative mr-3">
                                         <div class="toggle-bg block w-10 h-6 rounded-full transition-colors duration-200 @if(isset($suscripcionActual['renovacion_automatica']) && $suscripcionActual['renovacion_automatica']) bg-blue-500 @else bg-gray-300 @endif"></div>
-                                        <div class="toggle-dot absolute bg-white w-5 h-5 rounded-full transition-transform duration-200 @if(isset($suscripcionActual['renovacion_automatica']) && $suscripcionActual['renovacion_automatica']) translate-x-4 @endif" style="left: 0.125rem; top: 0.125rem;"></div>
+                                        <div class="toggle-dot absolute bg-white w-5 h-5 rounded-full transition-transform duration-200 @if(isset($suscripcionActual['renovacion_automatica']) && $suscripcionActual['renovacion_automatica']) translate-x-4 @else translate-x-0 @endif" style="left: 0.125rem; top: 0.125rem;"></div>
                                     </div>
                                     <span class="text-sm font-medium text-gray-700">Auto-renovar</span>
                                 </label>

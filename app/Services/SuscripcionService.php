@@ -530,6 +530,8 @@ class SuscripcionService
     public function cancelarRenovacionAutomatica($suscripcionId)
     {
         try {
+            Log::info("Intentando cancelar renovación automática", ['suscripcion_id' => $suscripcionId]);
+            
             $response = $this->client->patch($this->baseUrl . "/api/suscripciones/{$suscripcionId}/renovacion-automatica", [
                 'headers' => [
                     'Accept' => 'application/json',
@@ -541,6 +543,12 @@ class SuscripcionService
             ]);
 
             $data = json_decode($response->getBody()->getContents(), true);
+            
+            Log::info("Respuesta de API para cancelar renovación", [
+                'suscripcion_id' => $suscripcionId,
+                'status_code' => $response->getStatusCode(),
+                'data' => $data
+            ]);
             
             if (isset($data['success']) && $data['success'] === true) {
                 return [
@@ -554,7 +562,11 @@ class SuscripcionService
                 'message' => $data['message'] ?? 'Error al cancelar la renovación automática'
             ];
         } catch (RequestException $e) {
-            Log::error('Error al cancelar renovación automática: ' . $e->getMessage());
+            Log::error('Error al cancelar renovación automática', [
+                'suscripcion_id' => $suscripcionId,
+                'error' => $e->getMessage(),
+                'response' => $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : null
+            ]);
             return ['success' => false, 'message' => 'Error al cancelar la renovación automática'];
         }
     }
@@ -566,7 +578,9 @@ class SuscripcionService
     public function activarRenovacionAutomatica($suscripcionId)
     {
         try {
-            $response = $this->client->patch($this->baseUrl . "/suscripciones/{$suscripcionId}/renovacion-automatica", [
+            Log::info("Intentando activar renovación automática", ['suscripcion_id' => $suscripcionId]);
+            
+            $response = $this->client->patch($this->baseUrl . "/api/suscripciones/{$suscripcionId}/renovacion-automatica", [
                 'headers' => [
                     'Accept' => 'application/json',
                     'Content-Type' => 'application/json'
@@ -577,6 +591,12 @@ class SuscripcionService
             ]);
 
             $data = json_decode($response->getBody()->getContents(), true);
+            
+            Log::info("Respuesta de API para activar renovación", [
+                'suscripcion_id' => $suscripcionId,
+                'status_code' => $response->getStatusCode(),
+                'data' => $data
+            ]);
             
             if (isset($data['success']) && $data['success'] === true) {
                 return [
@@ -590,7 +610,11 @@ class SuscripcionService
                 'message' => $data['message'] ?? 'Error al activar la renovación automática'
             ];
         } catch (RequestException $e) {
-            Log::error('Error al activar renovación automática: ' . $e->getMessage());
+            Log::error('Error al activar renovación automática', [
+                'suscripcion_id' => $suscripcionId,
+                'error' => $e->getMessage(),
+                'response' => $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : null
+            ]);
             return ['success' => false, 'message' => 'Error al activar la renovación automática'];
         }
     }
@@ -601,7 +625,7 @@ class SuscripcionService
     public function verificarSuscripcionesVencidas()
     {
         try {
-            $response = $this->client->post($this->baseUrl . "/suscripciones/check-expired", [
+            $response = $this->client->post($this->baseUrl . "/api/suscripciones/check-expired", [
                 'headers' => [
                     'Accept' => 'application/json',
                     'Content-Type' => 'application/json'
@@ -635,7 +659,7 @@ class SuscripcionService
     public function obtenerSuscripcion($suscripcionId)
     {
         try {
-            $response = $this->client->get($this->baseUrl . "/suscripciones/{$suscripcionId}", [
+            $response = $this->client->get($this->baseUrl . "/api/suscripciones/{$suscripcionId}", [
                 'headers' => [
                     'Accept' => 'application/json'
                 ]
